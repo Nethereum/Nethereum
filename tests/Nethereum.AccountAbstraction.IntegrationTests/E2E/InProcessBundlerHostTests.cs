@@ -29,7 +29,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var entryPointService = await EntryPointService.DeployContractAndGetServiceAsync(
                 host.OperatorWeb3, new EntryPointDeployment());
 
-            var bundler = host.StartBundler(entryPointService.ContractAddress, bundlerAccount);
+            var bundler = host.StartBundler(entryPointService.ContractAddress, bundlerAccount, enableErc7562Validation: false);
 
             Assert.Same(bundler, host.Bundler);
             Assert.NotNull(host.BundlerService);

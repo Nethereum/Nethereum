@@ -12,6 +12,8 @@ namespace Nethereum.AccountAbstraction
 {
     public static class UserOperationConverter
     {
+        private const string Eip7702Sentinel = "0x7702";
+
         public static RpcUserOperation ToRpcFormat(PackedUserOperation packed)
         {
             var rpc = new RpcUserOperation
@@ -115,6 +117,13 @@ namespace Nethereum.AccountAbstraction
             if (initCode == null || initCode.Length == 0)
                 return;
 
+            if (AAEIP7702Utils.IsEip7702UserOp(initCode))
+            {
+                factory = Eip7702Sentinel;
+                factoryData = initCode.Length > 20 ? initCode.Skip(20).ToArray() : null;
+                return;
+            }
+
             if (initCode.Length < 20)
                 return;
 
@@ -129,6 +138,9 @@ namespace Nethereum.AccountAbstraction
 
         private static string GetFactoryFromInitCode(byte[] initCode)
         {
+            if (initCode != null && AAEIP7702Utils.IsEip7702UserOp(initCode))
+                return Eip7702Sentinel;
+
             if (initCode == null || initCode.Length < 20)
                 return null;
 

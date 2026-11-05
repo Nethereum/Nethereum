@@ -56,6 +56,8 @@ namespace Nethereum.AccountAbstraction
             };
         }
 
+        private static readonly byte[] PaymasterSignatureMagic = { 0x22, 0xe3, 0x25, 0xa2, 0x97, 0x43, 0x96, 0x56 };
+
         public static byte[] PackAccountGasLimits(BigInteger verificationGasLimit, BigInteger callGasLimit)
         {
            var verificationBytes = ByteUtil.PadBytesLeft(verificationGasLimit.ToBytesForRLPEncoding(), 16);
@@ -84,8 +86,52 @@ namespace Nethereum.AccountAbstraction
                 AccountGasLimits = userOperation.AccountGasLimits,
                 PreVerificationGas = userOperation.PreVerificationGas,
                 GasFees = userOperation.GasFees,
-                PaymasterAndData = userOperation.PaymasterAndData
+                PaymasterAndData = SignedPaymasterAndData(userOperation.PaymasterAndData)
             };
+        }
+
+        private static PackedUserOperationForHash WithSignedPaymasterData(PackedUserOperationForHash userOperation)
+        {
+            return new PackedUserOperationForHash
+            {
+                Sender = userOperation.Sender,
+                Nonce = userOperation.Nonce,
+                InitCode = userOperation.InitCode,
+                CallData = userOperation.CallData,
+                AccountGasLimits = userOperation.AccountGasLimits,
+                PreVerificationGas = userOperation.PreVerificationGas,
+                GasFees = userOperation.GasFees,
+                PaymasterAndData = SignedPaymasterAndData(userOperation.PaymasterAndData)
+            };
+        }
+
+        private static byte[] SignedPaymasterAndData(byte[] paymasterAndData)
+        {
+            const int paymasterDataOffset = 52;
+            const int magicLength = 8;
+            const int suffixLength = magicLength + 2;
+            const int minimumWithSuffix = paymasterDataOffset + suffixLength;
+
+            if (paymasterAndData == null || paymasterAndData.Length < minimumWithSuffix) return paymasterAndData;
+
+            var length = paymasterAndData.Length;
+            for (var i = 0; i < magicLength; i++)
+            {
+                if (paymasterAndData[length - magicLength + i] != PaymasterSignatureMagic[i]) return paymasterAndData;
+            }
+
+            var signatureLength = (paymasterAndData[length - suffixLength] << 8) | paymasterAndData[length - suffixLength + 1];
+            if (signatureLength > length - minimumWithSuffix)
+            {
+                throw new ArgumentException(
+                    $"InvalidPaymasterSignatureLength: dataLength {length}, signatureLength {signatureLength}");
+            }
+
+            if (signatureLength == 0) return paymasterAndData;
+
+            return ByteUtil.Merge(
+                paymasterAndData.Take(length - (signatureLength + suffixLength)).ToArray(),
+                PaymasterSignatureMagic);
         }
 
         public static string BuildUserOperationTypedDataJson(PackedUserOperation userOperation, string entryPointAddress, BigInteger chainId)
@@ -117,7 +163,7 @@ namespace Nethereum.AccountAbstraction
             var domain = new ERC4337Domain(entryPointAddress, chainId);
             var typedData = CreateUserOperationTypeData(domain);
 
-            var hash = new Eip712TypedDataEncoder().EncodeAndHashTypedData(packedUserOperationForHash, typedData);
+            var hash = new Eip712TypedDataEncoder().EncodeAndHashTypedData(WithSignedPaymasterData(packedUserOperationForHash), typedData);
 
             var packedUserOperation = new PackedUserOperation
             {
@@ -143,7 +189,7 @@ namespace Nethereum.AccountAbstraction
         public static byte[] PackAndHashEIP712UserOperation(UserOperation userOperation, ERC4337Domain domain)
         {
             var typedDataEncoder = new Eip712TypedDataEncoder();
-            var packedUserOperation = PackUserOperationForHash(userOperation);
+            var packedUserOperation = WithSignedPaymasterData(PackUserOperationForHash(userOperation));
             var typedData = CreateUserOperationTypeData(domain);
             var encoded = typedDataEncoder.EncodeAndHashTypedData(packedUserOperation, typedData);
             return encoded;
@@ -151,7 +197,7 @@ namespace Nethereum.AccountAbstraction
 
         public static byte[] PackAndEncodeEip712UserOperation(UserOperation userOperation, string entryPointAddress, BigInteger chainId)
         {
-            var packedUserOperation = PackUserOperationForHash(userOperation);
+            var packedUserOperation = WithSignedPaymasterData(PackUserOperationForHash(userOperation));
             var domain = new ERC4337Domain(entryPointAddress, chainId);
             var typedData = CreateUserOperationTypeData(domain);
             var typedDataEncoder = new Eip712TypedDataEncoder();
@@ -161,7 +207,7 @@ namespace Nethereum.AccountAbstraction
 
         public static byte[] PackAndEncodeUserOperationStruct(UserOperation userOperation)
         {
-            var packedUserOperation = PackUserOperationForHash(userOperation);
+            var packedUserOperation = WithSignedPaymasterData(PackUserOperationForHash(userOperation));
             var typedDataEncoder = new Eip712TypedDataEncoder();
             return typedDataEncoder.EncodeStruct(packedUserOperation, "PackedUserOperation", typeof(PackedUserOperationForHash));
         }

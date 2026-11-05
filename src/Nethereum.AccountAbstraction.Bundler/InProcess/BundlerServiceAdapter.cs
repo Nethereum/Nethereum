@@ -49,11 +49,7 @@ namespace Nethereum.AccountAbstraction.Bundler.InProcess
             byte[] initCode = null;
             if (!string.IsNullOrEmpty(rpc.Factory))
             {
-                var factoryBytes = rpc.Factory.HexToByteArray();
-                var factoryData = rpc.FactoryData?.HexToByteArray() ?? Array.Empty<byte>();
-                initCode = new byte[factoryBytes.Length + factoryData.Length];
-                Buffer.BlockCopy(factoryBytes, 0, initCode, 0, factoryBytes.Length);
-                Buffer.BlockCopy(factoryData, 0, initCode, factoryBytes.Length, factoryData.Length);
+                initCode = AAEIP7702Utils.BuildInitCode(rpc.Factory, rpc.FactoryData?.HexToByteArray());
             }
 
             return new LocalUserOperation

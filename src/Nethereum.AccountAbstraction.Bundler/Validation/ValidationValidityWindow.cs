@@ -7,6 +7,43 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
         public const ulong VALIDITY_BLOCK_RANGE_FLAG = 0x800000000000;
         public const ulong VALIDITY_BLOCK_RANGE_MASK = 0x7FFFFFFFFFFF;
 
+        public const ulong MAX_UINT48 = 0xFFFFFFFFFFFF;
+
+        public static ulong NormalizeValidUntil(ulong validUntil)
+        {
+            return validUntil == 0 ? MAX_UINT48 : validUntil;
+        }
+
+        public static bool IsBlockRange(ulong validAfter, ulong validUntil)
+        {
+            return validAfter >= VALIDITY_BLOCK_RANGE_FLAG && NormalizeValidUntil(validUntil) >= VALIDITY_BLOCK_RANGE_FLAG;
+        }
+
+        public static bool IsValidAt(ulong validAfter, ulong validUntil, ulong timestamp, ulong blockNumber)
+        {
+            var until = NormalizeValidUntil(validUntil);
+
+            if (validAfter >= VALIDITY_BLOCK_RANGE_FLAG && until >= VALIDITY_BLOCK_RANGE_FLAG)
+            {
+                return blockNumber > GetBlockNumber(validAfter) && blockNumber <= GetBlockNumber(until);
+            }
+
+            return timestamp > validAfter && timestamp <= until;
+        }
+
+        public static bool IsBlockWindowOpen(ulong? validAfterBlock, ulong? validUntilBlock, ulong blockNumber)
+        {
+            if (!validAfterBlock.HasValue && !validUntilBlock.HasValue)
+                return true;
+
+            return blockNumber > (validAfterBlock ?? 0) && blockNumber <= (validUntilBlock ?? GetBlockNumber(MAX_UINT48));
+        }
+
+        public static bool IsBlockWindowEnded(ulong? validUntilBlock, ulong blockNumber)
+        {
+            return validUntilBlock.HasValue && blockNumber > validUntilBlock.Value;
+        }
+
         public static bool IsBlockRangeValidity(ulong validAfter, ulong validUntil)
         {
             return validAfter >= VALIDITY_BLOCK_RANGE_FLAG && validUntil >= VALIDITY_BLOCK_RANGE_FLAG;

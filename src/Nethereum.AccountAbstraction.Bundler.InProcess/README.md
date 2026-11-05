@@ -91,7 +91,7 @@ public class InProcessBundlerHost : IDisposable, IAsyncDisposable
     public IAccountAbstractionBundlerService StartBundler(
         string entryPointAddress,
         Web3Account bundlerAccount,
-        bool enableErc7562Validation = false,
+        bool enableErc7562Validation = true,
         Action<BundlerConfig> configureOverrides = null);
 
     public static IAccountAbstractionBundlerService UseHostedUrl(string bundlerRpcUrl, BigInteger chainId);
@@ -102,8 +102,8 @@ public class InProcessBundlerHost : IDisposable, IAsyncDisposable
   `OperatorWeb3` exposes (mining control, additional `Web3` instances for other accounts, direct node
   shutdown independent of `Dispose`).
 - **`StartBundler`**'s two extra optional parameters go beyond the Quick Start's two required ones:
-  `enableErc7562Validation` turns on ERC-7562 full-validation-rule enforcement (off by default, even
-  though `SimulateValidation`/`StrictValidation` are already on), and `configureOverrides` is invoked
+  `enableErc7562Validation` controls ERC-7562 full-validation-rule enforcement (on by default; pass
+  `false` to opt out), and `configureOverrides` is invoked
   against the `BundlerConfig` the host builds internally *before* the bundler is constructed - use it to
   tweak any other `BundlerConfig` field (mempool size, bundle gas, reputation) without hand-assembling
   the whole config yourself.

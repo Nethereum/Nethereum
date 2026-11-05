@@ -27,13 +27,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
         }
 
         [Fact]
-        public void MaxVerificationGas_DefaultIsAboveTheOldOneAndHalfMillionCeiling()
+        public void MaxVerificationGas_DefaultIsTheErc7562MaxVerificationGas()
         {
             var serverConfig = new BundlerRpcServerConfig();
 
-            Assert.True(serverConfig.MaxVerificationGas > 5_000_000,
-                $"Default MaxVerificationGas ({serverConfig.MaxVerificationGas}) must exceed the " +
-                "5,000,000 verificationGasLimit used by bundler-spec-tests EREP-020.");
+            Assert.Equal(500_000, serverConfig.MaxVerificationGas);
         }
 
         [Fact]
@@ -89,7 +87,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             {
                 SupportedEntryPoints = new[] { _fixture.EntryPointService.ContractAddress },
                 BeneficiaryAddress = _fixture.BeneficiaryAddress,
-                ChainId = _fixture.ChainId
+                ChainId = _fixture.ChainId,
+                MaxVerificationGas = 1_500_000
             };
 
             var validator = new UserOpValidator(_fixture.Web3, oldDefaultConfig);
@@ -100,7 +99,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
         }
 
         [Fact]
-        public async Task ValidateStructureAsync_ComplianceGas_AcceptedWithRaisedRpcServerConfigDefault()
+        public async Task ValidateStructureAsync_ComplianceGas_AcceptedWhenMaxVerificationGasIsRaisedToTenMillion()
         {
             var salt = (ulong)Random.Shared.NextInt64();
             var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt);
@@ -110,7 +109,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             {
                 SupportedEntryPoints = new[] { _fixture.EntryPointService.ContractAddress },
                 BeneficiaryAddress = _fixture.BeneficiaryAddress,
-                ChainId = _fixture.ChainId
+                ChainId = _fixture.ChainId,
+                MaxVerificationGas = 10_000_000
             };
 
             var raisedConfig = serverConfig.ToBundlerConfig();
@@ -131,7 +131,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
             {
                 SupportedEntryPoints = new[] { _fixture.EntryPointService.ContractAddress },
                 BeneficiaryAddress = _fixture.BeneficiaryAddress,
-                ChainId = _fixture.ChainId
+                ChainId = _fixture.ChainId,
+                MaxVerificationGas = 10_000_000
             };
 
             var raisedConfig = serverConfig.ToBundlerConfig();

@@ -165,6 +165,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };
@@ -262,6 +264,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };

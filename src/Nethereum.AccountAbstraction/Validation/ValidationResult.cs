@@ -18,6 +18,10 @@ namespace Nethereum.AccountAbstraction.Validation
 
         public ulong ValidUntil { get; set; }
 
+        public ulong? ValidAfterBlock { get; set; }
+
+        public ulong? ValidUntilBlock { get; set; }
+
         public string? Aggregator { get; set; }
 
         public BigInteger PreVerificationGas { get; set; }
@@ -75,7 +79,9 @@ namespace Nethereum.AccountAbstraction.Validation
 
         BundleFull = 90,
         DuplicateUserOp = 91,
-        ReplacementUnderpriced = 92
+        ReplacementUnderpriced = 92,
+
+        NodeCallFailed = 100
     }
 
     public static class ValidationDataCodec
@@ -151,9 +157,10 @@ namespace Nethereum.AccountAbstraction.Validation
         public static BigInteger Merge(BigInteger accountValidation, BigInteger paymasterValidation)
         {
             var (accSigFailed, accValidUntil, accValidAfter, accAggregator) = Parse(accountValidation);
-            var (pmSigFailed, pmValidUntil, pmValidAfter, _) = Parse(paymasterValidation);
+            var (pmSigFailed, pmValidUntil, pmValidAfter, pmAggregator) = Parse(paymasterValidation);
 
-            var sigFailed = accSigFailed || pmSigFailed;
+            var paymasterFailed = pmSigFailed || pmAggregator != null;
+            var sigFailed = accSigFailed || paymasterFailed;
 
             ulong validUntil = 0;
             if (accValidUntil > 0 && pmValidUntil > 0)
@@ -165,7 +172,7 @@ namespace Nethereum.AccountAbstraction.Validation
 
             ulong validAfter = Math.Max(accValidAfter, pmValidAfter);
 
-            return Pack(sigFailed, validUntil, validAfter, accAggregator);
+            return Pack(sigFailed, validUntil, validAfter, paymasterFailed ? null : accAggregator);
         }
     }
 }

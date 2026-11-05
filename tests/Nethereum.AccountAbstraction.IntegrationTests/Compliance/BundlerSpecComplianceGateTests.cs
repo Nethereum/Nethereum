@@ -4,10 +4,13 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.AccountAbstraction.IntegrationTests.Compliance
 {
     [Trait("Category", "Compliance")]
+    [Trait("Category", "BundlerSpec")]
+    [Trait("Requires", "Externals")]
     public class BundlerSpecComplianceGateTests
     {
         private static readonly Regex SummaryLineRegex = new Regex(
@@ -30,13 +33,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Compliance
         [Trait("Category", "Compliance")]
         public void EthInfinitismComplianceSuite_RunsWithZeroFailures()
         {
-            var specTests = Environment.GetEnvironmentVariable("BUNDLER_SPEC_TESTS");
-            Skip.If(string.IsNullOrEmpty(specTests) || !Directory.Exists(specTests),
-                "Compliance gate skipped: set BUNDLER_SPEC_TESTS to a bundler-spec-tests clone " +
-                "(with its .venv and spec/openrpc.json built — see " +
-                "tests/Nethereum.AccountAbstraction.ComplianceHarness/README.md), then run " +
-                "`dotnet test --filter Category=Compliance`. This gate MUST pass before any " +
-                "bundler change is called done.");
+            var specTests = TestEnvironment.RequireExternalPath("BundlerSpecTests");
 
             Skip.If(!IsOnPath("anvil", "--version"),
                 "Compliance gate skipped: `anvil` is not on PATH. Install Foundry " +
@@ -50,21 +47,16 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Compliance
 
             var venvPath = Path.Combine(specTests, ".venv");
             Skip.If(!Directory.Exists(venvPath),
-                $"Compliance gate skipped: no Python venv found at {venvPath}. Build it per " +
-                "tests/Nethereum.AccountAbstraction.ComplianceHarness/README.md " +
-                "(`python -m venv .venv` + `pip install -r requirements.txt` inside the " +
-                "bundler-spec-tests clone) then run `dotnet test --filter Category=Compliance`.");
+                $"Compliance gate skipped: no Python venv found at {venvPath}. Run " +
+                "`dotnet run ci/fetch-externals.cs -- bundler-spec-tests` (needs uv and pdm, as in ci/Dockerfile) " +
+                "then run `dotnet test --filter Category=Compliance`.");
 
-            var repoRoot = FindRepoRoot();
-            Skip.If(repoRoot == null,
-                "Compliance gate skipped: could not locate " +
-                "tests/Nethereum.AccountAbstraction.ComplianceHarness/run-spec-tests.ps1 by " +
-                "walking up from AppContext.BaseDirectory — repo layout may have changed.");
+            var repoRoot = TestEnvironment.RepoRoot;
 
-            var script = Path.Combine(repoRoot!,
+            var script = Path.Combine(repoRoot,
                 "tests", "Nethereum.AccountAbstraction.ComplianceHarness", "run-spec-tests.ps1");
 
-            var (output, timedOut) = RunComplianceHarness(script, specTests!, repoRoot!);
+            var (output, timedOut) = RunComplianceHarness(script, specTests, repoRoot);
 
             if (timedOut)
             {
@@ -179,20 +171,6 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Compliance
             {
                 return false;
             }
-        }
-
-        private static string? FindRepoRoot()
-        {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir.FullName,
-                    "tests", "Nethereum.AccountAbstraction.ComplianceHarness", "run-spec-tests.ps1");
-                if (File.Exists(candidate))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-            return null;
         }
     }
 }

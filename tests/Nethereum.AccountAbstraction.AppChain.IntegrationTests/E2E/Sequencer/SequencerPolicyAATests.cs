@@ -94,9 +94,9 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var config = new AppChainServerConfig
             {
                 ChainId = CHAIN_ID,
-                ChainName = "PolicyAATest",
-                BaseFee = 1_000_000_000
+                ChainName = "PolicyAATest"
             };
+            config.Node.Producer.BaseFee = 1_000_000_000;
             config.Genesis.Owner.PrivateKey = _operatorPrivateKey;
             config.Consensus.Sequencer.PrivateKey = _operatorPrivateKey;
             config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
@@ -167,6 +167,9 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
+                MaxUserOperationSize = 131_072,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };

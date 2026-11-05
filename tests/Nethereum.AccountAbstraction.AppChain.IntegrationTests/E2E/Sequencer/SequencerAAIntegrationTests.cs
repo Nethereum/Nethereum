@@ -225,7 +225,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             await _fixture.ResetBundlerServiceAsync();
 
             var userAccounts = new[] { _fixture.UserAccounts[3], _fixture.UserAccounts[4] };
-            var recipient = _fixture.OperatorAccount;
+            var recipient = _fixture.UserAccounts[1];
             var transferAmount = Web3.Web3.Convert.ToWei(0.05m);
 
             var smartAccountAddresses = new List<string>();
@@ -333,7 +333,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var userAccount = new Account(
                 "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
                 SequencerAAFixture.CHAIN_ID);
-            var recipient = _fixture.OperatorAccount;
+            var recipient = _fixture.UserAccounts[1];
             var transferAmount = Web3.Web3.Convert.ToWei(0.1m);
 
             var salt = new byte[32];

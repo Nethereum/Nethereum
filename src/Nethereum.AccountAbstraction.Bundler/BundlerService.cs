@@ -34,13 +34,16 @@ namespace Nethereum.AccountAbstraction.Bundler
         private readonly IStakingInfoService _stakingInfo;
         private readonly Dictionary<string, EntryPointService> _entryPoints = new();
 
-        private readonly ConcurrentDictionary<string, UserOperationReceipt> _receipts = new();
+        private readonly BoundedReceiptCache _receipts;
+        private readonly BoundedExpiringSet _unknownReceipts;
         private readonly ConcurrentDictionary<string, ReputationEntry> _inMemoryReputation = new();
         private readonly BundlerStats _stats = new() { StartedAt = DateTimeOffset.UtcNow };
 
         private readonly SemaphoreSlim _admissionGate = new(1, 1);
 
         private readonly SemaphoreSlim _bundleGate = new(1, 1);
+
+        private readonly SemaphoreSlim _inclusionGate = new(1, 1);
 
         private readonly SemaphoreSlim _reputationDecayGate = new(1, 1);
 
@@ -80,9 +83,12 @@ namespace Nethereum.AccountAbstraction.Bundler
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger;
             _mempool = mempool ?? new InMemoryUserOpMempool(config.MaxMempoolSize);
-            _validator = validator ?? new UserOpValidator(web3, config, null, null, _mempool);
+            _validator = validator ?? new UserOpValidator(web3, config, null, null, _mempool, logger);
             _executor = executor ?? new BundleExecutor(web3, config);
             _receiptService = new UserOperationReceiptService(web3);
+            _receipts = new BoundedReceiptCache(config.ReceiptCacheSize);
+            _unknownReceipts = new BoundedExpiringSet(
+                config.ReceiptNegativeCacheSize, TimeSpan.FromSeconds(config.ReceiptNegativeCacheSeconds));
             _reputationService = reputationService;
             _stakingInfo = new StakingInfoService(web3, config);
 
@@ -113,8 +119,9 @@ namespace Nethereum.AccountAbstraction.Bundler
         public async Task<string> SendUserOperationAsync(PackedUserOperation userOp, string entryPoint, Authorisation eip7702Auth = null)
         {
             ValidateEntryPoint(entryPoint);
+            ValidateAdmissionBounds(userOp);
 
-            if (_config.BlacklistedAddresses.Contains(userOp.Sender?.ToLowerInvariant() ?? ""))
+            if (IsListed(_config.BlacklistedAddresses, userOp.Sender))
             {
                 throw new BundlerRpcException(
                     BundlerErrorCodes.Reputation,
@@ -149,28 +156,35 @@ namespace Nethereum.AccountAbstraction.Bundler
                 Paymaster = ExtractPaymaster(userOp.PaymasterAndData),
                 ValidUntil = validationResult.ValidUntil > 0 ? validationResult.ValidUntil : null,
                 ValidAfter = validationResult.ValidAfter > 0 ? validationResult.ValidAfter : null,
+                ValidAfterBlock = validationResult.ValidAfterBlock,
+                ValidUntilBlock = validationResult.ValidUntilBlock,
                 AccessedStorageAddresses = accessedStorageAddresses,
                 Eip7702Auth = eip7702Auth
             };
 
             MempoolEntry? replacedEntry;
             MempoolAddOutcome addOutcome;
+            MempoolEntry[] evictedEntries;
 
             await _admissionGate.WaitAsync();
             try
             {
-                replacedEntry = await FindPendingBySenderAndNonceAsync(userOp.Sender, userOp.Nonce, entryPoint);
+                var pool = await GetAdmissionPendingAsync();
+                replacedEntry = FindPendingBySenderAndNonce(pool, userOp.Sender, userOp.Nonce, entryPoint);
 
-                await CheckPaymasterDepositAsync(entry, entryPoint, replacedEntry);
-                await CheckSenderPrefundAsync(entry, entryPoint, replacedEntry);
+                await CheckPaymasterDepositAsync(pool, entry, entryPoint, replacedEntry);
+                await CheckSenderPrefundAsync(pool, entry, entryPoint, replacedEntry);
 
                 if (replacedEntry == null)
                 {
-                    await CheckSenderMempoolLimitAsync(userOp.Sender, entryPoint);
-                    await CheckMultipleRolesViolationAsync(entry);
+                    await CheckSenderMempoolLimitAsync(pool, userOp.Sender, entryPoint);
                 }
 
+                await CheckEntityMempoolLimitsAsync(pool, entry, entryPoint, replacedEntry);
+                CheckMultipleRolesViolation(pool, entry, replacedEntry);
+
                 addOutcome = await _mempool.AddAsync(entry);
+                evictedEntries = (_mempool as IMempoolEvictionLog)?.DrainEvicted() ?? Array.Empty<MempoolEntry>();
             }
             finally
             {
@@ -193,11 +207,18 @@ namespace Nethereum.AccountAbstraction.Bundler
                         "Mempool is full");
             }
 
+            _unknownReceipts.Remove(userOpHash);
+
             if (_reputationService != null)
             {
                 if (addOutcome == MempoolAddOutcome.Replaced && replacedEntry != null)
                 {
                     await RevertSeenReputationAsync(replacedEntry, entryPoint);
+                }
+
+                foreach (var evicted in evictedEntries)
+                {
+                    await RevertSeenReputationAsync(evicted, evicted.EntryPoint);
                 }
 
                 await RecordSeenReputationAsync(entry, entryPoint);
@@ -206,14 +227,14 @@ namespace Nethereum.AccountAbstraction.Bundler
             return userOpHash;
         }
 
-        private async Task<MempoolEntry?> FindPendingBySenderAndNonceAsync(string? sender, BigInteger nonce, string entryPoint)
+        private static MempoolEntry? FindPendingBySenderAndNonce(
+            MempoolEntry[] pool, string? sender, BigInteger nonce, string entryPoint)
         {
             if (string.IsNullOrEmpty(sender)) return null;
 
-            var pending = await _mempool.GetBySenderAsync(sender);
-            return pending.FirstOrDefault(e =>
-                e.State == MempoolEntryState.Pending &&
+            return pool.FirstOrDefault(e =>
                 e.UserOperation.Nonce == nonce &&
+                sender.IsTheSameAddress(e.UserOperation.Sender) &&
                 e.EntryPoint.Equals(entryPoint, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -221,49 +242,74 @@ namespace Nethereum.AccountAbstraction.Bundler
         {
             ValidateEntryPoint(entryPoint);
 
+            var sizeViolation = UserOpAdmissionBounds.Check(userOp, _config.MaxUserOperationSize);
+            if (sizeViolation != null)
+            {
+                throw new BundlerRpcException(BundlerErrorCodes.InvalidFields, sizeViolation);
+            }
+
             var gasEstimator = new SimulationGasEstimator(_web3, _config, _logger);
             return await gasEstimator.EstimateAsync(userOp, entryPoint);
         }
 
         public async Task<UserOperationReceipt?> GetUserOperationReceiptAsync(string userOpHash)
         {
-            if (_receipts.TryGetValue(userOpHash, out var cached))
+            userOpHash = NormalizeUserOpHashOrThrow(userOpHash);
+
+            if (_receipts.TryGet(userOpHash, out var cached))
             {
                 return cached;
             }
 
+            if (_unknownReceipts.Contains(userOpHash))
+            {
+                return null;
+            }
+
+            var unknownGeneration = _unknownReceipts.Generation;
             var entry = await _mempool.GetAsync(userOpHash);
 
             UserOperationReceipt? receipt = null;
+            var cacheAsUnknown = false;
 
-            if (entry?.State == MempoolEntryState.Included && entry.TransactionHash != null)
+            if (entry == null)
             {
-                var txReceipt = await _web3.Eth.Transactions.GetTransactionReceipt
-                    .SendRequestAsync(entry.TransactionHash);
-                if (txReceipt != null)
-                {
-                    receipt = _receiptService.BuildFromTransactionReceipt(
-                        txReceipt, userOpHash, entry.EntryPoint);
-                }
+                receipt = await FindReceiptByLogScanAsync(userOpHash, null);
+                cacheAsUnknown = receipt == null;
             }
-
-            if (receipt == null)
+            else if (entry.State == MempoolEntryState.Included)
             {
-                receipt = await FindReceiptByLogScanAsync(userOpHash, entry?.EntryPoint);
-
-                if (receipt != null && entry != null && entry.State != MempoolEntryState.Included)
+                if (entry.TransactionHash != null)
                 {
-                    await _mempool.MarkIncludedAsync(
-                        new[] { userOpHash },
-                        receipt.Receipt.TransactionHash,
-                        receipt.Receipt.BlockNumber?.Value ?? 0,
-                        receipt.Receipt.BlockHash);
+                    var txReceipt = await _web3.Eth.Transactions.GetTransactionReceipt
+                        .SendRequestAsync(entry.TransactionHash);
+                    if (txReceipt != null)
+                    {
+                        receipt = _receiptService.BuildFromTransactionReceipt(
+                            txReceipt, userOpHash, entry.EntryPoint);
+                    }
                 }
+
+                receipt ??= await FindReceiptByLogScanAsync(userOpHash, entry.EntryPoint);
+            }
+            else if (entry.State == MempoolEntryState.Pending || entry.State == MempoolEntryState.Failed)
+            {
+                receipt = await ReconcileAgainstChainAsync(entry);
+            }
+            else if (entry.State == MempoolEntryState.Submitted)
+            {
+                var (outcome, reconciled) = await ReconcileMinedAsync(entry);
+                receipt = reconciled;
+                cacheAsUnknown = outcome == Reconciliation.NotFound;
             }
 
             if (receipt != null)
             {
-                _receipts[userOpHash] = receipt;
+                _receipts.Set(userOpHash, receipt);
+            }
+            else if (cacheAsUnknown)
+            {
+                _unknownReceipts.AddIfUnchanged(userOpHash, unknownGeneration);
             }
 
             return receipt;
@@ -287,6 +333,7 @@ namespace Nethereum.AccountAbstraction.Bundler
 
         public async Task<IncludedUserOperation?> GetUserOperationByHashAsync(string userOpHash)
         {
+            userOpHash = NormalizeUserOpHashOrThrow(userOpHash);
             var entry = await _mempool.GetAsync(userOpHash);
             if (entry == null) return null;
 
@@ -497,6 +544,7 @@ namespace Nethereum.AccountAbstraction.Bundler
             await _mempool.ClearAsync();
             await ClearReputationAsync();
             _receipts.Clear();
+            _unknownReceipts.Clear();
 
             _stats.PendingCount = 0;
             _stats.SubmittedCount = 0;
@@ -549,11 +597,64 @@ namespace Nethereum.AccountAbstraction.Bundler
 
         private async Task<BundleExecutionResult?> ExecuteBundleCoreAsync(BigInteger? minBaseFee)
         {
-            var pending = await _mempool.GetPendingAsync(_config.MaxBundleSize, _config.MaxBundleGas);
+            var eligible = await _mempool.GetPendingAsync(int.MaxValue, null);
+            var allPending = await _mempool.GetAllPendingAsync();
 
+            ulong? nextBlock = null;
+            if (eligible.Any(e => e.ValidAfterBlock.HasValue))
+            {
+                nextBlock = (ulong)(await _web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()).Value + 1;
+
+                var removed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var ended in eligible.Where(e => ValidationValidityWindow.IsBlockWindowEnded(e.ValidUntilBlock, nextBlock.Value)).ToArray())
+                {
+                    if (!eligible.Contains(ended)) continue;
+
+                    removed.Add(ended.UserOpHash);
+                    await _mempool.RemoveAsync(ended.UserOpHash);
+                    eligible = RemoveEvictedAndOrphanedSuccessors(eligible, ended);
+                }
+
+                allPending = allPending.Where(e => !removed.Contains(e.UserOpHash)).ToArray();
+            }
+
+            BundleExecutionResult? firstResult = null;
+            Exception? firstFailure = null;
+
+            foreach (var entryPoint in _config.SupportedEntryPoints)
+            {
+                var candidates = MempoolPendingChains.SelectBundleCandidates(
+                    eligible.Where(e => entryPoint.Equals(e.EntryPoint, StringComparison.OrdinalIgnoreCase)).ToArray(),
+                    _config.MaxBundleSize,
+                    _config.MaxBundleGas);
+                if (candidates.Length == 0) continue;
+
+                try
+                {
+                    var result = await ExecuteEntryPointBundleAsync(candidates, allPending, minBaseFee, nextBlock);
+                    firstResult ??= result;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Bundling for EntryPoint {EntryPoint} failed.", entryPoint);
+                    firstFailure ??= ex;
+                }
+            }
+
+            if (firstFailure != null)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(firstFailure).Throw();
+            }
+
+            return firstResult;
+        }
+
+        private async Task<BundleExecutionResult?> ExecuteEntryPointBundleAsync(
+            MempoolEntry[] pending, MempoolEntry[] allPending, BigInteger? minBaseFee, ulong? nextBlock)
+        {
             pending = await AnchorToOnChainNonceAsync(pending);
 
-            pending = FilterBundleCandidates(pending, await _mempool.GetAllPendingAsync(), minBaseFee);
+            pending = FilterBundleCandidates(pending, allPending, minBaseFee, nextBlock);
 
             BundleExecutionResult? lastEvictionResult = null;
             var attemptSize = pending.Length;
@@ -563,12 +664,43 @@ namespace Nethereum.AccountAbstraction.Bundler
                 attemptSize = Math.Min(attemptSize, pending.Length);
                 var attempt = pending.Take(attemptSize).ToArray();
 
-                var bundle = await _executor.BuildBundleAsync(attempt);
+                Bundle bundle;
+                try
+                {
+                    bundle = await _executor.BuildBundleAsync(attempt);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Building a bundle of {Count} UserOperations failed.", attempt.Length);
+                    return BundleExecutionResult.Failed($"Bundle build failed: {ex.Message}");
+                }
+
                 var hashes = bundle.UserOpHashes;
 
                 string transactionHash;
                 try
                 {
+                    var marked = await MarkInFlightAsync(hashes);
+                    if (marked.Length != hashes.Length)
+                    {
+                        var markedSet = new HashSet<string>(marked, StringComparer.OrdinalIgnoreCase);
+                        var droppedSet = new HashSet<string>(
+                            hashes.Where(h => !markedSet.Contains(h)), StringComparer.OrdinalIgnoreCase);
+                        foreach (var dropped in attempt.Where(e => droppedSet.Contains(e.UserOpHash)))
+                        {
+                            pending = RemoveEvictedAndOrphanedSuccessors(pending, dropped);
+                        }
+
+                        var remaining = new HashSet<string>(pending.Select(e => e.UserOpHash), StringComparer.OrdinalIgnoreCase);
+                        await ReleaseInFlightAsync(marked.Where(h => !remaining.Contains(h)).ToArray());
+                        attemptSize = Math.Min(attemptSize, pending.Length);
+                        attempt = attempt.Where(e => remaining.Contains(e.UserOpHash)).ToArray();
+                        if (attempt.Length == 0) continue;
+
+                        bundle = await _executor.BuildBundleAsync(attempt);
+                        hashes = bundle.UserOpHashes;
+                    }
+
                     transactionHash = await _executor.SubmitAsync(bundle);
                 }
                 catch (BundleFailedOpException ex)
@@ -581,7 +713,7 @@ namespace Nethereum.AccountAbstraction.Bundler
                         var error = $"FailedOp opIndex {ex.OpIndex} is out of range for a bundle of " +
                                     $"{submissionOrdered.Length} operations; failing the whole attempt: {ex.Message}";
 
-                        await _mempool.MarkFailedAsync(attemptHashes, error);
+                        await MarkFailedAndReleaseAsync(attemptHashes, error, hashes);
                         _stats.FailedCount += attemptHashes.Length;
 
                         lastEvictionResult = BundleExecutionResult.Failed(error);
@@ -596,7 +728,7 @@ namespace Nethereum.AccountAbstraction.Bundler
                     }
 
                     var offender = submissionOrdered[ex.OpIndex];
-                    await _mempool.MarkFailedAsync(new[] { offender.UserOpHash }, ex.Message);
+                    await MarkFailedAndReleaseAsync(new[] { offender.UserOpHash }, ex.Message, hashes);
                     _stats.FailedCount++;
 
                     if (_reputationService != null)
@@ -618,12 +750,13 @@ namespace Nethereum.AccountAbstraction.Bundler
                 }
                 catch (BundleSimulationRevertedException) when (attempt.Length > 1)
                 {
+                    await ReleaseInFlightAsync(hashes);
                     attemptSize = attempt.Length / 2;
                     continue;
                 }
                 catch (BundleSimulationRevertedException ex)
                 {
-                    await _mempool.MarkFailedAsync(new[] { attempt[0].UserOpHash }, ex.Message);
+                    await MarkFailedAndReleaseAsync(new[] { attempt[0].UserOpHash }, ex.Message, hashes);
                     _stats.FailedCount++;
 
                     lastEvictionResult = BundleExecutionResult.Failed(ex.Message);
@@ -634,12 +767,23 @@ namespace Nethereum.AccountAbstraction.Bundler
                 }
                 catch (Exception ex)
                 {
+                    await ReleaseInFlightAsync(hashes);
                     return BundleExecutionResult.Failed($"Bundle submission failed: {ex.Message}");
                 }
 
                 await _mempool.MarkSubmittedAsync(hashes, transactionHash);
 
-                var result = await _executor.WaitForBundleReceiptAsync(bundle, transactionHash);
+                BundleExecutionResult result;
+                try
+                {
+                    result = await _executor.WaitForBundleReceiptAsync(bundle, transactionHash);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Waiting for the receipt of bundle transaction {TransactionHash} failed.", transactionHash);
+                    await _mempool.RevertSubmittedAsync(transactionHash);
+                    throw;
+                }
 
                 if (result.Success)
                 {
@@ -649,11 +793,14 @@ namespace Nethereum.AccountAbstraction.Bundler
                         .ToArray();
                     var included = hashes.Except(eventless).ToArray();
 
-                    await _mempool.MarkIncludedAsync(
-                        included,
-                        transactionHash,
-                        result.Receipt?.BlockNumber?.Value ?? 0,
-                        result.Receipt?.BlockHash);
+                    foreach (var entry in bundle.Entries.Where(e => included.Contains(e.UserOpHash)))
+                    {
+                        await RecordInclusionAsync(
+                            entry,
+                            transactionHash,
+                            result.Receipt?.BlockNumber?.Value ?? 0,
+                            result.Receipt?.BlockHash);
+                    }
 
                     if (eventless.Length > 0)
                     {
@@ -664,16 +811,7 @@ namespace Nethereum.AccountAbstraction.Bundler
                     }
 
                     _stats.BundlesSubmitted++;
-                    _stats.IncludedCount += included.Length;
                     _stats.TotalGasUsed += result.GasUsed;
-
-                    if (_reputationService != null)
-                    {
-                        foreach (var entry in bundle.Entries.Where(e => included.Contains(e.UserOpHash)))
-                        {
-                            await RecordIncludedReputationAsync(entry);
-                        }
-                    }
                 }
                 else if (result.ReceiptTimedOut)
                 {
@@ -690,6 +828,27 @@ namespace Nethereum.AccountAbstraction.Bundler
 
             return lastEvictionResult;
         }
+
+        private Task<MempoolEntry[]> GetAdmissionPendingAsync() =>
+            _mempool is IMempoolPendingPool pool ? pool.GetPendingPoolAsync() : _mempool.GetAllPendingAsync();
+
+        private static bool IsListed(HashSet<string> list, string? address) =>
+            !string.IsNullOrEmpty(address) &&
+            (list.Contains(address) || list.Any(item => string.Equals(item, address, StringComparison.OrdinalIgnoreCase)));
+
+        private Task<string[]> MarkInFlightAsync(string[] hashes) =>
+            _mempool is IMempoolInFlight inFlight ? inFlight.MarkInFlightAsync(hashes) : Task.FromResult(hashes);
+
+        private Task ReleaseInFlightAsync(string[] hashes) =>
+            _mempool is IMempoolInFlight inFlight ? inFlight.ReleaseInFlightAsync(hashes) : Task.CompletedTask;
+
+        private async Task MarkFailedAndReleaseAsync(string[] failed, string error, string[] released)
+        {
+            await _mempool.MarkFailedAsync(failed, error);
+            await ReleaseInFlightAsync(released);
+        }
+
+        private EntryPointService GetEntryPointService(string entryPoint) => _entryPoints[entryPoint.ToLowerInvariant()];
 
         private async Task<MempoolEntry[]> AnchorToOnChainNonceAsync(MempoolEntry[] candidates)
         {
@@ -716,15 +875,17 @@ namespace Nethereum.AccountAbstraction.Bundler
                     onChainNonceCache[group.Key] = onChainNonce;
                 }
 
-                var survivors = group.Where(e => e.UserOperation.Nonce >= onChainNonce).ToArray();
-                if (survivors.Length == 0)
+                foreach (var stale in group.Where(e => e.UserOperation.Nonce < onChainNonce))
                 {
-                    foreach (var stale in group)
+                    var (outcome, _) = await ReconcileMinedAsync(stale);
+                    if (outcome == Reconciliation.NotFound)
                     {
                         await _mempool.RemoveAsync(stale.UserOpHash);
                     }
-                    continue;
                 }
+
+                var survivors = group.Where(e => e.UserOperation.Nonce >= onChainNonce).ToArray();
+                if (survivors.Length == 0) continue;
                 if (survivors[0].UserOperation.Nonce != onChainNonce) continue;
 
                 result.AddRange(survivors);
@@ -733,15 +894,90 @@ namespace Nethereum.AccountAbstraction.Bundler
             return result.ToArray();
         }
 
-        private async Task CheckPaymasterDepositAsync(MempoolEntry entry, string entryPoint, MempoolEntry? replacedEntry)
+        private enum Reconciliation
+        {
+            Included,
+            NotFound,
+            Unknown
+        }
+
+        private async Task<(Reconciliation Outcome, UserOperationReceipt? Receipt)> ReconcileMinedAsync(MempoolEntry entry)
+        {
+            if (!MempoolHashKey.TryNormalizeStrict(entry.UserOpHash, out var normalizedHash))
+            {
+                return (Reconciliation.NotFound, null);
+            }
+
+            UserOperationReceipt? receipt;
+            try
+            {
+                receipt = await FindReceiptByLogScanAsync(normalizedHash, entry.EntryPoint);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Could not look up the inclusion of UserOperation {UserOpHash}.", entry.UserOpHash);
+                return (Reconciliation.Unknown, null);
+            }
+
+            if (receipt == null) return (Reconciliation.NotFound, null);
+
+            await RecordInclusionAsync(
+                entry,
+                receipt.Receipt.TransactionHash,
+                receipt.Receipt.BlockNumber?.Value ?? 0,
+                receipt.Receipt.BlockHash);
+            return (Reconciliation.Included, receipt);
+        }
+
+        private async Task<UserOperationReceipt?> ReconcileAgainstChainAsync(MempoolEntry entry)
+        {
+            var (sender, nonceKey, entryPoint) = MempoolChainKey.Of(entry);
+            if (string.IsNullOrEmpty(sender) || !_entryPoints.TryGetValue(entryPoint, out var epService)) return null;
+
+            var onChainNonce = await epService.GetNonceQueryAsync(sender, nonceKey);
+            if (entry.UserOperation.Nonce >= onChainNonce) return null;
+
+            return (await ReconcileMinedAsync(entry)).Receipt;
+        }
+
+        private async Task<bool> RecordInclusionAsync(
+            MempoolEntry entry, string transactionHash, BigInteger blockNumber, string? blockHash)
+        {
+            await _inclusionGate.WaitAsync();
+            try
+            {
+                var current = await _mempool.GetAsync(entry.UserOpHash);
+                if (current == null || current.State == MempoolEntryState.Included || current.State == MempoolEntryState.Dropped)
+                {
+                    return false;
+                }
+
+                await _mempool.MarkIncludedAsync(new[] { entry.UserOpHash }, transactionHash, blockNumber, blockHash);
+                _stats.IncludedCount++;
+                _unknownReceipts.Remove(MempoolHashKey.Normalize(entry.UserOpHash));
+
+                if (_reputationService != null)
+                {
+                    await RecordIncludedReputationAsync(entry);
+                }
+
+                return true;
+            }
+            finally
+            {
+                _inclusionGate.Release();
+            }
+        }
+
+        private async Task CheckPaymasterDepositAsync(MempoolEntry[] pool, MempoolEntry entry, string entryPoint, MempoolEntry? replacedEntry)
         {
             if (string.IsNullOrEmpty(entry.Paymaster)) return;
 
-            var epService = _entryPoints[entryPoint.ToLowerInvariant()];
+            var epService = GetEntryPointService(entryPoint);
             var deposit = await epService.BalanceOfQueryAsync(entry.Paymaster);
 
             var required = entry.Prefund;
-            foreach (var pending in await _mempool.GetAllPendingAsync())
+            foreach (var pending in pool)
             {
                 if (replacedEntry != null && pending.UserOpHash == replacedEntry.UserOpHash) continue;
 
@@ -762,29 +998,27 @@ namespace Nethereum.AccountAbstraction.Bundler
             }
         }
 
-        private async Task CheckSenderPrefundAsync(MempoolEntry entry, string entryPoint, MempoolEntry? replacedEntry)
+        private async Task CheckSenderPrefundAsync(MempoolEntry[] pool, MempoolEntry entry, string entryPoint, MempoolEntry? replacedEntry)
         {
             if (!string.IsNullOrEmpty(entry.Paymaster)) return;
 
             var sender = entry.UserOperation.Sender;
             if (string.IsNullOrEmpty(sender)) return;
 
-            var epService = _entryPoints[entryPoint.ToLowerInvariant()];
+            var epService = GetEntryPointService(entryPoint);
             var deposit = await epService.BalanceOfQueryAsync(sender);
             var balance = (await _web3.Eth.GetBalance.SendRequestAsync(sender)).Value;
             var available = deposit + balance;
 
-            var nonceKey = entry.UserOperation.Nonce >> 64;
             var required = entry.Prefund;
 
-            foreach (var pending in await _mempool.GetAllPendingAsync())
+            foreach (var pending in pool)
             {
                 if (replacedEntry != null && pending.UserOpHash == replacedEntry.UserOpHash) continue;
 
                 if (string.IsNullOrEmpty(pending.Paymaster) &&
                     !string.IsNullOrEmpty(pending.UserOperation.Sender) &&
                     pending.UserOperation.Sender.IsTheSameAddress(sender) &&
-                    (pending.UserOperation.Nonce >> 64) == nonceKey &&
                     pending.EntryPoint.Equals(entryPoint, StringComparison.OrdinalIgnoreCase))
                 {
                     required += pending.Prefund;
@@ -800,13 +1034,12 @@ namespace Nethereum.AccountAbstraction.Bundler
             }
         }
 
-        private async Task CheckSenderMempoolLimitAsync(string? sender, string entryPoint)
+        private async Task CheckSenderMempoolLimitAsync(MempoolEntry[] pool, string? sender, string entryPoint)
         {
             if (string.IsNullOrEmpty(sender)) return;
-            if (_config.WhitelistedAddresses.Contains(sender.ToLowerInvariant())) return;
+            if (IsListed(_config.WhitelistedAddresses, sender)) return;
 
-            var activeCount = (await _mempool.GetBySenderAsync(sender))
-                .Count(e => e.State == MempoolEntryState.Pending);
+            var activeCount = pool.Count(e => sender.IsTheSameAddress(e.UserOperation.Sender));
 
             if (activeCount < _config.MaxUnstakedSenderMempoolCount) return;
 
@@ -820,7 +1053,7 @@ namespace Nethereum.AccountAbstraction.Bundler
         }
 
         private static MempoolEntry[] FilterBundleCandidates(
-            MempoolEntry[] candidates, MempoolEntry[] allPending, BigInteger? minBaseFee)
+            MempoolEntry[] candidates, MempoolEntry[] allPending, BigInteger? minBaseFee, ulong? nextBlock)
         {
             var knownSenders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in allPending)
@@ -834,6 +1067,10 @@ namespace Nethereum.AccountAbstraction.Bundler
             bool IsUnderpriced(MempoolEntry entry) =>
                 minBaseFee.HasValue && minBaseFee.Value > 0 &&
                 entry.UserOperation.UnpackGasFees().MaxFeePerGas < minBaseFee.Value;
+
+            bool IsOutsideBlockRange(MempoolEntry entry) =>
+                nextBlock.HasValue &&
+                !ValidationValidityWindow.IsBlockWindowOpen(entry.ValidAfterBlock, entry.ValidUntilBlock, nextBlock.Value);
 
             bool HasStorageConflict(MempoolEntry entry)
             {
@@ -857,7 +1094,7 @@ namespace Nethereum.AccountAbstraction.Bundler
                 var chainKey = ChainKeyOf(entry);
                 if (brokenChains.Contains(chainKey)) continue;
 
-                if (IsUnderpriced(entry) || HasStorageConflict(entry))
+                if (IsUnderpriced(entry) || HasStorageConflict(entry) || IsOutsideBlockRange(entry))
                 {
                     brokenChains.Add(chainKey);
                     continue;
@@ -881,11 +1118,74 @@ namespace Nethereum.AccountAbstraction.Bundler
 
         private static ChainKey ChainKeyOf(MempoolEntry entry) => MempoolChainKey.Of(entry);
 
-        private async Task CheckMultipleRolesViolationAsync(MempoolEntry entry)
+        private void ValidateAdmissionBounds(PackedUserOperation userOp)
+        {
+            var violation = UserOpAdmissionBounds.Check(userOp, _config.MaxBundleGas, _config.MaxUserOperationSize);
+            if (violation != null)
+            {
+                throw new BundlerRpcException(BundlerErrorCodes.InvalidFields, violation);
+            }
+        }
+
+        private static string NormalizeUserOpHashOrThrow(string userOpHash)
+        {
+            if (!MempoolHashKey.TryNormalizeStrict(userOpHash, out var normalized))
+            {
+                throw new BundlerRpcException(
+                    BundlerErrorCodes.InvalidFields,
+                    "Missing/invalid userOpHash: must be a 0x-prefixed 32-byte hex string");
+            }
+
+            return normalized;
+        }
+
+        private async Task CheckEntityMempoolLimitsAsync(MempoolEntry[] pool, MempoolEntry entry, string entryPoint, MempoolEntry? replacedEntry)
+        {
+            if (_config.UnsafeMode) return;
+
+            await CheckEntityMempoolLimitAsync(pool, entry.Factory, "Factory", e => e.Factory, entryPoint, replacedEntry);
+            await CheckEntityMempoolLimitAsync(pool, entry.Paymaster, "Paymaster", e => e.Paymaster, entryPoint, replacedEntry);
+        }
+
+        private async Task CheckEntityMempoolLimitAsync(
+            MempoolEntry[] pool, string? entity, string role, Func<MempoolEntry, string?> entityOf, string entryPoint, MempoolEntry? replacedEntry)
+        {
+            if (string.IsNullOrEmpty(entity)) return;
+            if (IsListed(_config.WhitelistedAddresses, entity)) return;
+            if (await _stakingInfo.IsStakedAsync(entity, entryPoint)) return;
+
+            var pendingCount = pool
+                .Where(e => replacedEntry == null || e.UserOpHash != replacedEntry.UserOpHash)
+                .Count(e => entityOf(e) is { } other && other.IsTheSameAddress(entity));
+
+            var reputation = _reputationService != null ? await _reputationService.GetAsync(entity) : null;
+            var allowed = UnstakedEntityMempoolAllowance(reputation);
+
+            if (pendingCount + 1 <= allowed) return;
+
+            throw new BundlerRpcException(
+                BundlerErrorCodes.InsufficientStake,
+                $"{role} {entity} already has {pendingCount} UserOperations in the mempool; " +
+                $"an unstaked entity with its reputation is limited to {allowed}",
+                new { entity });
+        }
+
+        private decimal UnstakedEntityMempoolAllowance(ReputationEntry? reputation)
+        {
+            var opsIncluded = reputation?.OpsIncluded ?? 0;
+            var opsSeen = reputation?.OpsSeen ?? 0;
+            var inclusionRate = opsSeen > 0 ? Math.Min(1m, (decimal)opsIncluded / opsSeen) : 0m;
+
+            return _config.MaxUnstakedEntityMempoolCount +
+                   inclusionRate * Math.Min(opsIncluded, _config.MaxOpsAllowedUnstakedEntity);
+        }
+
+        private void CheckMultipleRolesViolation(MempoolEntry[] pool, MempoolEntry entry, MempoolEntry? replacedEntry)
         {
             if (!_config.EnableERC7562Validation) return;
 
-            var pending = await _mempool.GetAllPendingAsync();
+            var pending = pool
+                .Where(e => replacedEntry == null || e.UserOpHash != replacedEntry.UserOpHash);
             var violation = MultipleRolesRule.Detect(
                 entry.UserOperation.Sender, entry.Paymaster, entry.Factory, pending);
 
@@ -899,7 +1199,7 @@ namespace Nethereum.AccountAbstraction.Bundler
         {
             var sender = userOp.Sender?.ToLowerInvariant() ?? "";
 
-            if (!_config.WhitelistedAddresses.Contains(sender))
+            if (!IsListed(_config.WhitelistedAddresses, sender))
             {
                 if (await _reputationService!.IsBannedAsync(sender))
                 {
@@ -915,7 +1215,7 @@ namespace Nethereum.AccountAbstraction.Bundler
             }
 
             var factory = ExtractFactory(userOp.InitCode);
-            if (!string.IsNullOrEmpty(factory) && !_config.WhitelistedAddresses.Contains(factory.ToLowerInvariant()))
+            if (!string.IsNullOrEmpty(factory) && !IsListed(_config.WhitelistedAddresses, factory))
             {
                 if (await _reputationService!.IsBannedAsync(factory))
                 {
@@ -931,7 +1231,7 @@ namespace Nethereum.AccountAbstraction.Bundler
             }
 
             var paymaster = ExtractPaymaster(userOp.PaymasterAndData);
-            if (!string.IsNullOrEmpty(paymaster) && !_config.WhitelistedAddresses.Contains(paymaster.ToLowerInvariant()))
+            if (!string.IsNullOrEmpty(paymaster) && !IsListed(_config.WhitelistedAddresses, paymaster))
             {
                 if (await _reputationService!.IsBannedAsync(paymaster))
                 {
@@ -1089,7 +1389,7 @@ namespace Nethereum.AccountAbstraction.Bundler
         private async Task<string> CalculateUserOpHashAsync(
             PackedUserOperation userOp, string entryPoint, Authorisation eip7702Auth = null)
         {
-            var epService = _entryPoints[entryPoint.ToLowerInvariant()];
+            var epService = GetEntryPointService(entryPoint);
 
             // EIP-7702: for a factory=0x7702 op the v0.9 EntryPoint.getUserOpHash reads the sender's
             // revert ("sender has no code"). Compute the hash via an eth_call that overrides the
@@ -1161,6 +1461,7 @@ namespace Nethereum.AccountAbstraction.Bundler
                 _reputationDecayTimer?.Dispose();
                 _admissionGate.Dispose();
                 _bundleGate.Dispose();
+                _inclusionGate.Dispose();
                 _reputationDecayGate.Dispose();
             }
 

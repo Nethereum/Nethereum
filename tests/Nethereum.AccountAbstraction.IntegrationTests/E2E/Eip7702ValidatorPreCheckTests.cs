@@ -224,7 +224,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
 
             var factoryData = "0x0c55699c00000000000000000000000000000000000000000000000000000000000012fd".HexToByteArray();
             var sentinelInitCode = ByteUtil.Merge(
-                AAEIP7702Utils.INITCODE_EIP7702_MARKER, factoryData);
+                AAEIP7702Utils.INITCODE_EIP7702_MARKER_ADDRESS, factoryData);
             var realFactoryInitCode = ByteUtil.Merge(
                 _fixture.AccountFactoryService.ContractAddress.HexToByteArray(), factoryData);
 
@@ -291,7 +291,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
         {
             var userOp = CreateValidPackedUserOp(sender);
             userOp.InitCode = ByteUtil.Merge(
-                AAEIP7702Utils.INITCODE_EIP7702_MARKER,
+                AAEIP7702Utils.INITCODE_EIP7702_MARKER_ADDRESS,
                 factoryData ?? Array.Empty<byte>());
             return userOp;
         }

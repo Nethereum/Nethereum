@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
 using Nethereum.AccountAbstraction.Bundler.Reputation;
 using Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization;
@@ -36,14 +37,14 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB
             {
                 var manager = sp.GetRequiredService<BundlerRocksDbManager>();
                 var opts = sp.GetRequiredService<BundlerRocksDbOptions>();
-                return new RocksDbUserOpMempool(manager, opts);
+                return new RocksDbUserOpMempool(manager, opts, sp.GetService<ILoggerFactory>()?.CreateLogger<RocksDbUserOpMempool>());
             });
 
             services.AddSingleton<IReputationStore>(sp =>
             {
                 var manager = sp.GetRequiredService<BundlerRocksDbManager>();
                 var config = sp.GetRequiredService<ReputationConfig>();
-                return new RocksDbReputationStore(manager, config);
+                return new RocksDbReputationStore(manager, config, sp.GetService<ILoggerFactory>()?.CreateLogger<RocksDbReputationStore>());
             });
 
             return services;
@@ -67,7 +68,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB
             {
                 var manager = sp.GetRequiredService<BundlerRocksDbManager>();
                 var opts = sp.GetRequiredService<BundlerRocksDbOptions>();
-                return new RocksDbUserOpMempool(manager, opts);
+                return new RocksDbUserOpMempool(manager, opts, sp.GetService<ILoggerFactory>()?.CreateLogger<RocksDbUserOpMempool>());
             });
 
             return services;
@@ -97,7 +98,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB
             {
                 var manager = sp.GetRequiredService<BundlerRocksDbManager>();
                 var config = sp.GetRequiredService<ReputationConfig>();
-                return new RocksDbReputationStore(manager, config);
+                return new RocksDbReputationStore(manager, config, sp.GetService<ILoggerFactory>()?.CreateLogger<RocksDbReputationStore>());
             });
 
             return services;

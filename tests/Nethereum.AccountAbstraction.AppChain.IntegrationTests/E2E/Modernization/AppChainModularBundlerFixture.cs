@@ -105,6 +105,7 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Modernizati
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             });

@@ -65,7 +65,9 @@ namespace Nethereum.AccountAbstraction.AppChain.Enterprise.Example.Hosting
             log($"EntryPoint deployed at {entryPoint.ContractAddress}");
 
             log("Starting in-process bundler (ERC-4337 validation ON)...");
-            var bundler = bootstrap.StartBundler(entryPoint.ContractAddress, bundlerAccount);
+            var bundler = bootstrap.StartBundler(
+                entryPoint.ContractAddress, bundlerAccount, enableErc7562Validation: false,
+                configureOverrides: c => c.MaxVerificationGas = 10_000_000);
 
             var infra = await DeployEnterpriseStackAsync(bootstrap.OperatorWeb3, bundler, ChainId, log).ConfigureAwait(false);
             infra = infra with { Resource = bootstrap };

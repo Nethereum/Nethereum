@@ -38,7 +38,11 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(entry.BlockHash ?? "")),
                 // Trailing element (index 17): the EIP-7702 authorisation side-channel. Empty when
                 // unset; a count guard on read keeps rows written before this element deserializing.
-                RLP.RLP.EncodeElement(SerializeAuthorisation(entry.Eip7702Auth))
+                RLP.RLP.EncodeElement(SerializeAuthorisation(entry.Eip7702Auth)),
+                RLP.RLP.EncodeElement(entry.SubmittedAt.UtcTicks.ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(SerializeAddresses(entry.AccessedStorageAddresses)),
+                RLP.RLP.EncodeElement(entry.FinishedAt.HasValue ? entry.FinishedAt.Value.UtcTicks.ToBytesForRLPEncoding() : Array.Empty<byte>()),
+                RLP.RLP.EncodeElement(SerializeBlockWindow(entry))
             );
         }
 
@@ -52,12 +56,32 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
             var userOpBytes = elements[1].RLPData;
             var userOp = DeserializePackedUserOperation(userOpBytes);
 
+            var submittedAt = DateTimeOffset.FromUnixTimeMilliseconds(elements[3].RLPData.ToLongFromRLPDecoded());
+            if (elements.Count > 18 && elements[18].RLPData?.Length > 0)
+            {
+                submittedAt = new DateTimeOffset(elements[18].RLPData.ToLongFromRLPDecoded(), TimeSpan.Zero);
+            }
+
+            (ulong? After, ulong? Until) blockWindow = elements.Count > 21 ? DeserializeBlockWindow(elements[21].RLPData) : (null, null);
+
+            DateTimeOffset? finishedAt = null;
+            if (elements.Count > 20 && elements[20].RLPData?.Length > 0)
+            {
+                finishedAt = new DateTimeOffset(elements[20].RLPData.ToLongFromRLPDecoded(), TimeSpan.Zero);
+            }
+
             return new MempoolEntry
             {
                 UserOpHash = Encoding.UTF8.GetString(elements[0].RLPData ?? Array.Empty<byte>()),
                 UserOperation = userOp,
                 EntryPoint = Encoding.UTF8.GetString(elements[2].RLPData ?? Array.Empty<byte>()),
-                SubmittedAt = DateTimeOffset.FromUnixTimeMilliseconds(elements[3].RLPData.ToLongFromRLPDecoded()),
+                SubmittedAt = submittedAt,
+                FinishedAt = finishedAt,
+                ValidAfterBlock = blockWindow.After,
+                ValidUntilBlock = blockWindow.Until,
+                AccessedStorageAddresses = elements.Count > 19
+                    ? DeserializeAddresses(elements[19].RLPData)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                 State = (MempoolEntryState)(int)elements[4].RLPData.ToLongFromRLPDecoded(),
                 TransactionHash = GetNullableString(elements[5].RLPData),
                 BlockNumber = elements[6].RLPData?.Length > 0 ? elements[6].RLPData.ToBigIntegerFromRLPDecoded() : null,
@@ -75,6 +99,46 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
                 // so an older payload deserializes with Eip7702Auth null.
                 Eip7702Auth = elements.Count > 17 ? DeserializeAuthorisation(elements[17].RLPData) : null
             };
+        }
+
+        private static byte[] SerializeBlockWindow(MempoolEntry entry)
+        {
+            if (!entry.ValidAfterBlock.HasValue && !entry.ValidUntilBlock.HasValue) return Array.Empty<byte>();
+
+            return RLP.RLP.EncodeList(
+                RLP.RLP.EncodeElement(((BigInteger)(entry.ValidAfterBlock ?? 0)).ToBytesForRLPEncoding()),
+                RLP.RLP.EncodeElement(((BigInteger)(entry.ValidUntilBlock ?? 0)).ToBytesForRLPEncoding()));
+        }
+
+        private static ulong BlockValue(byte[]? data) => data?.Length > 0 ? (ulong)data.ToLongFromRLPDecoded() : 0UL;
+
+        private static (ulong? After, ulong? Until) DeserializeBlockWindow(byte[]? data)
+        {
+            if (data == null || data.Length == 0) return (null, null);
+
+            var elements = (RLPCollection)RLP.RLP.Decode(data);
+            return (BlockValue(elements[0].RLPData), BlockValue(elements[1].RLPData));
+        }
+
+        private static byte[] SerializeAddresses(HashSet<string>? addresses)
+        {
+            if (addresses == null || addresses.Count == 0) return Array.Empty<byte>();
+
+            return RLP.RLP.EncodeList(
+                addresses.Select(address => RLP.RLP.EncodeElement(Encoding.UTF8.GetBytes(address))).ToArray());
+        }
+
+        private static HashSet<string> DeserializeAddresses(byte[]? data)
+        {
+            var addresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (data == null || data.Length == 0) return addresses;
+
+            foreach (var element in (RLPCollection)RLP.RLP.Decode(data))
+            {
+                addresses.Add(Encoding.UTF8.GetString(element.RLPData ?? Array.Empty<byte>()));
+            }
+
+            return addresses;
         }
 
         private static byte[] SerializePackedUserOperation(PackedUserOperation op)
@@ -195,7 +259,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization
 
         public static byte[] StringToKey(string value)
         {
-            return Encoding.UTF8.GetBytes(value?.ToLowerInvariant() ?? "");
+            return Encoding.UTF8.GetBytes(MempoolHashKey.Normalize(value));
         }
     }
 }

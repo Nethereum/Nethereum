@@ -52,7 +52,7 @@ var receipt = await bundlerService.GetUserOperationReceiptAsync(userOpHash);
 
 | Preset | Use Case | StrictValidation | ERC-7562 | AutoBundle |
 |--------|----------|:---:|:---:|:---:|
-| `CreateAppChainConfig` | Private chains | false | false | 1s |
+| `CreateAppChainConfig` | Private chains | false | true | 1s |
 | `CreateStandardConfig` | Public testnets | true | true | 10s |
 | `CreateProductionConfig` | Mainnet | true | true | 10s + staking |
 
@@ -70,7 +70,7 @@ var prodConfig = BundlerConfig.CreateProductionConfig(entryPoint, beneficiary);
 | `MaxMempoolSize` | 1000 | Max UserOperations in mempool |
 | `AutoBundleIntervalMs` | 10000 | Bundle interval (0 = manual) |
 | `StrictValidation` | true | Enforce ERC-4337 rules |
-| `EnableERC7562Validation` | false | Trace-based opcode validation |
+| `EnableERC7562Validation` | true | Trace-based opcode validation |
 | `UnsafeMode` | false | Skip all validation (testing only) |
 | `MinStake` | 1 ETH | Min stake for reputation |
 | `WhitelistedAddresses` | empty | Exempt from reputation checks |

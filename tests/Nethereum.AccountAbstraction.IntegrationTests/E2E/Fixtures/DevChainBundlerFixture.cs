@@ -96,6 +96,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
                 SimulateValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };
@@ -272,6 +274,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.Fixtures
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
                 SimulateValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };

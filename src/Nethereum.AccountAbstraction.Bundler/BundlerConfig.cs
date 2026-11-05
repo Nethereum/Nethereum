@@ -34,7 +34,7 @@ namespace Nethereum.AccountAbstraction.Bundler
 
         public bool UnsafeMode { get; set; } = false;
 
-        public bool EnableERC7562Validation { get; set; } = false;
+        public bool EnableERC7562Validation { get; set; } = true;
 
         public BigInteger MinStake { get; set; } = 1_000_000_000_000_000_000;
 
@@ -42,11 +42,23 @@ namespace Nethereum.AccountAbstraction.Bundler
 
         public int MaxUnstakedSenderMempoolCount { get; set; } = 4;
 
+        public int MaxUnstakedEntityMempoolCount { get; set; } = 10;
+
+        public int MaxOpsAllowedUnstakedEntity { get; set; } = 10_000;
+
+        public int MaxUserOperationSize { get; set; } = 8192;
+
+        public int ReceiptCacheSize { get; set; } = 10_000;
+
+        public int ReceiptNegativeCacheSize { get; set; } = 10_000;
+
+        public int ReceiptNegativeCacheSeconds { get; set; } = 12;
+
         public HashSet<string> WhitelistedAddresses { get; set; } = new();
 
         public HashSet<string> BlacklistedAddresses { get; set; } = new();
 
-        public int MaxVerificationGas { get; set; } = 1_500_000;
+        public int MaxVerificationGas { get; set; } = 500_000;
 
         public BigInteger? ChainId { get; set; }
 
@@ -71,6 +83,9 @@ namespace Nethereum.AccountAbstraction.Bundler
             BeneficiaryAddress = beneficiary,
             StrictValidation = false,
             SimulateValidation = true,
+            EnableERC7562Validation = true,
+            MaxUserOperationSize = 131_072,
+            MaxVerificationGas = 10_000_000,
             MinPriorityFeePerGas = 0,
             AutoBundleIntervalMs = 1000,
             UnsafeMode = false

@@ -42,11 +42,19 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.IntegrationTests
         }
 
         [Fact]
-        public void EnableERC7562Validation_DefaultsToFalse()
+        public void EnableERC7562Validation_DefaultsToTrue()
         {
             var serverConfig = new BundlerRpcServerConfig();
 
-            Assert.False(serverConfig.EnableERC7562Validation);
+            Assert.True(serverConfig.EnableERC7562Validation);
+            Assert.True(serverConfig.ToBundlerConfig().EnableERC7562Validation);
+        }
+
+        [Fact]
+        public void EnableERC7562Validation_CanBeOptedOutExplicitly()
+        {
+            var serverConfig = new BundlerRpcServerConfig { EnableERC7562Validation = false };
+
             Assert.False(serverConfig.ToBundlerConfig().EnableERC7562Validation);
         }
     }

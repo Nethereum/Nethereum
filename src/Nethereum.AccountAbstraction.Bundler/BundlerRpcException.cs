@@ -48,6 +48,9 @@ namespace Nethereum.AccountAbstraction.Bundler
                 case UserOpValidationError.AggregatorValidationFailed:
                     return BundlerErrorCodes.UnsupportedSignatureAggregator;
 
+                case UserOpValidationError.NodeCallFailed:
+                    return BundlerErrorCodes.InternalError;
+
                 case UserOpValidationError.GasValuesOverflow:
                 case UserOpValidationError.MaxFeePerGasTooLow:
                 case UserOpValidationError.MaxPriorityFeePerGasTooLow:

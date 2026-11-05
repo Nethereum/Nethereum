@@ -18,10 +18,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
         {
             try
             {
-                var userOpHash = GetParam<string>(request, 0);
-
-                if (string.IsNullOrEmpty(userOpHash))
-                    throw RpcException.InvalidParams("Missing/invalid userOpHash");
+                var userOpHash = UserOperationRpcParser.ParseUserOpHash(GetJsonElement(request, 0));
 
                 var info = await _bundler.GetUserOperationByHashAsync(userOpHash);
 
@@ -48,9 +45,13 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             {
                 throw;
             }
+            catch (BundlerRpcException ex)
+            {
+                return Error(request.Id, ex.Code, ex.Message, ex.ErrorData);
+            }
             catch (Exception ex)
             {
-                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
+                return BundlerRpcResponses.InternalError(request.Id, context, ex);
             }
         }
     }

@@ -4,14 +4,17 @@ using Nethereum.AccountAbstraction.Structs;
 
 namespace Nethereum.AccountAbstraction.Bundler.Mempool
 {
-    public class InMemoryUserOpMempool : IUserOpMempool
+    public class InMemoryUserOpMempool : IUserOpMempool, IMempoolEvictionLog, IMempoolInFlight, IMempoolPendingPool
     {
         private readonly ConcurrentDictionary<string, MempoolEntry> _entries = new();
         private readonly ConcurrentDictionary<string, HashSet<string>> _bySender = new();
         private readonly ConcurrentDictionary<string, HashSet<string>> _byTransaction = new();
+        private static readonly TimeSpan FinishedEntryRetention = TimeSpan.FromMinutes(5);
+
         private readonly int _maxSize;
         private readonly TimeSpan _entryTtl;
         private readonly object _lock = new();
+        private readonly List<MempoolEntry> _evicted = new();
 
         public InMemoryUserOpMempool(int maxSize = 1000, TimeSpan? entryTtl = null)
         {
@@ -24,53 +27,44 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             if (entry == null) throw new ArgumentNullException(nameof(entry));
             if (string.IsNullOrEmpty(entry.UserOpHash)) throw new ArgumentException("UserOpHash required");
 
+            var key = MempoolHashKey.Normalize(entry.UserOpHash);
+
             lock (_lock)
             {
-                if (_entries.ContainsKey(entry.UserOpHash))
-                {
-                    return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
-                }
-
                 var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                var sameNonceEntry = FindBySenderAndNonce(sender, entry.UserOperation.Nonce, entry.EntryPoint);
+                var decision = MempoolAdmission.Decide(
+                    _entries.ContainsKey(key),
+                    FindBySenderAndNonce(sender, entry.UserOperation.Nonce, entry.EntryPoint),
+                    _entries.Values.Count(e => e.State == MempoolEntryState.Pending),
+                    _maxSize,
+                    () => _entries.Values,
+                    entry);
 
-                if (sameNonceEntry != null)
+                if (!decision.Accepted) return Task.FromResult(decision.Outcome);
+
+                if (decision.Replaced != null) RemoveInternal(decision.Replaced.UserOpHash);
+                if (decision.Evicted != null)
                 {
-                    if (sameNonceEntry.State != MempoolEntryState.Pending)
-                    {
-                        return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
-                    }
-
-                    if (!MempoolReplacementRules.IsValidFeeBump(sameNonceEntry.UserOperation, entry.UserOperation))
-                    {
-                        return Task.FromResult(MempoolAddOutcome.RejectedUnderpriced);
-                    }
-
-                    RemoveInternal(sameNonceEntry.UserOpHash);
-                    InsertInternal(entry, sender);
-                    return Task.FromResult(MempoolAddOutcome.Replaced);
+                    RemoveInternal(decision.Evicted.UserOpHash);
+                    _evicted.Add(decision.Evicted);
+                    if (_evicted.Count > _maxSize) _evicted.RemoveAt(0);
                 }
 
-                if (_entries.Count >= _maxSize)
-                {
-                    return Task.FromResult(MempoolAddOutcome.RejectedFull);
-                }
-
-                InsertInternal(entry, sender);
-                return Task.FromResult(MempoolAddOutcome.Added);
+                InsertInternal(entry, key, sender);
+                return Task.FromResult(decision.Outcome);
             }
         }
 
-        private void InsertInternal(MempoolEntry entry, string sender)
+        private void InsertInternal(MempoolEntry entry, string key, string sender)
         {
             entry.SubmittedAt = DateTimeOffset.UtcNow;
             entry.State = MempoolEntryState.Pending;
-            _entries[entry.UserOpHash] = entry;
+            _entries[key] = entry;
 
             _bySender.AddOrUpdate(
                 sender,
-                _ => new HashSet<string> { entry.UserOpHash },
-                (_, set) => { set.Add(entry.UserOpHash); return set; });
+                _ => new HashSet<string> { key },
+                (_, set) => { set.Add(key); return set; });
         }
 
         private MempoolEntry? FindBySenderAndNonce(string sender, BigInteger nonce, string entryPoint)
@@ -82,7 +76,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
                 if (_entries.TryGetValue(hash, out var existing) &&
                     existing.UserOperation.Nonce == nonce &&
                     existing.EntryPoint.Equals(entryPoint, StringComparison.OrdinalIgnoreCase) &&
-                    (existing.State == MempoolEntryState.Pending || existing.State == MempoolEntryState.Submitted))
+                    MempoolStateTransitions.IsOccupying(existing))
                 {
                     return existing;
                 }
@@ -93,7 +87,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
 
         public Task<MempoolEntry?> GetAsync(string userOpHash)
         {
-            _entries.TryGetValue(userOpHash, out var entry);
+            _entries.TryGetValue(MempoolHashKey.Normalize(userOpHash), out var entry);
             return Task.FromResult(entry);
         }
 
@@ -120,6 +114,16 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             return Task.FromResult(pending);
         }
 
+        public Task<MempoolEntry[]> GetPendingPoolAsync()
+        {
+            var pool = _entries.Values
+                .Where(e => e.State == MempoolEntryState.Pending)
+                .OrderBy(e => e.SubmittedAt)
+                .ToArray();
+
+            return Task.FromResult(pool);
+        }
+
         public Task<MempoolEntry[]> GetBySenderAsync(string sender)
         {
             var normalizedSender = sender?.ToLowerInvariant() ?? "";
@@ -132,7 +136,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
                 }
 
                 var entries = hashes
-                    .Select(h => _entries.TryGetValue(h, out var e) ? e : null)
+                    .Select(h => _entries.TryGetValue(MempoolHashKey.Normalize(h), out var e) ? e : null)
                     .Where(e => e != null)
                     .Cast<MempoolEntry>()
                     .ToArray();
@@ -151,6 +155,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
 
         private bool RemoveInternal(string userOpHash)
         {
+            userOpHash = MempoolHashKey.Normalize(userOpHash);
             if (!_entries.TryRemove(userOpHash, out var entry))
             {
                 return false;
@@ -173,10 +178,9 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
         {
             foreach (var hash in userOpHashes)
             {
-                if (_entries.TryGetValue(hash, out var entry))
+                if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry))
                 {
-                    entry.State = MempoolEntryState.Submitted;
-                    entry.TransactionHash = transactionHash;
+                    MempoolStateTransitions.TrySubmit(entry, transactionHash);
                 }
             }
 
@@ -188,17 +192,47 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             return Task.CompletedTask;
         }
 
+        public Task<string[]> MarkInFlightAsync(string[] userOpHashes)
+        {
+            var marked = new List<string>();
+            lock (_lock)
+            {
+                foreach (var hash in userOpHashes)
+                {
+                    if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry) &&
+                        MempoolStateTransitions.TryMarkInFlight(entry))
+                    {
+                        marked.Add(hash);
+                    }
+                }
+            }
+
+            return Task.FromResult(marked.ToArray());
+        }
+
+        public Task ReleaseInFlightAsync(string[] userOpHashes)
+        {
+            lock (_lock)
+            {
+                foreach (var hash in userOpHashes)
+                {
+                    if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry))
+                    {
+                        MempoolStateTransitions.TryRelease(entry);
+                    }
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
         public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber, string? blockHash = null)
         {
             foreach (var hash in userOpHashes)
             {
-                if (_entries.TryGetValue(hash, out var entry))
+                if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry))
                 {
-                    entry.State = MempoolEntryState.Included;
-                    entry.TransactionHash = transactionHash;
-                    entry.BlockNumber = blockNumber;
-                    entry.BlockHash = blockHash;
-                    entry.Error = null;
+                    MempoolStateTransitions.TryInclude(entry, transactionHash, blockNumber, blockHash);
                 }
             }
 
@@ -211,14 +245,12 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
         {
             foreach (var hash in userOpHashes)
             {
-                if (_entries.TryGetValue(hash, out var entry))
+                if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry))
                 {
-                    entry.State = MempoolEntryState.Failed;
-                    entry.Error = error;
-
-                    if (!string.IsNullOrEmpty(entry.TransactionHash))
+                    var transactionHash = entry.TransactionHash;
+                    if (MempoolStateTransitions.TryFail(entry, error) && !string.IsNullOrEmpty(transactionHash))
                     {
-                        _byTransaction.TryRemove(entry.TransactionHash, out _);
+                        _byTransaction.TryRemove(transactionHash, out _);
                     }
                 }
             }
@@ -232,11 +264,9 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
             {
                 foreach (var hash in hashes)
                 {
-                    if (_entries.TryGetValue(hash, out var entry) && entry.State == MempoolEntryState.Submitted)
+                    if (_entries.TryGetValue(MempoolHashKey.Normalize(hash), out var entry))
                     {
-                        entry.State = MempoolEntryState.Pending;
-                        entry.TransactionHash = null;
-                        entry.RetryCount++;
+                        MempoolStateTransitions.TryRevert(entry);
                     }
                 }
             }
@@ -251,8 +281,19 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
                 _entries.Clear();
                 _bySender.Clear();
                 _byTransaction.Clear();
+                _evicted.Clear();
             }
             return Task.CompletedTask;
+        }
+
+        public MempoolEntry[] DrainEvicted()
+        {
+            lock (_lock)
+            {
+                var drained = _evicted.ToArray();
+                _evicted.Clear();
+                return drained;
+            }
         }
 
         public Task<int> CountAsync()
@@ -281,28 +322,10 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
         public async Task<int> PruneAsync()
         {
             var now = DateTimeOffset.UtcNow;
-            var toRemove = new List<string>();
-
-            foreach (var kvp in _entries)
-            {
-                var entry = kvp.Value;
-
-                if (entry.State == MempoolEntryState.Included || entry.State == MempoolEntryState.Failed)
-                {
-                    if (now - entry.SubmittedAt > TimeSpan.FromMinutes(5))
-                    {
-                        toRemove.Add(kvp.Key);
-                    }
-                }
-                else if (now - entry.SubmittedAt > _entryTtl)
-                {
-                    toRemove.Add(kvp.Key);
-                }
-                else if (entry.ValidUntil.HasValue && entry.ValidUntil.Value < (ulong)now.ToUnixTimeSeconds())
-                {
-                    toRemove.Add(kvp.Key);
-                }
-            }
+            var toRemove = _entries
+                .Where(kvp => MempoolPruneRule.IsExpired(kvp.Value, now, _entryTtl, FinishedEntryRetention))
+                .Select(kvp => kvp.Key)
+                .ToList();
 
             foreach (var hash in toRemove)
             {

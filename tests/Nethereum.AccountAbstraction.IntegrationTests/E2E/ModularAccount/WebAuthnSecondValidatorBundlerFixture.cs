@@ -80,7 +80,12 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.ModularAccount
             Bundler = Bootstrap.StartBundler(
                 EntryPointService.ContractAddress,
                 bundlerAccount,
-                configureOverrides: c => c.Hardfork = "osaka");
+                enableErc7562Validation: false,
+                configureOverrides: c =>
+                {
+                    c.Hardfork = "osaka";
+                    c.MaxVerificationGas = 10_000_000;
+                });
         }
 
         public async Task DisposeAsync()

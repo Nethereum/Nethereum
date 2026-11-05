@@ -80,9 +80,9 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
             var config = new AppChainServerConfig
             {
                 ChainId = CHAIN_ID,
-                ChainName = "SequencerAATest",
-                BaseFee = 1_000_000_000
+                ChainName = "SequencerAATest"
             };
+            config.Node.Producer.BaseFee = 1_000_000_000;
             config.Genesis.Owner.PrivateKey = operatorPrivateKey;
             config.Consensus.Sequencer.PrivateKey = operatorPrivateKey;
             config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;
@@ -172,6 +172,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };
@@ -270,6 +272,8 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Fixtures
                 MaxMempoolSize = 100,
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = CHAIN_ID
             };

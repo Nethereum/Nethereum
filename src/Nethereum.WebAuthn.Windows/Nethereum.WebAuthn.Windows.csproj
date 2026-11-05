@@ -8,7 +8,7 @@
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <AssemblyName>Nethereum.WebAuthn.Windows</AssemblyName>
     <PackageId>Nethereum.WebAuthn.Windows</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction;Windows;WindowsHello</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction;Windows;WindowsHello</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>

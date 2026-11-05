@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.JsonRpc.Client.RpcMessages;
-using RpcUserOperation = Nethereum.RPC.AccountAbstraction.DTOs.UserOperation;
 using DomainUserOperation = Nethereum.AccountAbstraction.UserOperation;
 
 namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
@@ -9,7 +8,6 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
     public class EthEstimateUserOperationGasHandler : RpcHandlerBase
     {
         private readonly IBundlerService _bundler;
-        private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public EthEstimateUserOperationGasHandler(IBundlerService bundler)
         {
@@ -23,16 +21,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             try
             {
                 var userOpJson = GetJsonElement(request, 0);
-                var entryPoint = GetParam<string>(request, 1);
+                var entryPoint = UserOperationRpcParser.ParseEntryPoint(GetJsonElement(request, 1));
 
-                if (string.IsNullOrEmpty(entryPoint))
-                    throw RpcException.InvalidParams("entryPoint address is required");
-
-                var rpcUserOp = JsonSerializer.Deserialize<RpcUserOperation>(userOpJson.GetRawText(), JsonOptions)
-                    ?? throw new JsonException("Failed to deserialize UserOperation");
-
-                if (string.IsNullOrEmpty(rpcUserOp.Sender))
-                    throw RpcException.InvalidParams("sender is required");
+                var rpcUserOp = UserOperationRpcParser.ParseUserOperationForEstimate(userOpJson);
 
                 var domainUserOp = rpcUserOp.ToDomainUserOperation();
 
@@ -73,18 +64,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             }
             catch (Exception ex)
             {
-                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
+                return BundlerRpcResponses.InternalError(request.Id, context, ex);
             }
-        }
-
-        private static JsonSerializerOptions CreateJsonOptions()
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-            return options;
         }
     }
 }

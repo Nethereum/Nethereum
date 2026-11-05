@@ -1,4 +1,5 @@
 using System.Numerics;
+using Microsoft.Extensions.Logging;
 using Nethereum.ABI.FunctionEncoding;
 using Nethereum.AccountAbstraction.Bundler.GasEstimation;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
@@ -38,6 +39,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
         private readonly IStateReader _nodeDataService;
         private readonly EthCall _ethCallWithStateOverride;
         private readonly IUserOpMempool? _mempool;
+        private readonly ILogger? _logger;
 
         public UserOpValidator(IWeb3 web3, BundlerConfig config)
             : this(web3, config, null, null, null)
@@ -49,8 +51,10 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             BundlerConfig config,
             IStateReader? nodeDataService,
             IStakingInfoService? stakingInfoService,
-            IUserOpMempool? mempool = null)
+            IUserOpMempool? mempool = null,
+            ILogger? logger = null)
         {
+            _logger = logger;
             _web3 = web3 ?? throw new ArgumentNullException(nameof(web3));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mempool = mempool;
@@ -186,9 +190,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure(
-                    $"ERC-7562 validation error: {ex.Message}",
-                    UserOpValidationError.InvalidOpcodeAccess);
+                return NodeCallFailed(ex, "running ERC-7562 validation");
             }
         }
 
@@ -201,6 +203,33 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
 
             var chainId = await _web3.Eth.ChainId.SendRequestAsync();
             return chainId.Value;
+        }
+
+        private UserOpValidationResult NodeCallFailed(Exception exception, string operation)
+        {
+            _logger?.LogError(exception, "UserOperation validation failed while {Operation}.", operation);
+            return UserOpValidationResult.Failure("Internal error", UserOpValidationError.NodeCallFailed);
+        }
+
+        private const string AuthorisationSignatureInvalid = "Authorization signature is invalid";
+
+        private static readonly BigInteger Secp256k1Order =
+            BigInteger.Parse("0FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", System.Globalization.NumberStyles.HexNumber);
+
+        private static bool HasCanonicalSignature(Authorisation auth)
+        {
+            try
+            {
+                var r = new BigInteger(auth.R.HexToByteArray(), isUnsigned: true, isBigEndian: true);
+                var s = new BigInteger(auth.S.HexToByteArray(), isUnsigned: true, isBigEndian: true);
+                var yParity = new BigInteger(auth.YParity.HexToByteArray(), isUnsigned: true, isBigEndian: true);
+
+                return r > 0 && r < Secp256k1Order && s > 0 && s <= Secp256k1Order >> 1 && yParity <= 1;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private async Task<UserOpValidationResult> ValidateEip7702AuthAsync(
@@ -216,15 +245,22 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
                     UserOpValidationError.InvalidAuthorisation);
             }
 
+            if (!HasCanonicalSignature(eip7702Auth))
+            {
+                return UserOpValidationResult.Failure(
+                    AuthorisationSignatureInvalid,
+                    UserOpValidationError.InvalidAuthorisation);
+            }
+
             string authority;
             try
             {
                 authority = eip7702Auth.ToAuthorisation7702Signed().RecoverSignerAddress();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return UserOpValidationResult.Failure(
-                    $"Authorization signer is not sender: {ex.Message}",
+                    AuthorisationSignatureInvalid,
                     UserOpValidationError.InvalidAuthorisation);
             }
 
@@ -264,10 +300,18 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
 
             var (verificationGas, callGas) = userOp.UnpackAccountGasLimits();
 
-            if (verificationGas > _config.MaxVerificationGas)
+            if (verificationGas >= _config.MaxVerificationGas)
             {
                 return UserOpValidationResult.Failure(
-                    $"Verification gas too high: {verificationGas} > {_config.MaxVerificationGas}",
+                    $"Verification gas too high: {verificationGas} >= {_config.MaxVerificationGas}",
+                    UserOpValidationError.InsufficientVerificationGas);
+            }
+
+            var (paymasterVerificationGas, _) = userOp.UnpackPaymasterGasLimits();
+            if (paymasterVerificationGas >= _config.MaxVerificationGas)
+            {
+                return UserOpValidationResult.Failure(
+                    $"Paymaster verification gas too high: {paymasterVerificationGas} >= {_config.MaxVerificationGas}",
                     UserOpValidationError.InsufficientVerificationGas);
             }
 
@@ -362,7 +406,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             try
             {
                 var validation = await RunSimulateValidationAsync(userOp, entryPoint, eip7702Auth);
-                return BuildSimulationResult(userOp, validation);
+                return await BuildSimulationResultAsync(userOp, validation);
             }
             catch (SmartContractCustomErrorRevertException ex)
             {
@@ -371,7 +415,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure($"Simulation error: {ex.Message}", UserOpValidationError.Unknown);
+                return NodeCallFailed(ex, "simulating validation");
             }
         }
 
@@ -414,13 +458,13 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
         }
 
-        private UserOpValidationResult BuildSimulationResult(PackedUserOperation userOp, ValidationResult validation)
+        private async Task<UserOpValidationResult> BuildSimulationResultAsync(PackedUserOperation userOp, ValidationResult validation)
         {
             var returnInfo = validation.ReturnInfo;
 
-            var (accountSigFailed, _, _, accountAggregator) =
+            var (accountSigFailed, accountValidUntil, accountValidAfter, accountAggregator) =
                 PackedValidationData.Parse(returnInfo.AccountValidationData);
-            var (paymasterSigFailed, _, _, _) =
+            var (paymasterSigFailed, paymasterValidUntil, paymasterValidAfter, paymasterAggregator) =
                 PackedValidationData.Parse(returnInfo.PaymasterValidationData);
 
             if (accountSigFailed)
@@ -430,19 +474,110 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
                     UserOpValidationError.InvalidSignature);
             }
 
-            if (paymasterSigFailed)
+            if (paymasterSigFailed || paymasterAggregator != null)
             {
                 return UserOpValidationResult.Failure(
                     "AA34 signature error",
                     UserOpValidationError.SignatureValidationFailed);
             }
 
-            var merged = PackedValidationData.Merge(
-                returnInfo.AccountValidationData, returnInfo.PaymasterValidationData);
-            var (_, validUntil, validAfter, _) = PackedValidationData.Parse(merged);
+            var accountHasRange = returnInfo.AccountValidationData != BigInteger.Zero;
+            var paymasterHasRange = returnInfo.PaymasterValidationData != BigInteger.Zero;
+            var accountIsBlockRange = accountHasRange && ValidationValidityWindow.IsBlockRange(accountValidAfter, accountValidUntil);
+            var paymasterIsBlockRange = paymasterHasRange && ValidationValidityWindow.IsBlockRange(paymasterValidAfter, paymasterValidUntil);
+
+            ulong nextBlock = 0;
+            if (accountIsBlockRange || paymasterIsBlockRange)
+            {
+                var latest = await _web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+                nextBlock = (ulong)latest.Value + 1;
+            }
 
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+            if (accountHasRange)
+            {
+                var rangeFailure = accountIsBlockRange
+                    ? CheckBlockRange(accountValidAfter, accountValidUntil, nextBlock, "AA27 outside valid block range")
+                    : CheckTimeRange(accountValidAfter, accountValidUntil, now);
+                if (rangeFailure != null) return rangeFailure;
+            }
+
+            if (paymasterHasRange)
+            {
+                var rangeFailure = paymasterIsBlockRange
+                    ? CheckBlockRange(paymasterValidAfter, paymasterValidUntil, nextBlock, "AA37 paymaster inval block range")
+                    : CheckTimeRange(paymasterValidAfter, paymasterValidUntil, now);
+                if (rangeFailure != null) return rangeFailure;
+            }
+
+            var timeAfters = new List<ulong>();
+            var timeUntils = new List<ulong>();
+            var blockAfters = new List<ulong>();
+            var blockUntils = new List<ulong>();
+            if (accountHasRange)
+            {
+                if (accountIsBlockRange)
+                {
+                    blockAfters.Add(ValidationValidityWindow.GetBlockNumber(accountValidAfter));
+                    blockUntils.Add(ValidationValidityWindow.GetBlockNumber(ValidationValidityWindow.NormalizeValidUntil(accountValidUntil)));
+                }
+                else
+                {
+                    timeAfters.Add(accountValidAfter);
+                    if (accountValidUntil != 0) timeUntils.Add(accountValidUntil);
+                }
+            }
+
+            if (paymasterHasRange)
+            {
+                if (paymasterIsBlockRange)
+                {
+                    blockAfters.Add(ValidationValidityWindow.GetBlockNumber(paymasterValidAfter));
+                    blockUntils.Add(ValidationValidityWindow.GetBlockNumber(ValidationValidityWindow.NormalizeValidUntil(paymasterValidUntil)));
+                }
+                else
+                {
+                    timeAfters.Add(paymasterValidAfter);
+                    if (paymasterValidUntil != 0) timeUntils.Add(paymasterValidUntil);
+                }
+            }
+
+            var validAfter = timeAfters.Count == 0 ? 0UL : timeAfters.Max();
+            var validUntil = timeUntils.Count == 0 ? 0UL : timeUntils.Min();
+
+            var result = UserOpValidationResult.Success();
+            result.ValidationData = returnInfo.AccountValidationData;
+            result.PaymasterValidationData = returnInfo.PaymasterValidationData;
+            result.ValidAfter = validAfter;
+            result.ValidUntil = validUntil;
+            if (blockAfters.Count > 0)
+            {
+                result.ValidAfterBlock = blockAfters.Max();
+                result.ValidUntilBlock = blockUntils.Min();
+            }
+
+            result.Aggregator = !string.IsNullOrEmpty(accountAggregator)
+                ? accountAggregator
+                : ExtractAggregator(validation);
+
+            var (verificationGas, callGas) = userOp.UnpackAccountGasLimits();
+            result.VerificationGasLimit = verificationGas;
+            result.CallGasLimit = callGas;
+            result.PreVerificationGas = userOp.PreVerificationGas;
+
+            return result;
+        }
+
+        private static UserOpValidationResult? CheckBlockRange(ulong validAfter, ulong validUntil, ulong nextBlock, string message)
+        {
+            return ValidationValidityWindow.IsValidAt(validAfter, validUntil, 0, nextBlock)
+                ? null
+                : UserOpValidationResult.Failure(message, UserOpValidationError.NotYetValid);
+        }
+
+        private static UserOpValidationResult? CheckTimeRange(ulong validAfter, ulong validUntil, ulong now)
+        {
             if (validAfter > now)
             {
                 return UserOpValidationResult.Failure(
@@ -464,22 +599,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
                     UserOpValidationError.ExpiredSignature);
             }
 
-            var result = UserOpValidationResult.Success();
-            result.ValidationData = returnInfo.AccountValidationData;
-            result.PaymasterValidationData = returnInfo.PaymasterValidationData;
-            result.ValidAfter = validAfter;
-            result.ValidUntil = validUntil;
-
-            result.Aggregator = !string.IsNullOrEmpty(accountAggregator)
-                ? accountAggregator
-                : ExtractAggregator(validation);
-
-            var (verificationGas, callGas) = userOp.UnpackAccountGasLimits();
-            result.VerificationGasLimit = verificationGas;
-            result.CallGasLimit = callGas;
-            result.PreVerificationGas = userOp.PreVerificationGas;
-
-            return result;
+            return null;
         }
 
         private static string? ExtractAggregator(ValidationResult validation)
@@ -522,7 +642,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure($"Gas estimation error: {ex.Message}", UserOpValidationError.Unknown);
+                return NodeCallFailed(ex, "estimating gas");
             }
         }
 
@@ -608,9 +728,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure(
-                    $"Failed to validate sender/initCode: {ex.Message}",
-                    UserOpValidationError.Unknown);
+                return NodeCallFailed(ex, "validating the sender and initCode");
             }
         }
 
@@ -646,9 +764,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure(
-                    $"Failed to validate nonce: {ex.Message}",
-                    UserOpValidationError.Unknown);
+                return NodeCallFailed(ex, "validating the nonce");
             }
         }
 
@@ -710,9 +826,7 @@ namespace Nethereum.AccountAbstraction.Bundler.Validation
             }
             catch (Exception ex)
             {
-                return UserOpValidationResult.Failure(
-                    $"Failed to validate paymaster: {ex.Message}",
-                    UserOpValidationError.Unknown);
+                return NodeCallFailed(ex, "validating the paymaster");
             }
         }
     }

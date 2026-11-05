@@ -7,7 +7,7 @@
     <TargetFrameworks>net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <AssemblyName>Nethereum.WebAuthn</AssemblyName>
     <PackageId>Nethereum.WebAuthn</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

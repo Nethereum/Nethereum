@@ -47,6 +47,8 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
 
         public DateTimeOffset SubmittedAt { get; set; }
 
+        public DateTimeOffset? FinishedAt { get; set; }
+
         public MempoolEntryState State { get; set; } = MempoolEntryState.Pending;
 
         public string? TransactionHash { get; set; }
@@ -66,6 +68,10 @@ namespace Nethereum.AccountAbstraction.Bundler.Mempool
         public ulong? ValidUntil { get; set; }
 
         public ulong? ValidAfter { get; set; }
+
+        public ulong? ValidAfterBlock { get; set; }
+
+        public ulong? ValidUntilBlock { get; set; }
 
         public string? Factory { get; set; }
 

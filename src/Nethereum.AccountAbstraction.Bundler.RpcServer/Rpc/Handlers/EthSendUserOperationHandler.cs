@@ -1,14 +1,12 @@
 using System.Text.Json;
 using Nethereum.CoreChain.Rpc;
 using Nethereum.JsonRpc.Client.RpcMessages;
-using RpcUserOperation = Nethereum.RPC.AccountAbstraction.DTOs.UserOperation;
 
 namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
 {
     public class EthSendUserOperationHandler : RpcHandlerBase
     {
         private readonly IBundlerService _bundler;
-        private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
         public EthSendUserOperationHandler(IBundlerService bundler)
         {
@@ -22,13 +20,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             try
             {
                 var userOpJson = GetJsonElement(request, 0);
-                var entryPoint = GetParam<string>(request, 1);
+                var entryPoint = UserOperationRpcParser.ParseEntryPoint(GetJsonElement(request, 1));
 
-                if (string.IsNullOrEmpty(entryPoint))
-                    throw RpcException.InvalidParams("entryPoint address is required");
-
-                var rpcUserOp = JsonSerializer.Deserialize<RpcUserOperation>(userOpJson.GetRawText(), JsonOptions)
-                    ?? throw new JsonException("Failed to deserialize UserOperation");
+                var rpcUserOp = UserOperationRpcParser.ParseUserOperation(userOpJson);
 
                 var packedUserOp = rpcUserOp.ToPackedUserOperation();
                 // The EIP-7702 auth is a side-channel not folded into the packed form, so carry it
@@ -55,18 +49,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             }
             catch (Exception ex)
             {
-                return Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}");
+                return BundlerRpcResponses.InternalError(request.Id, context, ex);
             }
-        }
-
-        private static JsonSerializerOptions CreateJsonOptions()
-        {
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-            return options;
         }
     }
 }

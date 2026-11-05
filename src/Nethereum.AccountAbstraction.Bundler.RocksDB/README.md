@@ -94,8 +94,8 @@ services.AddBundlerRocksDbReputationOnly(options);
 | `WriteBufferSize` | 32 MB | Memtable size before flush |
 | `MaxWriteBufferNumber` | 2 | Number of memtables kept in memory |
 | `MaxMempoolSize` | 10000 | Maximum pending UserOperations before `AddAsync` returns `MempoolAddOutcome.RejectedFull` |
-| `EntryTtl` | 30 minutes | Retention window for pending entries swept by `PruneAsync` |
-| `IncludedEntryRetention` | 5 minutes | Retention window for included/failed entries swept by `PruneAsync` |
+| `EntryTtl` | 30 minutes | Retention window for pending and submitted entries swept by `PruneAsync` |
+| `IncludedEntryRetention` | 5 minutes | Retention window for included/failed entries, counted from when they finished, swept by `PruneAsync` |
 
 ### BundlerRocksDbManager
 
@@ -103,11 +103,11 @@ Owns the RocksDB database handle and its eight column families (`CF_USEROP_PENDI
 
 ### RocksDbUserOpMempool
 
-`IUserOpMempool` implementation. Constructor: `RocksDbUserOpMempool(BundlerRocksDbManager manager, BundlerRocksDbOptions options)`. On construction it checks the sender-index schema version stored in `CF_METADATA` and rebuilds the (sender, EntryPoint, nonce) index from the stored UserOperations if it is missing or stale, so an older on-disk layout self-heals on open.
+`IUserOpMempool` implementation. Constructors: `RocksDbUserOpMempool(BundlerRocksDbManager manager, BundlerRocksDbOptions options)` and `RocksDbUserOpMempool(BundlerRocksDbManager manager, BundlerRocksDbOptions options, ILogger? logger)`. On construction it checks the sender-index schema version stored in `CF_METADATA` and rebuilds the (sender, EntryPoint, nonce) index from the stored UserOperations if it is missing or stale, so an older on-disk layout self-heals on open. It also returns every `Submitted` row to `Pending`, so a restart never leaves an operation waiting for a receipt that nothing will reconcile; the on-chain nonce check drops the ones that were mined.
 
 ### RocksDbReputationStore
 
-`IReputationStore` (an `IReputationService`) implementation. Constructor: `RocksDbReputationStore(BundlerRocksDbManager manager, ReputationConfig? config = null)`. Loads all reputation entries into an in-process cache on construction and keeps the cache and RocksDB in sync on every write.
+`IReputationStore` (an `IReputationService`) implementation. Constructors: `RocksDbReputationStore(BundlerRocksDbManager manager, ReputationConfig? config = null)` and `RocksDbReputationStore(BundlerRocksDbManager manager, ReputationConfig? config, ILogger? logger)`. Loads all reputation entries into an in-process cache on construction and keeps the cache and RocksDB in sync on every write.
 
 ## Related Packages
 

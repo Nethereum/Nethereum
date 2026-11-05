@@ -41,7 +41,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Rpc.Handlers
             }
             catch (Exception ex)
             {
-                return Task.FromResult(Error(request.Id, BundlerErrorCodes.InternalError, $"Internal error: {ex.Message}"));
+                return Task.FromResult(BundlerRpcResponses.InternalError(request.Id, context, ex));
             }
         }
     }

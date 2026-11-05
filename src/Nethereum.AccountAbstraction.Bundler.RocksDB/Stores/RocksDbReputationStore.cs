@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text;
+using Microsoft.Extensions.Logging;
 using Nethereum.AccountAbstraction.Bundler.Reputation;
 using Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization;
 
@@ -14,11 +16,18 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         private readonly ReputationConfig _config;
         private readonly ConcurrentDictionary<string, ReputationEntry> _cache = new();
         private readonly object _lock = new();
+        private readonly ILogger? _logger;
 
         public RocksDbReputationStore(BundlerRocksDbManager manager, ReputationConfig? config = null)
+            : this(manager, config, null)
+        {
+        }
+
+        public RocksDbReputationStore(BundlerRocksDbManager manager, ReputationConfig? config, ILogger? logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _config = config ?? new ReputationConfig();
+            _logger = logger;
             LoadCacheFromDb();
         }
 
@@ -233,20 +242,72 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         private List<ReputationEntry> ReadAllFromDb()
         {
             var result = new List<ReputationEntry>();
-            using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_REPUTATION);
-            iterator.SeekToFirst();
+            var corrupt = new List<(byte[] Key, string Reason)>();
 
-            while (iterator.Valid())
+            using (var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_REPUTATION))
             {
-                var entry = ReputationSerializer.Deserialize(iterator.Value());
-                if (entry != null)
+                iterator.SeekToFirst();
+
+                while (iterator.Valid())
                 {
-                    result.Add(entry);
+                    var entry = TryDecode(iterator.Value(), out var reason);
+                    if (entry != null)
+                    {
+                        result.Add(entry);
+                    }
+                    else
+                    {
+                        corrupt.Add((iterator.Key(), reason));
+                    }
+                    iterator.Next();
                 }
-                iterator.Next();
+            }
+
+            foreach (var (key, reason) in corrupt)
+            {
+                Quarantine(key, reason);
             }
 
             return result;
+        }
+
+        private ReputationEntry? TryDecode(byte[] data, out string reason)
+        {
+            reason = string.Empty;
+
+            ReputationEntry? entry;
+            try
+            {
+                entry = ReputationSerializer.Deserialize(data);
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+                return null;
+            }
+
+            if (entry == null || string.IsNullOrEmpty(entry.Address))
+            {
+                reason = "row holds no reputation entry";
+                return null;
+            }
+
+            if (entry.OpsSeen < 0 || entry.OpsIncluded < 0 || entry.OpsFailed < 0 || entry.OpsDropped < 0 ||
+                !Enum.IsDefined(typeof(ReputationStatus), entry.Status))
+            {
+                reason = "row holds out-of-range counters or status";
+                return null;
+            }
+
+            return entry;
+        }
+
+        private void Quarantine(byte[] key, string reason)
+        {
+            _logger?.LogWarning(
+                "Dropping undecodable bundler reputation row {Key}: {Reason}",
+                Encoding.UTF8.GetString(key), reason);
+            _manager.Delete(BundlerRocksDbManager.CF_REPUTATION, key);
         }
 
         private void RemoveUnlocked(string? address)
@@ -258,17 +319,9 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 
         private void LoadCacheFromDb()
         {
-            using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_REPUTATION);
-            iterator.SeekToFirst();
-
-            while (iterator.Valid())
+            foreach (var entry in ReadAllFromDb())
             {
-                var entry = ReputationSerializer.Deserialize(iterator.Value());
-                if (entry != null && !string.IsNullOrEmpty(entry.Address))
-                {
-                    _cache[entry.Address.ToLowerInvariant()] = entry;
-                }
-                iterator.Next();
+                _cache[entry.Address!.ToLowerInvariant()] = entry;
             }
         }
 
@@ -291,15 +344,18 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 return cached;
             }
 
-            var data = _manager.Get(BundlerRocksDbManager.CF_REPUTATION, ReputationSerializer.AddressToKey(key));
+            var rowKey = ReputationSerializer.AddressToKey(key);
+            var data = _manager.Get(BundlerRocksDbManager.CF_REPUTATION, rowKey);
             if (data != null)
             {
-                var entry = ReputationSerializer.Deserialize(data);
+                var entry = TryDecode(data, out var reason);
                 if (entry != null)
                 {
                     _cache[key] = entry;
                     return entry;
                 }
+
+                Quarantine(rowKey, reason);
             }
 
             return null;

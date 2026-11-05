@@ -1,5 +1,7 @@
 using System.Numerics;
+using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using Nethereum.AccountAbstraction.Bundler;
 using Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration;
@@ -90,7 +92,7 @@ if (!string.IsNullOrEmpty(privateKey))
 config.Verbose = builder.Configuration.GetValue<bool>("verbose", false);
 config.EnableDebugMethods = builder.Configuration.GetValue<bool>("debug", false);
 config.UnsafeMode = builder.Configuration.GetValue<bool>("unsafe", false);
-config.EnableERC7562Validation = builder.Configuration.GetValue<bool>("enableErc7562", false);
+config.EnableERC7562Validation = builder.Configuration.GetValue<bool>("enableErc7562", config.EnableERC7562Validation);
 config.RequireSigner = builder.Configuration.GetValue<bool>("requireSigner", config.RequireSigner);
 
 if (string.IsNullOrEmpty(config.BeneficiaryAddress))
@@ -158,8 +160,31 @@ app.MapPost("/", async (HttpContext httpContext) =>
 {
     try
     {
-        using var reader = new StreamReader(httpContext.Request.Body);
-        var json = await reader.ReadToEndAsync();
+        if (httpContext.Request.ContentLength > config.MaxRequestBodyBytes)
+        {
+            httpContext.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+            await httpContext.Response.WriteAsJsonAsync(new { error = "Request body too large" });
+            return;
+        }
+
+        var bodyLimit = httpContext.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (bodyLimit != null && !bodyLimit.IsReadOnly)
+        {
+            bodyLimit.MaxRequestBodySize = config.MaxRequestBodyBytes;
+        }
+
+        using var buffer = new MemoryStream();
+        await httpContext.Request.Body.CopyToAsync(buffer);
+
+        var rejection = RpcBatchGuard.RejectOversizedBatch(buffer.GetBuffer().AsSpan(0, (int)buffer.Length), dispatcher.MaxBatchSize);
+        if (rejection != null)
+        {
+            httpContext.Response.ContentType = "application/json";
+            await httpContext.Response.WriteAsync(rejection.SerializeResponses(jsonOptions));
+            return;
+        }
+
+        var json = Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
 
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -170,29 +195,51 @@ app.MapPost("/", async (HttpContext httpContext) =>
 
         if (json.TrimStart().StartsWith('['))
         {
-            var requests = JsonSerializer.Deserialize<JsonRpcRequest[]>(json, jsonOptions);
-            if (requests != null)
+            var members = JsonSerializer.Deserialize<JsonElement[]>(json, jsonOptions);
+            if (members != null)
             {
                 var responses = await dispatcher.DispatchBatchAsync(
-                    requests.Select(r => r.ToRpcRequestMessage()).ToArray());
-                var wireResponses = responses.Select(r => r.ToJsonRpcResponse()).ToArray();
+                    members.Select(m => m.ReadRequestMember()).ToArray());
+                var wireResponses = responses
+                    .Where((_, index) => responses.Count != members.Length || !members[index].IsNotification())
+                    .ToArray();
+                if (wireResponses.Length == 0)
+                {
+                    httpContext.Response.StatusCode = StatusCodes.Status204NoContent;
+                    return;
+                }
+
                 httpContext.Response.ContentType = "application/json";
-                await httpContext.Response.WriteAsync(JsonSerializer.Serialize(wireResponses, jsonOptions));
+                await httpContext.Response.WriteAsync(wireResponses.SerializeResponses(jsonOptions));
                 return;
             }
         }
 
-        var request = JsonSerializer.Deserialize<JsonRpcRequest>(json, jsonOptions);
+        var root = JsonSerializer.Deserialize<JsonElement>(json, jsonOptions);
+        var request = root.ReadRequestMember();
         if (request == null)
         {
             httpContext.Response.StatusCode = 400;
-            await httpContext.Response.WriteAsJsonAsync(new { error = "Invalid JSON-RPC request" });
+            httpContext.Response.ContentType = "application/json";
+            var rejected = await dispatcher.DispatchAsync(null);
+            await httpContext.Response.WriteAsync(rejected.SerializeResponse(jsonOptions));
             return;
         }
 
-        var response = await dispatcher.DispatchAsync(request.ToRpcRequestMessage());
+        var response = await dispatcher.DispatchAsync(request);
+        if (root.IsNotification())
+        {
+            httpContext.Response.StatusCode = StatusCodes.Status204NoContent;
+            return;
+        }
+
         httpContext.Response.ContentType = "application/json";
-        await httpContext.Response.WriteAsync(JsonSerializer.Serialize(response.ToJsonRpcResponse(), jsonOptions));
+        await httpContext.Response.WriteAsync(response.SerializeResponse(jsonOptions));
+    }
+    catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
+    {
+        httpContext.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
+        await httpContext.Response.WriteAsJsonAsync(new { error = "Request body too large" });
     }
     catch (JsonException ex)
     {
@@ -216,7 +263,7 @@ app.MapPost("/", async (HttpContext httpContext) =>
             Error = new JsonRpcError
             {
                 Code = BundlerErrorCodes.InternalError,
-                Message = "Internal error: " + ex.Message
+                Message = "Internal error"
             }
         });
     }

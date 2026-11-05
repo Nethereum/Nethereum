@@ -55,7 +55,7 @@ namespace Nethereum.AccountAbstraction.Bundler.InProcess
         public IAccountAbstractionBundlerService StartBundler(
             string entryPointAddress,
             Web3Account bundlerAccount,
-            bool enableErc7562Validation = false,
+            bool enableErc7562Validation = true,
             Action<BundlerConfig> configureOverrides = null)
         {
             var bundlerWeb3 = Node.CreateWeb3(bundlerAccount);

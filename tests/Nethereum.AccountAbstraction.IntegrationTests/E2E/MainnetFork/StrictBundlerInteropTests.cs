@@ -19,6 +19,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.MainnetFork
 
     [Collection(StrictBundlerFixture.COLLECTION_NAME)]
     [Trait("Category", "MainnetFork")]
+    [Trait("Requires", "Externals")]
     [Trait("ERC", "4337")]
     public class StrictBundlerInteropTests
     {

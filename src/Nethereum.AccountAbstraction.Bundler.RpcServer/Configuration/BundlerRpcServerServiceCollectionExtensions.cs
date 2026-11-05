@@ -78,7 +78,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
                 var logger = config.Verbose
                     ? provider.GetService<ILogger<RpcDispatcher>>()
                     : null;
-                return new RpcDispatcher(registry, context, logger);
+                return new RpcDispatcher(registry, context, logger) { MaxBatchSize = config.MaxBatchSize };
             });
 
             return services;
@@ -124,7 +124,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
                 var logger = config.Verbose
                     ? provider.GetService<ILogger<RpcDispatcher>>()
                     : null;
-                return new RpcDispatcher(registry, context, logger);
+                return new RpcDispatcher(registry, context, logger) { MaxBatchSize = config.MaxBatchSize };
             });
 
             return services;

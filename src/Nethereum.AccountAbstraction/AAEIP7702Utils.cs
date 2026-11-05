@@ -12,7 +12,15 @@ namespace Nethereum.AccountAbstraction
 
             public static bool IsEip7702UserOp(byte[] initCode)
             {
-                return initCode.Length >= 2 && initCode.Take(2).SequenceEqual(INITCODE_EIP7702_MARKER);
+                if (initCode == null || initCode.Length < 2) return false;
+
+                for (var i = 0; i < INITCODE_EIP7702_MARKER_ADDRESS.Length; i++)
+                {
+                    var actual = i < initCode.Length ? initCode[i] : (byte)0;
+                    if (actual != INITCODE_EIP7702_MARKER_ADDRESS[i]) return false;
+                }
+
+                return true;
             }
 
             public static byte[] BuildInitCode(string factory, byte[] factoryData)
@@ -37,6 +45,7 @@ namespace Nethereum.AccountAbstraction
                 return IsEip7702UserOp(userOperation.InitCode);
             }
 
+            [Obsolete("The EntryPoint takes the delegate from the sender's code, not from initCode.")]
             public static byte[] GetEip7702Delegate(byte[] initCode)
             {
                 if (IsEip7702UserOp(initCode))
@@ -46,6 +55,7 @@ namespace Nethereum.AccountAbstraction
                 return Array.Empty<byte>();
             }
 
+            [Obsolete("Builds a layout the EntryPoint does not read as EIP-7702; use BuildInitCode(\"0x7702\", factoryData). The delegate comes from the sender's code.")]
             public static byte[] CreateEip7702InitCode(byte[] delegateAddress)
             {
                 if (delegateAddress.Length != 20)
@@ -54,6 +64,7 @@ namespace Nethereum.AccountAbstraction
                 return INITCODE_EIP7702_MARKER.Concat(delegateAddress).ToArray();
             }
 
+            [Obsolete("Builds a layout the EntryPoint does not read as EIP-7702; use BuildInitCode(\"0x7702\", factoryData). The delegate comes from the sender's code.")]
             public static byte[] CreateEip7702InitCode(string delegateAddressHex)
             {
                 var addressBytes = AddressUtil.Current.ConvertToValid20ByteAddress(delegateAddressHex).HexToByteArray();
@@ -85,6 +96,7 @@ namespace Nethereum.AccountAbstraction
             }
 
 
+            [Obsolete("Builds a layout the EntryPoint does not read as EIP-7702; use BuildInitCode(\"0x7702\", factoryData). The delegate comes from the sender's code.")]
             public static byte[] CreateEip7702InitCode(byte[] delegateAddress, byte[] extraData)
             {
                 if (delegateAddress.Length != 20)
@@ -96,6 +108,7 @@ namespace Nethereum.AccountAbstraction
                     .ToArray();
             }
 
+            [Obsolete("Builds a layout the EntryPoint does not read as EIP-7702; use BuildInitCode(\"0x7702\", factoryData). The delegate comes from the sender's code.")]
             public static byte[] CreateEip7702InitCode(string delegateAddressHex, byte[] extraData)
             {
                 var delegateBytes = AddressUtil.Current

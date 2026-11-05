@@ -22,7 +22,7 @@ namespace Nethereum.AccountAbstraction.Bundler.GasEstimation
 {
     public class SimulationGasEstimator
     {
-        private const long SIMULATION_GAS = 30_000_000;
+        private const long SIMULATION_GAS = Nethereum.EVM.Gas.GasConstants.EIP8037_TX_MAX_GAS_LIMIT;
 
         private static readonly BigInteger DEFAULT_SIMULATION_GAS_LIMIT = 10_000_000;
         private static readonly BigInteger DEFAULT_SIMULATION_PAYMASTER_GAS_LIMIT = 3_000_000;

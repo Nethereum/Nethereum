@@ -26,27 +26,22 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
         public bool EnableDebugMethods { get; set; } = false;
 
         /// <summary>
-        /// Ceiling on a UserOperation's verificationGasLimit, enforced during structural
-        /// validation (see UserOpValidator). This is a Nethereum resource-safety knob, not
-        /// an ERC-4337/ERC-7562 spec requirement or an eth-infinitism reference-bundler
-        /// setting - the reference bundler and spec impose no fixed ceiling here, relying
-        /// instead on the block gas limit and the EntryPoint's own gas accounting.
-        /// Default is raised well above the highest verificationGasLimit exercised by the
-        /// eth-infinitism bundler-spec-tests compliance suite (5,000,000, used by
-        /// EREP-020 test_staked_factory_on_account_failure for a legitimately expensive
-        /// staked factory), so the server is conformant out of the box. Operators can
-        /// still lower it via --maxVerificationGas for stricter DoS protection.
+        /// Exclusive ceiling on a UserOperation's verificationGasLimit and
+        /// paymasterVerificationGasLimit, enforced during structural validation (see
+        /// UserOpValidator). The default is ERC-7562 MAX_VERIFICATION_GAS (LIM-060, 500000).
+        /// Operators raise it via --maxVerificationGas, for example for the eth-infinitism
+        /// bundler-spec-tests compliance suite, which uses verificationGasLimit up to 5,000,000.
         /// </summary>
-        public int MaxVerificationGas { get; set; } = 10_000_000;
+        public int MaxVerificationGas { get; set; } = 500_000;
 
         /// <summary>
         /// Whether to enable ERC-7562 trace-based opcode/storage validation (see
         /// Nethereum.AccountAbstraction.Bundler.Validation.ERC7562.ERC7562SimulationService).
-        /// Defaults to false to preserve existing RpcServer host behaviour; UserOpValidator
+        /// Defaults to true (ERC-7562 validation is on unless an operator opts out with false); UserOpValidator
         /// wires its own IStateReader and EVM hardfork config, so no extra DI is required
         /// beyond forwarding this flag.
         /// </summary>
-        public bool EnableERC7562Validation { get; set; } = false;
+        public bool EnableERC7562Validation { get; set; } = true;
 
         /// <summary>
         /// Minimum stake (in wei) for an entity to be treated as staked by StakingInfoService
@@ -77,6 +72,22 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
         public BigInteger ReceiptLogLookbackBlocks { get; set; } = 10_000;
 
         public int MaxUnstakedSenderMempoolCount { get; set; } = 4;
+
+        public int MaxUnstakedEntityMempoolCount { get; set; } = 10;
+
+        public int MaxOpsAllowedUnstakedEntity { get; set; } = 10_000;
+
+        public int MaxUserOperationSize { get; set; } = 8192;
+
+        public long MaxRequestBodyBytes { get; set; } = 5 * 1024 * 1024;
+
+        public int MaxBatchSize { get; set; } = 1000;
+
+        public int ReceiptCacheSize { get; set; } = 10_000;
+
+        public int ReceiptNegativeCacheSize { get; set; } = 10_000;
+
+        public int ReceiptNegativeCacheSeconds { get; set; } = 12;
 
         public HashSet<string> WhitelistedAddresses { get; set; } = new();
 
@@ -110,6 +121,12 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
                 BundleReceiptTimeoutSeconds = BundleReceiptTimeoutSeconds,
                 ReceiptLogLookbackBlocks = ReceiptLogLookbackBlocks,
                 MaxUnstakedSenderMempoolCount = MaxUnstakedSenderMempoolCount,
+                MaxUnstakedEntityMempoolCount = MaxUnstakedEntityMempoolCount,
+                MaxOpsAllowedUnstakedEntity = MaxOpsAllowedUnstakedEntity,
+                MaxUserOperationSize = MaxUserOperationSize,
+                ReceiptCacheSize = ReceiptCacheSize,
+                ReceiptNegativeCacheSize = ReceiptNegativeCacheSize,
+                ReceiptNegativeCacheSeconds = ReceiptNegativeCacheSeconds,
                 WhitelistedAddresses = new HashSet<string>(WhitelistedAddresses, StringComparer.OrdinalIgnoreCase),
                 BlacklistedAddresses = new HashSet<string>(BlacklistedAddresses, StringComparer.OrdinalIgnoreCase),
                 Hardfork = Hardfork
@@ -144,6 +161,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RpcServer.Configuration
                 RpcUrl = rpcUrl,
                 ChainId = chainId,
                 StrictValidation = false,
+                MaxUserOperationSize = 131_072,
+                MaxVerificationGas = 10_000_000,
                 AutoBundleIntervalMs = 1000,
                 MinPriorityFeePerGas = 0,
                 UnsafeMode = true

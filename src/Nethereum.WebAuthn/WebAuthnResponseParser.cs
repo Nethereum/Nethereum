@@ -11,6 +11,11 @@ namespace Nethereum.WebAuthn
         internal static readonly BigInteger P256Order =
             BigInteger.Parse("0FFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551", System.Globalization.NumberStyles.HexNumber);
         internal static readonly BigInteger P256HalfOrder = P256Order / 2;
+        private static readonly BigInteger P256FieldPrime =
+            BigInteger.Parse("0FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF", System.Globalization.NumberStyles.HexNumber);
+        private static readonly BigInteger P256B =
+            BigInteger.Parse("05AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B", System.Globalization.NumberStyles.HexNumber);
+        private const string P256CurveOid = "1.2.840.10045.3.1.7";
 
         private const int RpIdHashLength = 32;
         private const int FlagsOffset = RpIdHashLength;
@@ -47,9 +52,12 @@ namespace Nethereum.WebAuthn
             using var ecdsa = ECDsa.Create();
             ecdsa.ImportSubjectPublicKeyInfo(spki, out _);
             var parameters = ecdsa.ExportParameters(false);
-            return (
-                new BigInteger(parameters.Q.X, isUnsigned: true, isBigEndian: true),
-                new BigInteger(parameters.Q.Y, isUnsigned: true, isBigEndian: true));
+            if (parameters.Curve.Oid?.Value != P256CurveOid)
+            {
+                throw new CryptographicException("SPKI public key is not on the P-256 curve.");
+            }
+
+            return ToP256Point(parameters.Q.X, parameters.Q.Y);
         }
 
         public static (BigInteger x, BigInteger y) DecodeP256PublicKeyFromCose(byte[] coseKey)
@@ -89,9 +97,31 @@ namespace Nethereum.WebAuthn
                 throw new CryptographicException("COSE EC2 key is missing its x or y coordinate.");
             }
 
-            return (
-                new BigInteger(x, isUnsigned: true, isBigEndian: true),
-                new BigInteger(y, isUnsigned: true, isBigEndian: true));
+            return ToP256Point(x, y);
+        }
+
+        private static (BigInteger x, BigInteger y) ToP256Point(byte[]? xBytes, byte[]? yBytes)
+        {
+            if (xBytes == null || yBytes == null || xBytes.Length != 32 || yBytes.Length != 32)
+            {
+                throw new CryptographicException("P-256 public key coordinates must be 32 bytes.");
+            }
+
+            var x = new BigInteger(xBytes, isUnsigned: true, isBigEndian: true);
+            var y = new BigInteger(yBytes, isUnsigned: true, isBigEndian: true);
+            var p = P256FieldPrime;
+            if (x.IsZero && y.IsZero)
+            {
+                throw new CryptographicException("P-256 public key is the zero point.");
+            }
+
+            var rhs = ((x * x % p * x - 3 * x + P256B) % p + p) % p;
+            if (x >= p || y >= p || y * y % p != rhs)
+            {
+                throw new CryptographicException("Public key point is not on the P-256 curve.");
+            }
+
+            return (x, y);
         }
 
         public static byte[] ExtractCosePublicKeyFromAuthenticatorData(byte[] authenticatorData)

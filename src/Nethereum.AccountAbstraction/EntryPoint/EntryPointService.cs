@@ -62,9 +62,7 @@ namespace Nethereum.AccountAbstraction.EntryPoint
 
                         if (userOperation.Nonce == null)
                         {
-                            userOperation.Nonce = await EthApi.Transactions
-                                .GetTransactionCount
-                                .SendRequestAsync(userOperation.Sender);
+                            userOperation.Nonce = await GetNonceQueryAsync(userOperation.Sender, BigInteger.Zero);
                         }
                     }
                     else

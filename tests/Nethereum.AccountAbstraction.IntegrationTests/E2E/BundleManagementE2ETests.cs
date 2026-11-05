@@ -685,11 +685,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt, 1.0m);
             var startNonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, BigInteger.Zero);
 
-            var maxFeePerGas = new BigInteger(1_000_000_000);
             const int callGasLimit = 100_000;
             const int verificationGasLimit = 100_000;
             var perOpPrefund = Nethereum.Util.UnitConversion.Convert.ToWei(0.6m);
-            var totalGasForPerOpPrefund = perOpPrefund / maxFeePerGas;
+            var totalGasForPerOpPrefund = new BigInteger(10_000_000);
+            var maxFeePerGas = perOpPrefund / totalGasForPerOpPrefund;
             var preVerificationGas = totalGasForPerOpPrefund - callGasLimit - verificationGasLimit;
 
             Func<BigInteger, Task<Nethereum.AccountAbstraction.Structs.PackedUserOperation>> buildOp = async nonce =>
@@ -736,11 +736,11 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E
             var (accountAddress, accountKey) = await _fixture.CreateFundedAccountAsync(salt, 1.0m);
             var startNonce = await _fixture.EntryPointService.GetNonceQueryAsync(accountAddress, BigInteger.Zero);
 
-            var maxFeePerGas = new BigInteger(1_000_000_000);
             const int callGasLimit = 100_000;
             const int verificationGasLimit = 100_000;
             var perOpPrefund = Nethereum.Util.UnitConversion.Convert.ToWei(0.2m);
-            var totalGasForPerOpPrefund = perOpPrefund / maxFeePerGas;
+            var totalGasForPerOpPrefund = new BigInteger(10_000_000);
+            var maxFeePerGas = perOpPrefund / totalGasForPerOpPrefund;
             var preVerificationGas = totalGasForPerOpPrefund - callGasLimit - verificationGasLimit;
 
             using var bundler = _fixture.CreateNewBundlerService();

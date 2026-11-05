@@ -110,7 +110,9 @@ namespace Nethereum.AccountAbstraction.Example.Hosting
             log($"EntryPoint deployed at {entryPoint.ContractAddress}");
 
             log("Starting in-process bundler (ERC-4337 validation ON)...");
-            var bundler = bootstrap.StartBundler(entryPoint.ContractAddress, bundlerAccount);
+            var bundler = bootstrap.StartBundler(
+                entryPoint.ContractAddress, bundlerAccount, enableErc7562Validation: false,
+                configureOverrides: c => c.MaxVerificationGas = 10_000_000);
 
             var faucet = new DevChainFaucet(bootstrap);
             return new EmbeddedInfra(bootstrap, bootstrap.OperatorWeb3, bundler, faucet);

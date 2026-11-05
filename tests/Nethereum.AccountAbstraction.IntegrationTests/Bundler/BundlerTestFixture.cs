@@ -65,6 +65,8 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.Bundler
                 AutoBundleIntervalMs = 0,
                 StrictValidation = false,
                 SimulateValidation = false,
+                EnableERC7562Validation = false,
+                MaxVerificationGas = 10_000_000,
                 UnsafeMode = true,
                 ChainId = ChainId
             };

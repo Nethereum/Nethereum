@@ -112,7 +112,7 @@ var standard = BundlerConfig.CreateStandardConfig(entryPoint, beneficiary);
 var production = BundlerConfig.CreateProductionConfig(entryPoint, beneficiary);
 ```
 
-The three differ only in the fields they set: `CreateAppChainConfig` turns `StrictValidation` off and bundles every second; `CreateStandardConfig` and `CreateProductionConfig` both turn on `StrictValidation` and `EnableERC7562Validation`, require a 1 gwei priority fee and bundle every 10 seconds, and production additionally pins `MinStake` (1 ETH) and `MinUnstakeDelaySec` (86400). None of them enables `UnsafeMode`.
+The three differ only in the fields they set: `CreateAppChainConfig` turns `StrictValidation` off, keeps `EnableERC7562Validation` on, raises `MaxUserOperationSize` to 131072 and `MaxVerificationGas` to 10000000 and bundles every second; `CreateStandardConfig` and `CreateProductionConfig` both turn on `StrictValidation` and `EnableERC7562Validation`, require a 1 gwei priority fee and bundle every 10 seconds, and production additionally pins `MinStake` (1 ETH) and `MinUnstakeDelaySec` (86400). None of them enables `UnsafeMode`.
 
 ## Usage Examples
 
@@ -375,7 +375,7 @@ public enum MempoolAddOutcome
 public enum MempoolEntryState { Pending, Submitted, Included, Failed, Dropped }
 ```
 
-`InMemoryUserOpMempool` is the thread-safe in-memory implementation, holding `maxSize` entries (default 1000) with a per-entry TTL that defaults to 30 minutes. `AddAsync` returns a `MempoolAddOutcome` rather than a plain success flag, so a caller can tell a fee-bump *replacement* from each distinct rejection; `MempoolReplacementRules` decides when a new op replaces an existing one for the same sender+nonce, and `PruneAsync` returns the number of expired/stale entries removed. `RevertSubmittedAsync` puts a bundle's operations back to pending when its transaction did not land. `MempoolChainKey` and `MempoolPendingChains` track per-sender nonce chains, and `MultipleRolesRule` enforces ERC-7562's "an address cannot be both an account and a factory/paymaster in the same mempool" constraint.
+`InMemoryUserOpMempool` is the thread-safe in-memory implementation, holding `maxSize` pending entries (default 1000) with a per-entry TTL that defaults to 30 minutes. `AddAsync` returns a `MempoolAddOutcome` rather than a plain success flag, so a caller can tell a fee-bump *replacement* from each distinct rejection; `MempoolReplacementRules` decides when a new op replaces an existing one for the same sender+nonce, and `PruneAsync` returns the number of expired/stale entries removed. `RevertSubmittedAsync` puts a bundle's operations back to pending when its transaction did not land. `MempoolChainKey` and `MempoolPendingChains` track per-sender nonce chains, and `MultipleRolesRule` enforces ERC-7562's "an address cannot be both an account and a factory/paymaster in the same mempool" constraint.
 
 ## ERC-7562 validation
 
@@ -609,13 +609,19 @@ public class BundlerConfig
     public bool StrictValidation { get; set; } = true;
     public bool SimulateValidation { get; set; } = true;
     public bool UnsafeMode { get; set; } = false;
-    public bool EnableERC7562Validation { get; set; } = false;
+    public bool EnableERC7562Validation { get; set; } = true;
     public BigInteger MinStake { get; set; } = 1_000_000_000_000_000_000;
     public uint MinUnstakeDelaySec { get; set; } = 86400;
     public int MaxUnstakedSenderMempoolCount { get; set; } = 4;
+    public int MaxUnstakedEntityMempoolCount { get; set; } = 10;
+    public int MaxOpsAllowedUnstakedEntity { get; set; } = 10_000;
+    public int MaxUserOperationSize { get; set; } = 8192;
+    public int ReceiptCacheSize { get; set; } = 10_000;
+    public int ReceiptNegativeCacheSize { get; set; } = 10_000;
+    public int ReceiptNegativeCacheSeconds { get; set; } = 12;
     public HashSet<string> WhitelistedAddresses { get; set; } = new();
     public HashSet<string> BlacklistedAddresses { get; set; } = new();
-    public int MaxVerificationGas { get; set; } = 1_500_000;
+    public int MaxVerificationGas { get; set; } = 500_000;
     public BigInteger? ChainId { get; set; }
     public string Hardfork { get; set; }
     public ChainForkSchedule ForkSchedule { get; set; }
@@ -628,6 +634,8 @@ public class BundlerConfig
     public static BundlerConfig CreateProductionConfig(string entryPoint, string beneficiary);
 }
 ```
+
+`ReceiptNegativeCacheSeconds` bounds how long an unknown `userOpHash`, or a submitted one whose `UserOperationEvent` is not on chain yet, is remembered as not found; the entry is removed when this bundler admits the op, but an op admitted through another bundler stays unseen here for up to that many seconds. `WhitelistedAddresses` and `BlacklistedAddresses` are matched case-insensitively whatever set is assigned.
 
 Two knobs deserve attention:
 

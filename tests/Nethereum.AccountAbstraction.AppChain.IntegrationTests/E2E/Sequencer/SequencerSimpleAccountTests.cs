@@ -57,9 +57,9 @@ namespace Nethereum.AccountAbstraction.AppChain.IntegrationTests.E2E.Sequencer
             var config = new AppChainServerConfig
             {
                 ChainId = CHAIN_ID,
-                ChainName = "SimpleAccountTest",
-                BaseFee = 1_000_000_000
+                ChainName = "SimpleAccountTest"
             };
+            config.Node.Producer.BaseFee = 1_000_000_000;
             config.Genesis.Owner.PrivateKey = operatorPrivateKey;
             config.Consensus.Sequencer.PrivateKey = operatorPrivateKey;
             config.Consensus.BlockProductionMode = BlockProductionMode.OnDemand;

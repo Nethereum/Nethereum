@@ -49,7 +49,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.NonModularAccount
                 Bootstrap.OperatorWeb3,
                 new SimpleAccountFactoryDeployment { EntryPoint = EntryPointService.ContractAddress });
 
-            Bundler = Bootstrap.StartBundler(EntryPointService.ContractAddress, bundlerAccount);
+            Bundler = Bootstrap.StartBundler(EntryPointService.ContractAddress, bundlerAccount, enableErc7562Validation: false);
         }
 
         public async Task DisposeAsync()

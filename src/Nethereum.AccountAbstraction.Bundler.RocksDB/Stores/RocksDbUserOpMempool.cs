@@ -1,12 +1,15 @@
 using System.Numerics;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using Nethereum.AccountAbstraction.Bundler.Mempool;
 using Nethereum.AccountAbstraction.Bundler.RocksDB.Serialization;
+using Nethereum.AccountAbstraction.Bundler.Validation;
+using Nethereum.AccountAbstraction.Structs;
 using RocksDbSharp;
 
 namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 {
-    public class RocksDbUserOpMempool : IUserOpMempool
+    public class RocksDbUserOpMempool : IUserOpMempool, IMempoolEvictionLog, IMempoolInFlight, IMempoolPendingPool
     {
         public const int SenderIndexSchemaVersion = 2;
         public const string SenderIndexSchemaVersionMetadataKey = "sender_index_schema_version";
@@ -16,13 +19,42 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         private readonly BundlerRocksDbManager _manager;
         private readonly BundlerRocksDbOptions _options;
         private readonly object _lock = new();
+        private readonly List<MempoolEntry> _evicted = new();
+        private readonly ILogger? _logger;
+        private int _pendingCount;
 
         public RocksDbUserOpMempool(BundlerRocksDbManager manager, BundlerRocksDbOptions options)
+            : this(manager, options, null)
+        {
+        }
+
+        public RocksDbUserOpMempool(BundlerRocksDbManager manager, BundlerRocksDbOptions options, ILogger? logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _options = options ?? new BundlerRocksDbOptions();
+            _logger = logger;
 
             EnsureSenderIndexSchema();
+            ReleaseOrphanedInFlight();
+            Interlocked.Exchange(ref _pendingCount, CountInColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+        }
+
+        private void AdjustPending(int delta) => Interlocked.Add(ref _pendingCount, delta);
+
+        private void ReleaseOrphanedInFlight()
+        {
+            lock (_lock)
+            {
+                var submitted = ReadAll(BundlerRocksDbManager.CF_USEROP_SUBMITTED)
+                    .Select(e => e.UserOpHash)
+                    .ToArray();
+                MoveEntries(
+                    submitted,
+                    BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                    BundlerRocksDbManager.CF_USEROP_PENDING,
+                    entry => { MempoolStateTransitions.Requeue(entry); return true; });
+                DeleteAllInColumnFamily(BundlerRocksDbManager.CF_TX_MAPPING);
+            }
         }
 
         private void EnsureSenderIndexSchema()
@@ -62,19 +94,12 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                     BundlerRocksDbManager.CF_USEROP_SUBMITTED,
                     BundlerRocksDbManager.CF_USEROP_PENDING })
                 {
-                    using var iterator = _manager.CreateIterator(cf);
-                    iterator.SeekToFirst();
-                    while (iterator.Valid())
+                    foreach (var (entryKey, entry) in ReadAllWithKeys(cf))
                     {
-                        var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
-                        if (entry?.UserOperation != null)
-                        {
-                            var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
-                            var senderKey = MempoolEntrySerializer.CreateSenderKey(
-                                sender, entry.EntryPoint, entry.UserOperation.Nonce);
-                            batch.Put(senderKey, iterator.Key(), senderIndexCf);
-                        }
-                        iterator.Next();
+                        var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
+                        var senderKey = MempoolEntrySerializer.CreateSenderKey(
+                            sender, entry.EntryPoint, entry.UserOperation.Nonce);
+                        batch.Put(senderKey, entryKey, senderIndexCf);
                     }
                 }
 
@@ -100,43 +125,30 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
             {
                 var key = MempoolEntrySerializer.StringToKey(entry.UserOpHash);
 
-                if (ExistsInAnyState(key))
-                {
-                    return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
-                }
-
                 var sender = entry.UserOperation.Sender?.ToLowerInvariant() ?? "";
                 var senderKey = MempoolEntrySerializer.CreateSenderKey(
                     sender, entry.EntryPoint, entry.UserOperation.Nonce);
 
                 var occupyingHashKey = _manager.Get(BundlerRocksDbManager.CF_SENDER_INDEX, senderKey);
-                var occupyingEntry = occupyingHashKey != null ? GetEntryByKey(occupyingHashKey) : null;
+                var decision = MempoolAdmission.Decide(
+                    ExistsInAnyState(key),
+                    occupyingHashKey != null ? GetEntryByKey(occupyingHashKey) : null,
+                    CountPendingInternal(),
+                    _options.MaxMempoolSize,
+                    () => ReadAll(BundlerRocksDbManager.CF_USEROP_PENDING),
+                    entry);
 
-                if (occupyingEntry != null &&
-                    (occupyingEntry.State == MempoolEntryState.Pending ||
-                     occupyingEntry.State == MempoolEntryState.Submitted))
+                if (!decision.Accepted) return Task.FromResult(decision.Outcome);
+
+                if (decision.Evicted != null)
                 {
-                    if (occupyingEntry.State == MempoolEntryState.Submitted)
-                    {
-                        return Task.FromResult(MempoolAddOutcome.RejectedDuplicate);
-                    }
-
-                    if (!MempoolReplacementRules.IsValidFeeBump(occupyingEntry.UserOperation, entry.UserOperation))
-                    {
-                        return Task.FromResult(MempoolAddOutcome.RejectedUnderpriced);
-                    }
-
-                    InsertInternal(entry, key, senderKey, replacedHashKey: occupyingHashKey);
-                    return Task.FromResult(MempoolAddOutcome.Replaced);
+                    RemoveInternal(decision.Evicted.UserOpHash);
+                    _evicted.Add(decision.Evicted);
+                    if (_evicted.Count > _options.MaxMempoolSize) _evicted.RemoveAt(0);
                 }
 
-                if (CountPendingInternal() >= _options.MaxMempoolSize)
-                {
-                    return Task.FromResult(MempoolAddOutcome.RejectedFull);
-                }
-
-                InsertInternal(entry, key, senderKey, replacedHashKey: null);
-                return Task.FromResult(MempoolAddOutcome.Added);
+                InsertInternal(entry, key, senderKey, replacedHashKey: decision.Replaced != null ? occupyingHashKey : null);
+                return Task.FromResult(decision.Outcome);
             }
         }
 
@@ -151,6 +163,10 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 if (replacedHashKey != null)
                 {
                     batch.Delete(replacedHashKey, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+                }
+                else
+                {
+                    AdjustPending(1);
                 }
 
                 var data = MempoolEntrySerializer.Serialize(entry);
@@ -169,48 +185,16 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         {
             var key = MempoolEntrySerializer.StringToKey(userOpHash);
 
-            var data = _manager.Get(BundlerRocksDbManager.CF_USEROP_PENDING, key);
-            if (data != null) return Task.FromResult(MempoolEntrySerializer.Deserialize(data));
-
-            data = _manager.Get(BundlerRocksDbManager.CF_USEROP_SUBMITTED, key);
-            if (data != null) return Task.FromResult(MempoolEntrySerializer.Deserialize(data));
-
-            data = _manager.Get(BundlerRocksDbManager.CF_USEROP_INCLUDED, key);
-            if (data != null) return Task.FromResult(MempoolEntrySerializer.Deserialize(data));
-
-            data = _manager.Get(BundlerRocksDbManager.CF_USEROP_FAILED, key);
-            if (data != null) return Task.FromResult(MempoolEntrySerializer.Deserialize(data));
-
-            return Task.FromResult<MempoolEntry?>(null);
+            return Task.FromResult(GetEntryByKey(key));
         }
 
         public Task<MempoolEntry[]> GetPendingAsync(int maxCount, BigInteger? maxGas = null)
         {
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-            using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_USEROP_PENDING);
-            iterator.SeekToFirst();
-
-            var eligible = new List<MempoolEntry>();
-            while (iterator.Valid())
-            {
-                var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
-                if (entry != null)
-                {
-                    if (entry.ValidAfter.HasValue && entry.ValidAfter.Value > now)
-                    {
-                        iterator.Next();
-                        continue;
-                    }
-                    if (entry.ValidUntil.HasValue && entry.ValidUntil.Value <= now)
-                    {
-                        iterator.Next();
-                        continue;
-                    }
-                    eligible.Add(entry);
-                }
-                iterator.Next();
-            }
+            var eligible = ReadAll(BundlerRocksDbManager.CF_USEROP_PENDING)
+                .Where(entry => ValidationValidityWindow.IsValidAtTime(entry.ValidAfter, entry.ValidUntil, now))
+                .ToList();
 
             return Task.FromResult(MempoolPendingChains.SelectBundleCandidates(eligible, maxCount, maxGas));
         }
@@ -218,33 +202,19 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         public Task<MempoolEntry[]> GetAllPendingAsync()
         {
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var pendingEntries = new List<MempoolEntry>();
-
-            using var iterator = _manager.CreateIterator(BundlerRocksDbManager.CF_USEROP_PENDING);
-            iterator.SeekToFirst();
-
-            while (iterator.Valid())
-            {
-                var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
-                if (entry != null)
-                {
-                    if (entry.ValidAfter.HasValue && entry.ValidAfter.Value > now)
-                    {
-                        iterator.Next();
-                        continue;
-                    }
-                    if (entry.ValidUntil.HasValue && entry.ValidUntil.Value <= now)
-                    {
-                        iterator.Next();
-                        continue;
-                    }
-                    pendingEntries.Add(entry);
-                }
-                iterator.Next();
-            }
-
-            var ordered = pendingEntries.OrderBy(e => e.SubmittedAt).ToArray();
+            var ordered = ReadAll(BundlerRocksDbManager.CF_USEROP_PENDING)
+                .Where(entry => ValidationValidityWindow.IsValidAtTime(entry.ValidAfter, entry.ValidUntil, now))
+                .OrderBy(e => e.SubmittedAt)
+                .ToArray();
             return Task.FromResult(ordered);
+        }
+
+        public Task<MempoolEntry[]> GetPendingPoolAsync()
+        {
+            var pool = ReadAll(BundlerRocksDbManager.CF_USEROP_PENDING)
+                .OrderBy(e => e.SubmittedAt)
+                .ToArray();
+            return Task.FromResult(pool);
         }
 
         public Task<MempoolEntry[]> GetBySenderAsync(string sender)
@@ -295,11 +265,15 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 var data = _manager.Get(cf, key);
                 if (data != null)
                 {
-                    var entry = MempoolEntrySerializer.Deserialize(data);
+                    var entry = TryDecode(data, out _);
                     var batch = _manager.CreateWriteBatch();
                     try
                     {
                         batch.Delete(key, _manager.GetColumnFamily(cf));
+                        if (cf == BundlerRocksDbManager.CF_USEROP_PENDING)
+                        {
+                            AdjustPending(-1);
+                        }
 
                         if (entry != null)
                         {
@@ -342,17 +316,21 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                     foreach (var hash in userOpHashes)
                     {
                         var key = MempoolEntrySerializer.StringToKey(hash);
-                        var data = _manager.Get(BundlerRocksDbManager.CF_USEROP_PENDING, key);
+                        var pendingData = _manager.Get(BundlerRocksDbManager.CF_USEROP_PENDING, key);
+                        var data = pendingData ?? _manager.Get(BundlerRocksDbManager.CF_USEROP_SUBMITTED, key);
                         if (data != null)
                         {
                             var entry = MempoolEntrySerializer.Deserialize(data);
                             if (entry != null)
                             {
-                                entry.State = MempoolEntryState.Submitted;
-                                entry.TransactionHash = transactionHash;
+                                MempoolStateTransitions.TrySubmit(entry, transactionHash);
 
                                 var newData = MempoolEntrySerializer.Serialize(entry);
-                                batch.Delete(key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+                                if (pendingData != null)
+                                {
+                                    batch.Delete(key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+                                    AdjustPending(-1);
+                                }
                                 batch.Put(key, newData, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_SUBMITTED));
                             }
                         }
@@ -366,6 +344,76 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 }
             }
             return Task.CompletedTask;
+        }
+
+        public Task<string[]> MarkInFlightAsync(string[] userOpHashes)
+        {
+            lock (_lock)
+            {
+                return Task.FromResult(MoveEntries(
+                    userOpHashes,
+                    BundlerRocksDbManager.CF_USEROP_PENDING,
+                    BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                    MempoolStateTransitions.TryMarkInFlight));
+            }
+        }
+
+        public Task ReleaseInFlightAsync(string[] userOpHashes)
+        {
+            lock (_lock)
+            {
+                ReleaseInFlight(userOpHashes);
+            }
+            return Task.CompletedTask;
+        }
+
+        private void ReleaseInFlight(string[] userOpHashes)
+        {
+            MoveEntries(
+                userOpHashes,
+                BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                BundlerRocksDbManager.CF_USEROP_PENDING,
+                MempoolStateTransitions.TryRelease);
+        }
+
+        private string[] MoveEntries(
+            string[] userOpHashes, string fromCf, string toCf, Func<MempoolEntry, bool> transition)
+        {
+            var moved = new List<string>();
+            var batch = _manager.CreateWriteBatch();
+            try
+            {
+                foreach (var hash in userOpHashes)
+                {
+                    var key = MempoolEntrySerializer.StringToKey(hash);
+                    var data = _manager.Get(fromCf, key);
+                    if (data == null) continue;
+
+                    var entry = MempoolEntrySerializer.Deserialize(data);
+                    if (entry == null || !transition(entry)) continue;
+
+                    batch.Delete(key, _manager.GetColumnFamily(fromCf));
+                    batch.Put(key, MempoolEntrySerializer.Serialize(entry), _manager.GetColumnFamily(toCf));
+                    moved.Add(hash);
+                }
+
+                if (fromCf == BundlerRocksDbManager.CF_USEROP_PENDING)
+                {
+                    AdjustPending(-moved.Count);
+                }
+
+                if (toCf == BundlerRocksDbManager.CF_USEROP_PENDING)
+                {
+                    AdjustPending(moved.Count);
+                }
+
+                _manager.Write(batch);
+                return moved.ToArray();
+            }
+            finally
+            {
+                batch.Dispose();
+            }
         }
 
         public Task MarkIncludedAsync(string[] userOpHashes, string transactionHash, BigInteger blockNumber, string? blockHash = null)
@@ -386,7 +434,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                         foreach (var sourceCf in new[] {
                             BundlerRocksDbManager.CF_USEROP_SUBMITTED,
                             BundlerRocksDbManager.CF_USEROP_PENDING,
-                            BundlerRocksDbManager.CF_USEROP_FAILED })
+                            BundlerRocksDbManager.CF_USEROP_FAILED,
+                            BundlerRocksDbManager.CF_USEROP_INCLUDED })
                         {
                             var data = _manager.Get(sourceCf, key);
                             if (data == null) continue;
@@ -394,14 +443,17 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                             var entry = MempoolEntrySerializer.Deserialize(data);
                             if (entry != null)
                             {
-                                entry.State = MempoolEntryState.Included;
-                                entry.TransactionHash = transactionHash;
-                                entry.BlockNumber = blockNumber;
-                                entry.BlockHash = blockHash;
-                                entry.Error = null;
+                                if (!MempoolStateTransitions.TryInclude(entry, transactionHash, blockNumber, blockHash)) break;
 
                                 var newData = MempoolEntrySerializer.Serialize(entry);
-                                batch.Delete(key, _manager.GetColumnFamily(sourceCf));
+                                if (sourceCf != BundlerRocksDbManager.CF_USEROP_INCLUDED)
+                                {
+                                    batch.Delete(key, _manager.GetColumnFamily(sourceCf));
+                                }
+                                if (sourceCf == BundlerRocksDbManager.CF_USEROP_PENDING)
+                                {
+                                    AdjustPending(-1);
+                                }
                                 batch.Put(key, newData, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_INCLUDED));
                             }
                             break;
@@ -446,11 +498,14 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                                             _manager.GetColumnFamily(BundlerRocksDbManager.CF_TX_MAPPING));
                                     }
 
-                                    entry.State = MempoolEntryState.Failed;
-                                    entry.Error = error;
+                                    MempoolStateTransitions.TryFail(entry, error);
 
                                     var newData = MempoolEntrySerializer.Serialize(entry);
                                     batch.Delete(key, _manager.GetColumnFamily(sourceCf));
+                                    if (sourceCf == BundlerRocksDbManager.CF_USEROP_PENDING)
+                                    {
+                                        AdjustPending(-1);
+                                    }
                                     batch.Put(key, newData, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_FAILED));
                                 }
                                 break;
@@ -492,13 +547,12 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                             var entry = MempoolEntrySerializer.Deserialize(data);
                             if (entry != null)
                             {
-                                entry.State = MempoolEntryState.Pending;
-                                entry.TransactionHash = null;
-                                entry.RetryCount++;
+                                if (!MempoolStateTransitions.TryRevert(entry)) continue;
 
                                 var newData = MempoolEntrySerializer.Serialize(entry);
                                 batch.Delete(key, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_SUBMITTED));
                                 batch.Put(key, newData, _manager.GetColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING));
+                                AdjustPending(1);
                             }
                         }
                     }
@@ -517,6 +571,8 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         {
             lock (_lock)
             {
+                _evicted.Clear();
+                Interlocked.Exchange(ref _pendingCount, 0);
                 foreach (var cf in new[] {
                     BundlerRocksDbManager.CF_USEROP_PENDING,
                     BundlerRocksDbManager.CF_USEROP_SUBMITTED,
@@ -558,20 +614,13 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 
             void ProcessColumnFamily(string cf)
             {
-                using var iterator = _manager.CreateIterator(cf);
-                iterator.SeekToFirst();
-                while (iterator.Valid())
+                foreach (var entry in ReadAll(cf))
                 {
-                    var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
-                    if (entry != null)
-                    {
-                        if (!string.IsNullOrEmpty(entry.UserOperation.Sender))
-                            uniqueSenders.Add(entry.UserOperation.Sender.ToLowerInvariant());
-                        if (!string.IsNullOrEmpty(entry.Paymaster))
-                            uniquePaymasters.Add(entry.Paymaster.ToLowerInvariant());
-                        totalPrefund += entry.Prefund;
-                    }
-                    iterator.Next();
+                    if (!string.IsNullOrEmpty(entry.UserOperation.Sender))
+                        uniqueSenders.Add(entry.UserOperation.Sender.ToLowerInvariant());
+                    if (!string.IsNullOrEmpty(entry.Paymaster))
+                        uniquePaymasters.Add(entry.Paymaster.ToLowerInvariant());
+                    totalPrefund += entry.Prefund;
                 }
             }
 
@@ -594,41 +643,20 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
         public Task<int> PruneAsync()
         {
             var now = DateTimeOffset.UtcNow;
-            var toRemove = new List<(string cf, string hash)>();
-
-            void CheckColumnFamily(string cf, TimeSpan retention, bool checkTtl = false, bool checkValidUntil = false)
-            {
-                using var iterator = _manager.CreateIterator(cf);
-                iterator.SeekToFirst();
-                while (iterator.Valid())
-                {
-                    var entry = MempoolEntrySerializer.Deserialize(iterator.Value());
-                    if (entry != null)
-                    {
-                        bool shouldRemove = false;
-
-                        if (now - entry.SubmittedAt > retention)
-                            shouldRemove = true;
-
-                        if (checkValidUntil && entry.ValidUntil.HasValue &&
-                            entry.ValidUntil.Value < (ulong)now.ToUnixTimeSeconds())
-                            shouldRemove = true;
-
-                        if (shouldRemove)
-                            toRemove.Add((cf, entry.UserOpHash));
-                    }
-                    iterator.Next();
-                }
-            }
-
-            CheckColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING, _options.EntryTtl, checkValidUntil: true);
-            CheckColumnFamily(BundlerRocksDbManager.CF_USEROP_INCLUDED, _options.IncludedEntryRetention);
-            CheckColumnFamily(BundlerRocksDbManager.CF_USEROP_FAILED, _options.IncludedEntryRetention);
+            var expired = new[] {
+                    BundlerRocksDbManager.CF_USEROP_PENDING,
+                    BundlerRocksDbManager.CF_USEROP_SUBMITTED,
+                    BundlerRocksDbManager.CF_USEROP_INCLUDED,
+                    BundlerRocksDbManager.CF_USEROP_FAILED }
+                .SelectMany(cf => ReadAll(cf))
+                .Where(entry => MempoolPruneRule.IsExpired(entry, now, _options.EntryTtl, _options.IncludedEntryRetention))
+                .Select(entry => entry.UserOpHash)
+                .ToList();
 
             var removedCount = 0;
             lock (_lock)
             {
-                foreach (var (_, hash) in toRemove)
+                foreach (var hash in expired)
                 {
                     if (RemoveInternal(hash)) removedCount++;
                 }
@@ -654,9 +682,118 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
                 BundlerRocksDbManager.CF_USEROP_FAILED })
             {
                 var data = _manager.Get(cf, key);
-                if (data != null) return MempoolEntrySerializer.Deserialize(data);
+                if (data != null) return TryRead(cf, key, data);
             }
             return null;
+        }
+
+        private List<MempoolEntry> ReadAll(string cf)
+        {
+            return ReadAllWithKeys(cf).Select(pair => pair.Entry).ToList();
+        }
+
+        private List<(byte[] Key, MempoolEntry Entry)> ReadAllWithKeys(string cf)
+        {
+            var result = new List<(byte[] Key, MempoolEntry Entry)>();
+            var corrupt = new List<(byte[] Key, string Reason)>();
+
+            using (var iterator = _manager.CreateIterator(cf))
+            {
+                iterator.SeekToFirst();
+                while (iterator.Valid())
+                {
+                    var key = iterator.Key();
+                    var entry = TryDecode(iterator.Value(), out var reason);
+                    if (entry != null)
+                    {
+                        result.Add((key, entry));
+                    }
+                    else
+                    {
+                        corrupt.Add((key, reason));
+                    }
+                    iterator.Next();
+                }
+            }
+
+            foreach (var (key, reason) in corrupt)
+            {
+                Quarantine(cf, key, reason);
+            }
+
+            return result;
+        }
+
+        private MempoolEntry? TryRead(string cf, byte[] key, byte[] data)
+        {
+            var entry = TryDecode(data, out var reason);
+            if (entry == null)
+            {
+                Quarantine(cf, key, reason);
+            }
+            return entry;
+        }
+
+        private MempoolEntry? TryDecode(byte[] data, out string reason)
+        {
+            reason = string.Empty;
+
+            MempoolEntry? entry;
+            try
+            {
+                entry = MempoolEntrySerializer.Deserialize(data);
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+                return null;
+            }
+
+            if (entry == null || entry.UserOperation == null || string.IsNullOrEmpty(entry.UserOpHash))
+            {
+                reason = "row holds no user operation";
+                return null;
+            }
+
+            if (!IsStructurallySound(entry.UserOperation))
+            {
+                reason = "row holds a user operation with inconsistent field sizes";
+                return null;
+            }
+
+            return entry;
+        }
+
+        private static bool IsStructurallySound(PackedUserOperation userOp)
+        {
+            return IsEmptyOrLength(userOp.AccountGasLimits, 32) &&
+                   IsEmptyOrLength(userOp.GasFees, 32) &&
+                   (string.IsNullOrEmpty(userOp.Sender) || userOp.Sender.Length == 42);
+        }
+
+        private static bool IsEmptyOrLength(byte[]? data, int length) =>
+            data == null || data.Length == 0 || data.Length == length;
+
+        private void Quarantine(string cf, byte[] key, string reason)
+        {
+            _logger?.LogWarning(
+                "Dropping undecodable bundler mempool row {Key} from {ColumnFamily}: {Reason}",
+                Encoding.UTF8.GetString(key), cf, reason);
+            _manager.Delete(cf, key);
+            if (cf == BundlerRocksDbManager.CF_USEROP_PENDING)
+            {
+                AdjustPending(-1);
+            }
+        }
+
+        public MempoolEntry[] DrainEvicted()
+        {
+            lock (_lock)
+            {
+                var drained = _evicted.ToArray();
+                _evicted.Clear();
+                return drained;
+            }
         }
 
         private int CountInColumnFamily(string cf)
@@ -674,7 +811,7 @@ namespace Nethereum.AccountAbstraction.Bundler.RocksDB.Stores
 
         private int CountPendingInternal()
         {
-            return CountInColumnFamily(BundlerRocksDbManager.CF_USEROP_PENDING);
+            return Volatile.Read(ref _pendingCount);
         }
 
         private void DeleteAllInColumnFamily(string cf)

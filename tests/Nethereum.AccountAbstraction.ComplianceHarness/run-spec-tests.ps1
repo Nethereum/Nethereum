@@ -50,7 +50,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")   # tests\...\ -> repo root
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "../..")   # tests\...\ -> repo root
 $rpcUrl = "http://127.0.0.1:8545"
 # anvil account[0] — the well-known public deterministic dev key/address (NOT a secret).
 $deployerKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
@@ -61,14 +61,15 @@ $beneficiary = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 $chainId = 1337
 
 if (-not $Venv) { $Venv = Join-Path $SpecTests ".venv" }
-$pytest = Join-Path $Venv "Scripts\pytest.exe"
+$pytest = if ($IsWindows) { Join-Path $Venv "Scripts/pytest.exe" } else { Join-Path $Venv "bin/pytest" }
+$hidden = if ($IsWindows) { @{ WindowStyle = "Hidden" } } else { @{} }
 if (-not (Test-Path $pytest)) { throw "pytest not found at $pytest — create/point -Venv at the spec-tests venv (see README)." }
 
 $anvil = $null
 $server = $null
 try {
   Write-Host "==> Starting anvil on 8545 ..." -ForegroundColor Cyan
-  $anvil = Start-Process anvil -ArgumentList "--port", "8545", "--chain-id", "$chainId" -PassThru -WindowStyle Hidden
+  $anvil = Start-Process anvil -ArgumentList "--port", "8545", "--chain-id", "$chainId" -PassThru @hidden
   Start-Sleep -Seconds 2
 
   Write-Host "==> Deploying v0.9 EntryPoint + SimpleAccountFactory ..." -ForegroundColor Cyan
@@ -82,20 +83,20 @@ try {
   # Clean, non-incremental build first: a cross-project incremental build can leave `dotnet run`
   # serving a STALE binary that silently ignores a source fix, wasting a whole ~40-min run.
   Write-Host "==> Building RpcServer (--no-incremental, so the run can't use a stale binary) ..." -ForegroundColor Cyan
-  $serverProj = Join-Path $repoRoot "src\Nethereum.AccountAbstraction.Bundler.RpcServer\Nethereum.AccountAbstraction.Bundler.RpcServer.csproj"
+  $serverProj = Join-Path $repoRoot "src/Nethereum.AccountAbstraction.Bundler.RpcServer/Nethereum.AccountAbstraction.Bundler.RpcServer.csproj"
   dotnet build $serverProj -c Debug --no-incremental | Write-Host
   if ($LASTEXITCODE -ne 0) { throw "RpcServer build failed." }
 
   Write-Host "==> Starting Nethereum RpcServer on $Port (ERC-7562=$EnableErc7562) ..." -ForegroundColor Cyan
   $serverArgs = @(
-    "run", "--no-build", "--project", (Join-Path $repoRoot "src\Nethereum.AccountAbstraction.Bundler.RpcServer"),
+    "run", "--no-build", "--project", (Join-Path $repoRoot "src/Nethereum.AccountAbstraction.Bundler.RpcServer"),
     "--", "--rpc=$rpcUrl", "--entryPoint=$entryPoint", "--beneficiary=$beneficiary",
     "--privateKey=$deployerKey", "--port=$Port", "--chainId=$chainId",
     "--debug=true", "--unsafe=true", "--maxVerificationGas=10000000",
     "--enableErc7562=$($EnableErc7562.ToString().ToLower())",
     "--minUnstakeDelay=$MinUnstakeDelay", "--minStake=$MinStake"
   )
-  $server = Start-Process dotnet -ArgumentList $serverArgs -PassThru -WindowStyle Hidden
+  $server = Start-Process dotnet -ArgumentList $serverArgs -PassThru @hidden
 
   Write-Host "==> Waiting for RpcServer readiness ..." -ForegroundColor Cyan
   $ready = $false
@@ -128,12 +129,12 @@ finally {
   foreach ($p in @($server, $anvil)) {
     if ($p -and -not $p.HasExited) {
       # kill the process tree (dotnet run spawns a child RpcServer .exe)
-      taskkill /PID $p.Id /T /F 2>$null | Out-Null
+      $p.Kill($true)
     }
   }
   # anvil dumps chain state under ~/.foundry/anvil/tmp on every run and never prunes it;
   # left unchecked this leaks to 100+ GB across runs. Wipe it now that our anvil is stopped.
-  $anvilTmp = Join-Path $env:USERPROFILE ".foundry\anvil\tmp"
+  $anvilTmp = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".foundry/anvil/tmp"
   if (Test-Path $anvilTmp) {
     Remove-Item -Path (Join-Path $anvilTmp '*') -Recurse -Force -ErrorAction SilentlyContinue
   }

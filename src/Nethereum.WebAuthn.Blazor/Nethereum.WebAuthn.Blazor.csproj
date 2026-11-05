@@ -8,7 +8,7 @@
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <AssemblyName>Nethereum.WebAuthn.Blazor</AssemblyName>
     <PackageId>Nethereum.WebAuthn.Blazor</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction;Blazor</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0;WebAuthn;Passkey;AccountAbstraction;Blazor</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
   </PropertyGroup>

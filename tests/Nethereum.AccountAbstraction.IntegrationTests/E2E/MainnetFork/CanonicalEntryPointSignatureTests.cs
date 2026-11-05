@@ -14,6 +14,7 @@ namespace Nethereum.AccountAbstraction.IntegrationTests.E2E.MainnetFork
 
     [Collection(AnvilMainnetForkFixture.COLLECTION_NAME)]
     [Trait("Category", "MainnetFork")]
+    [Trait("Requires", "Externals")]
     [Trait("ERC", "4337")]
     public class CanonicalEntryPointSignatureTests
     {
