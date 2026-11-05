@@ -19,11 +19,13 @@ namespace Nethereum.Parity.Reactive
             _paritySubscribeRequestBuilder = new ParitySubscribeRequestBuilder();
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-reactive", "ParityPubSubObservableSubscription.SubscribeAsync")]
         public Task SubscribeAsync(RpcRequest originalRequestToSubscribe, object id = null)
         {
             return base.SubscribeAsync(BuildRequest(originalRequestToSubscribe, id));
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-reactive", "ParityPubSubObservableSubscription.BuildRequest")]
         public RpcRequest BuildRequest(RpcRequest originalRequestToSubscribe, object id = null)
         {
             return _paritySubscribeRequestBuilder.BuildRequest(originalRequestToSubscribe, id);

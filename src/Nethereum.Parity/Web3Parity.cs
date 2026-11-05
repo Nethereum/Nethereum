@@ -7,6 +7,7 @@ using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Parity
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "Web3Parity")]
     public class Web3Parity : Web3.Web3, IWeb3Parity
     {
         public Web3Parity(IClient client) : base(client)

@@ -3,10 +3,11 @@
   <PropertyGroup>
     <Description>Nethereum.Parity.Reactive, Reactive Client Subscriptions pub / sub for Parity</Description>
     <AssemblyTitle>Nethereum.Parity.Reactive</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(ReactiveFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Parity.Reactive</AssemblyName>
     <PackageId>Nethereum.Parity.Reactive</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>Json;RPC;Reactive;Ethereum;Nethereum;Parity</PackageTags>
   </PropertyGroup>
   <ItemGroup>
@@ -28,6 +29,10 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

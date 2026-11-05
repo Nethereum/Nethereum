@@ -6,15 +6,14 @@ using System.Text;
 using System.Text.Json;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
+using Nethereum.Testing;
 
 namespace Nethereum.Contracts.IntegrationTests.Patricia
 {
     public static class GethTrieTestLoader
     {
-        private static readonly string TestVectorsPath = Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory,
-            "..", "..", "..", "..", "..",
-            "external", "ethereum-tests", "TrieTests");
+        private static string TestVectorsPath =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "TrieTests");
 
         public class TrieTestCase
         {

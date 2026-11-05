@@ -6,12 +6,14 @@ namespace Nethereum.StandardNonFungibleTokenERC721.ContractDefinition
 {
 
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "ERC721Deployment")]
     public partial class ERC721Deployment : ERC721DeploymentBase
     {
         public ERC721Deployment() : base(BYTECODE) { }
         public ERC721Deployment(string byteCode) : base(byteCode) { }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "ERC721DeploymentBase")]
     public class ERC721DeploymentBase : ContractDeploymentMessage
     {
 #if !BYTECODELITE
@@ -137,6 +139,7 @@ namespace Nethereum.StandardNonFungibleTokenERC721.ContractDefinition
     public partial class TransferEventDTO : TransferEventDTOBase { }
 
     [Event("Transfer")]
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "TransferEventDTOBase")]
     public class TransferEventDTOBase : IEventDTO
     {
         [Parameter("address", "from", 1, true )]
@@ -150,6 +153,7 @@ namespace Nethereum.StandardNonFungibleTokenERC721.ContractDefinition
     public partial class ApprovalEventDTO : ApprovalEventDTOBase { }
 
     [Event("Approval")]
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "ApprovalEventDTOBase")]
     public class ApprovalEventDTOBase : IEventDTO
     {
         [Parameter("address", "owner", 1, true )]
@@ -163,6 +167,7 @@ namespace Nethereum.StandardNonFungibleTokenERC721.ContractDefinition
     public partial class ApprovalForAllEventDTO : ApprovalForAllEventDTOBase { }
 
     [Event("ApprovalForAll")]
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "ApprovalForAllEventDTOBase")]
     public class ApprovalForAllEventDTOBase : IEventDTO
     {
         [Parameter("address", "owner", 1, true )]

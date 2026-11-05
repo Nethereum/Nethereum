@@ -4,6 +4,7 @@ using Nethereum.Rsk.RPC.RskEth;
 
 namespace Nethereum.Rsk
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "RskEthApiService")]
     public class RskEthApiService : RpcClientWrapper, IRskEthApiService
     {
         public RskEthApiService(IClient client) : base(client)

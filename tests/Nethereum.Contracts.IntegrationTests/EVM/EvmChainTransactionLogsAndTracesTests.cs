@@ -93,6 +93,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Historical state unavailable - use EvmCapturedStateTests instead")]
         public async void ShouldRetrieveUniswapV2TransactionFromChainAndSimulateIt()
         {
@@ -101,6 +102,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveOpenSeaTransferHelperTransactionFromChainAndSimulateIt()
         {
@@ -109,6 +111,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveCurveRemoveLiquidiyTransactionFromChainAndSimulateIt()
         {
@@ -117,6 +120,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveUniswapV3TransactionFromChainAndSimulateIt()
         {
@@ -125,6 +129,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
         }
         //
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Historical state unavailable - use EvmCapturedStateTests instead")]
         public async void ShouldRetrieveUniswapV2TransactionFromChainAndValidateTraces()
         {
@@ -133,6 +138,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveUniswapV3TransactionFromChainAndValidateTraces()
         {
@@ -191,6 +197,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveOpenSeaTransferHelperTransactionFromChainAndValidateTraces()
         {
@@ -199,6 +206,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveCurveRemoveLiquidiyTransactionFromChainAndValidateTraces()
         {
@@ -212,6 +220,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
         // CSV format: Step,PC,Operation,Gas,GasCost,Depth (comma-separated, quoted values)
         // Download traces from: https://etherscan.io/vmtrace?txhash=<hash>&type=gethtrace2
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveUniswapTransactionFromChainAndValidateEtherscanCsvTraces_1()
         {
@@ -220,6 +229,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 "EVM/TracesCSVEtherscan/0x266e42391db7fc9e57d04a93f604a173799d7cebd9fa4fe498b5afa66981f442.csv");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveUniswapTransactionFromChainAndValidateEtherscanCsvTraces_2()
         {
@@ -228,6 +238,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 "EVM/TracesCSVEtherscan/0x7296d8357df16d571a764791889012d3b76728abab80ff3b1c0d888ad08cf909.csv");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Historical state unavailable - use EvmCapturedStateTests instead")]
         public async void ShouldRetrieveOpenSeaTransactionFromChainAndValidateEtherscanCsvTraces()
         {
@@ -236,6 +247,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 "EVM/TracesCSVEtherscan/0x169759db4b97827d5efb64a84490cc31b1b9eb4f60d1b6daad64e908d54f64ac.csv");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveCurveTransactionFromChainAndValidateEtherscanCsvTraces()
         {
@@ -244,12 +256,14 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
                 "EVM/TracesCSVEtherscan/0xdfa2d8dec68f309b583772f30f5ff20b9043393e4b1740144c6a3972e2c8ca5f.csv");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveRecentOpenSeaTransactionFromChainAndSimulateIt()
         {
             await ShouldRetrieveTransactionFromChainSimulateItAndValidateLogs("0x955db73fb9b2c3dc733e2adcecabef4f7bce3f9de1895bd73643b4a656e43d85");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task TestRevert()
         {
@@ -606,12 +620,14 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             await CaptureTransactionState("0x955db73fb9b2c3dc733e2adcecabef4f7bce3f9de1895bd73643b4a656e43d85", outputPath);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Superseded by EvmCapturedStateTests")]
         public async void ShouldReplayOpenSeaTransactionFromCapturedState()
         {
             await ReplayTransactionFromCapturedState("EVM/CapturedState/opensea_recent.json");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Superseded by EvmCapturedStateTests")]
         public async void ShouldReplayOpenSeaTransactionAndValidateTraces()
         {

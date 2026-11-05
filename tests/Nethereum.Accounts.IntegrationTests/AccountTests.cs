@@ -65,6 +65,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [Trait("Category", "ExternalNode")]
         public async Task ShouldBeAbleToDeployAContractUsingPersonalUnlock()
         {
 
@@ -123,6 +124,7 @@ namespace Nethereum.Accounts.IntegrationTests
         }
 
         [Fact]
+        [Trait("Category", "ExternalNode")]
         public async Task ShouldBeAbleToTransferBetweenAccountsUsingManagedAccount()
         {
             var senderAddress = EthereumClientIntegrationFixture.AccountAddress;

@@ -21,6 +21,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void MultiDimensionShouldUseSolidityNestedNotationToDescribeReturnButDecodeToCSharp()
         {

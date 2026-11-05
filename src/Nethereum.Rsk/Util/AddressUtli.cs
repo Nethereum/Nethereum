@@ -9,6 +9,7 @@ using Nethereum.Util;
 
 namespace Nethereum.Rsk.Util
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "AddressUtil")]
     public class AddressUtil
     {
         private static AddressUtil _current;

@@ -2,13 +2,13 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Besu is the extended Web3 library for Besu. including the non-generic RPC API client methods to interact with the Java Ethereum Client (Besu) Admin, Debug, Miner, EEA, Clique, IBFT.. </Description>
+    <Description>Nethereum.Besu is the extended Web3 library for Besu. including the non-generic RPC API client methods to interact with the Java Ethereum Client (Besu) Admin, Debug, Miner, EEA, Clique, IBFT.. </Description>
     <AssemblyTitle>Nethereum.Besu</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Besu</AssemblyName>
     <PackageId>Nethereum.Besu</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Besu</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Besu</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

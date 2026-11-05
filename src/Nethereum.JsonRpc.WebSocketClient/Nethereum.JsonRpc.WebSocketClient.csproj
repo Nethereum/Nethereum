@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.JsonRpc WebSocketClient</Description>
     <AssemblyTitle>Nethereum.JsonRpc.WebSocketClient</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(IpcWebSocketsFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.WebSocketClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.WebSocketClient</PackageId>

@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum.Quorum. Extension to interact with Quorum, the permissioned implementation of Ethereum supporting data privacy created by JP Morgan</Description>
-    <AssemblyTitle>Nethereum.RPC.Quorum</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <AssemblyTitle>Nethereum.Quorum</AssemblyTitle>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Quorum</AssemblyName>
     <PackageId>Nethereum.Quorum</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
     <PackageIconUrl>https://raw.githubusercontent.com/Nethereum/Nethereum/master/logos/logo64x64.png</PackageIconUrl>
     <PackageProjectUrl>http://www.nethereum.com</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
@@ -37,6 +38,10 @@
     <Folder Include="RPC\ContractExtensions\" />
     <Folder Include="RPC\Privacy\" />
     <Folder Include="RPC\Permission\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

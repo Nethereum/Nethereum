@@ -12,6 +12,7 @@ using Nethereum.Web3;
 
 namespace Nethereum.StandardTokenEIP20
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-eip20", "StandardTokenService")]
     public class StandardTokenService
     {
         public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Web3.Web3 web3,

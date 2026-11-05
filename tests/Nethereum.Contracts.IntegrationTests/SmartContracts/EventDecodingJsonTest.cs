@@ -18,6 +18,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldConvertToJsonIndexedTopicsThatAreHashed()
         {

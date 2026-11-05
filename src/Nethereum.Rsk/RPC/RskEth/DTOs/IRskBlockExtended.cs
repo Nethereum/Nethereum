@@ -1,5 +1,6 @@
 ﻿namespace Nethereum.Rsk.RPC.RskEth.DTOs
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "IRskBlockExtended")]
     public interface IRskBlockExtended
     {
         /// <summary>

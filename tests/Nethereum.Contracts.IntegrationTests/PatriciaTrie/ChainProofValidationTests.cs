@@ -15,6 +15,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldValidateBalanceOfEOA()
         {
@@ -26,6 +27,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
 
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldValidateStorage()
         {
@@ -38,6 +40,7 @@ namespace Nethereum.Contracts.IntegrationTests.Patricia
             Assert.True(value.ToHex().IsTheSameHex(libAddressManager));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldValidateTransactions()
         {

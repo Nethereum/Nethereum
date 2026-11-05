@@ -3,6 +3,7 @@ using System.Numerics;
 
 namespace Nethereum.Rsk.RPC.RskEth.DTOs
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "RskBlockExtendedExtensions")]
     public static class RskBlockExtendedExtensions
     {
         public static BigInteger GetMinimumGasPriceAsBigInteger(this IRskBlockExtended rskBlock)

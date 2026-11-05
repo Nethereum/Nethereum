@@ -1,5 +1,6 @@
 namespace Nethereum.Parity.RPC.Trace
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "TraceType")]
     public enum TraceType
     {
         vmTrace,
@@ -7,6 +8,7 @@ namespace Nethereum.Parity.RPC.Trace
         stateDiff
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "TraceTypeExtensions")]
     public static class TraceTypeExtensions
     {
         public static string[] ConvertToStringArray(this TraceType[] value)

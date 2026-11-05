@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.RPC.Reactive, Reactive Client Subscriptions (WebSockets) and RPC Extensions for Nethereum</Description>
     <AssemblyTitle>Nethereum.RPC.Reactive</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(ReactiveFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.RPC.Reactive</AssemblyName>
     <PackageId>Nethereum.RPC.Reactive</PackageId>

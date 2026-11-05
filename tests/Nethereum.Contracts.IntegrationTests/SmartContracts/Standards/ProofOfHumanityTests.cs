@@ -14,6 +14,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveAddressRegistered()
         {
@@ -22,6 +23,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(isRegistered);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveMultipleAddressRegistered()
         {
@@ -35,6 +37,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "Need to move PoH to its own area, not standard anymore")]
         public async void ShouldRetrieveEvidenceFromLogs()
         {

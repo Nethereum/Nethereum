@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Parity.RPC.Trace
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "ITraceTransaction")]
     public interface ITraceTransaction
     {
         RpcRequest BuildRequest(string transactionHash, object id = null);

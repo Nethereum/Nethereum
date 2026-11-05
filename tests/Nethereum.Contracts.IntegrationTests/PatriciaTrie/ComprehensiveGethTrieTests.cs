@@ -11,6 +11,7 @@ using Nethereum.Merkle.Patricia.Nodes;
 
 namespace Nethereum.Contracts.IntegrationTests.Patricia
 {
+    [Trait("Requires", "Externals")]
     public class ComprehensiveGethTrieTests
     {
         private readonly Sha3Keccack _keccak = new Sha3Keccack();

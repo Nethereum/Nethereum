@@ -59,6 +59,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.Equal(balances[0], balances[1]);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBatchGetBlocksWithTransactionHashesRpc()
         {
@@ -68,6 +69,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.Equal(3, blocks.Count);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBatchGetBlocksWithTransactionsRpc()
         {
@@ -77,6 +79,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.Equal(3, blocks.Count);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBatchGetTransactionReceiptsRpc()
         {
@@ -87,6 +90,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.Equal(2, receipts.Count);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBatchGetBlocks()
         {

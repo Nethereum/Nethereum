@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>JsonRpc Rpc Client Nethereum provider</Description>
     <AssemblyTitle>Nethereum.JsonRpc.RpcClient</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.RpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.RpcClient</PackageId>

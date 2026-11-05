@@ -20,6 +20,7 @@ namespace Nethereum.Parity.RPC.Admin
     /// ]
     /// Returns
     /// Array - Req
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "IParityListStorageKeys")]
     public interface IParityListStorageKeys
     {
         Task<string[]> SendRequestAsync(string address, int quantity, string hash, object id = null);

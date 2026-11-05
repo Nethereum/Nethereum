@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Parity.RPC.Trace
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "ITraceCall")]
     public interface ITraceCall
     {
         RpcRequest BuildRequest(CallInput callInput, TraceType[] typeOfTrace, BlockParameter block, object id = null);

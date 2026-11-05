@@ -7,7 +7,7 @@
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Accounts</AssemblyName>
     <PackageId>Nethereum.Accounts</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>

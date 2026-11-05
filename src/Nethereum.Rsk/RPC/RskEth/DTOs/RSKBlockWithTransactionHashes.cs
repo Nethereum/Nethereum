@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.Rsk.RPC.RskEth.DTOs
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "RskBlockWithTransactionHashes")]
     public class RskBlockWithTransactionHashes : BlockWithTransactionHashes, IRskBlockExtended
     {
         /// <summary>

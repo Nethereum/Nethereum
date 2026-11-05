@@ -30,6 +30,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldCalculateBalanceSlot()
         {
@@ -50,6 +51,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             Assert.Equal(9, slot);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldSimulateTransferAndBalanceState()
         {
@@ -68,6 +70,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
 
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBeAbleToGetBalanceFromStorage()
         {

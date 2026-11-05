@@ -33,6 +33,7 @@ namespace Nethereum.RPC.UnitTests
        
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public void RpcSpecShouldBeTheSame()
         {

@@ -21,6 +21,7 @@ namespace Nethereum.Circles.IntegrationTests
         string humanAddress1 = "0xed1067bc2a09dd6a146eccd3577f27eb5be93646";
         string humanAddress2 = "0x42cEDde51198D1773590311E2A340DC06B24cB37";
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.DeFi, "circles", "Query total balance via Circles RPC", Order = 1)]
         public async Task ShouldGetBalances()
@@ -39,6 +40,7 @@ namespace Nethereum.Circles.IntegrationTests
             Debug.WriteLine($"Total Balance (V2): {balanceV2}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.DeFi, "circles", "Paginated transaction history via Circles RPC", Order = 2)]
         public async Task ShouldGetTransactionHistoryAsync()
@@ -68,6 +70,7 @@ namespace Nethereum.Circles.IntegrationTests
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.DeFi, "circles", "Query trust relationships via Circles RPC", Order = 3)]
         public async Task ShouldGetTrustRelationsAsync()
@@ -98,6 +101,7 @@ namespace Nethereum.Circles.IntegrationTests
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.DeFi, "circles", "Query avatar info via Circles RPC", Order = 4)]
         public async Task ShouldGetAvatarInfoAsync()

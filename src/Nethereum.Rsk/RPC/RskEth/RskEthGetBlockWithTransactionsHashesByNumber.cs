@@ -9,6 +9,7 @@ using Nethereum.Rsk.RPC.RskEth.DTOs;
 
 namespace Nethereum.Rsk.RPC.RskEth
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "RskEthGetBlockWithTransactionsHashesByNumber")]
     public class RskEthGetBlockWithTransactionsHashesByNumber : RpcRequestResponseHandler<RskBlockWithTransactionHashes>, IRskEthGetBlockWithTransactionsHashesByNumber
     {
         public RskEthGetBlockWithTransactionsHashesByNumber(IClient client)

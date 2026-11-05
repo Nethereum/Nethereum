@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Parity is the extended Web3 library for Parity, including the non-generic RPC API client methods.</Description>
+    <Description>Nethereum.Parity is the extended Web3 library for Parity, including the non-generic RPC API client methods.</Description>
     <AssemblyTitle>Nethereum.Parity</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Parity</AssemblyName>
     <PackageId>Nethereum.Parity</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Parity</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Parity</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +26,10 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

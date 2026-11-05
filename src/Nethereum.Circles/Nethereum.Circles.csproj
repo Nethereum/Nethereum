@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.Circles - Ethereum Service to interact with Circles UBI (Universal Basic Income) contracts</Description>
     <AssemblyTitle>Nethereum.Circles</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Circles</AssemblyName>
     <PackageId>Nethereum.Circles</PackageId>

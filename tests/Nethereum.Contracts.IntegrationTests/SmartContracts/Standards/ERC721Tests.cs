@@ -97,6 +97,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact] //
         public async void ShouldRetriveAllTheMetadataUrls()
         {
@@ -131,6 +132,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
        
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip ="Too many calls fails on public node")]
         public async void ShouldRetriveAllOwnnedTokensUsingProcessor()
         {

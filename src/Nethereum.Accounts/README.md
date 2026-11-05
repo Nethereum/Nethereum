@@ -838,6 +838,8 @@ var receipt = await web3.Eth.GetEtherTransferService()
     .TransferEtherAndWaitForReceiptAsync(toAddress, amount);
 ```
 
+When `Web3`/`AccountSignerTransactionManager` allocates the nonce from `account.NonceService` and the node then rejects the raw transaction (an `RpcResponseException`), the manager calls `NonceService.ResetNonceAsync()` before rethrowing, so the next send takes the nonce the rejected one never used instead of leaving a gap. A transaction that carries an explicit `Nonce` is not reset. `SendBlobTransactionAsync` resets the same way when its nonce came from the service.
+
 ### Production Patterns
 
 #### Pattern 1: High-Throughput Transaction Sender
@@ -944,6 +946,34 @@ You **need** nonce management when:
 - ✅ Distributed systems (multiple app instances using same account)
 - ✅ Batch transaction sending
 
+## Mnemonics and HD Derivation
+
+`Bip39` and `MinimalHDWallet` (namespace `Nethereum.Accounts.Bip32`) validate a BIP-39 mnemonic and derive Ethereum keys from it. A mnemonic is checked for a 12, 15, 18, 21 or 24 word count, English word-list membership and the checksum before a seed is derived; when validating, a mnemonic or passphrase longer than `Bip39.MaxInputLength` (4096) is refused (`validateMnemonic: false` skips the length check), and a derivation path deeper than `MinimalHDWallet.MaxDepth` (255) or with a malformed segment (empty, leading zero, over 10 digits, non-digit, index of 2^31 or more) throws `ArgumentException`.
+
+```csharp
+using Nethereum.Accounts.Bip32;
+
+var mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+bool valid = Bip39.IsValidMnemonic(mnemonic);
+Bip39.ValidateMnemonic(mnemonic);
+string canonical = Bip39.CanonicalMnemonic(mnemonic);
+
+var wallet = new MinimalHDWallet(mnemonic);
+string address = wallet.GetEthereumAddress(0);
+var key = wallet.GetKeyFromPath("m/44'/60'/0'/0/0");
+```
+
+The seed is derived from the canonical phrase (NFKD, lower-cased, whitespace collapsed), so a pasted phrase with capitals or stray whitespace gives the same seed and addresses as the clean phrase. A 7.0 phrase with capitals or extra whitespace therefore derives different addresses in 7.1; `Bip39.MnemonicToSeed(mnemonic, password, validateMnemonic: false)` keeps the 7.0 raw-NFKD derivation.
+
+A phrase that is not a valid BIP-39 mnemonic is refused by `new MinimalHDWallet(mnemonic)`. To derive from one anyway (for example a legacy wallet), pass `validateMnemonic: false`; `Bip39.IsNonStandardMnemonicForm` and `Bip39.IsLegacyUppercaseWordMnemonic` detect inputs whose normalization changes the seed:
+
+```csharp
+var legacy = new MinimalHDWallet("not a bip39 phrase at all", "", false);
+bool changesSeed = Bip39.IsNonStandardMnemonicForm("Abandon  abandon");
+bool legacyUppercase = Bip39.IsLegacyUppercaseWordMnemonic("TRUE FALSE abandon");
+```
+
 ## Message Signing
 
 ### Personal Sign (EIP-191)
@@ -1029,7 +1059,7 @@ var txHash = await ((AccountSignerTransactionManager)web3.TransactionManager)
 Console.WriteLine($"Blob transaction hash: {txHash}");
 ```
 
-*Source: `src/Nethereum.Accounts/AccountSignerTransactionManager.cs:157-209`*
+*Source: `src/Nethereum.Accounts/AccountSignerTransactionManager.cs`*
 
 ## Best Practices
 
@@ -1217,6 +1247,22 @@ catch (Exception ex)
 - `Task<HexBigInteger> GetNonceAsync(TransactionInput transaction)` - Get next nonce
 - `Task<Authorisation> SignAuthorisationAsync(Authorisation authorisation)` - Sign EIP-7702 authorization
 - `Task<string> SendBlobTransactionAsync(byte[] data, string to, IBlobKzgProvider kzg, HexBigInteger maxFeePerBlobGas = null, HexBigInteger value = null, string inputData = null)` - Build, sign, and send an EIP-4844 blob transaction
+
+### Bip39 and MinimalHDWallet Classes
+
+**Bip39 (static):**
+- `const int MaxInputLength = 4096`
+- `string GenerateMnemonic(int wordCount = 12)`, `string EntropyToMnemonic(byte[] entropy)`
+- `byte[] MnemonicToSeed(string mnemonic, string password = "")` - validates the mnemonic and derives from its canonical form
+- `byte[] MnemonicToSeed(string mnemonic, string password, bool validateMnemonic)` - `false` derives from the raw NFKD phrase and skips the length checks
+- `string NormalizeMnemonic(string mnemonic)` (NFKD, lower-cased, whitespace collapsed; bounded by `MaxInputLength`; no word-list or checksum check), `string CanonicalMnemonic(string mnemonic)` (validated and normalized)
+- `bool IsValidMnemonic(string mnemonic)`, `void ValidateMnemonic(string mnemonic)` - throws `ArgumentException`
+- `bool IsLegacyUppercaseWordMnemonic(string mnemonic)`, `bool IsNonStandardMnemonicForm(string mnemonic)`
+
+**MinimalHDWallet:**
+- `const int MaxDepth = 255`
+- `MinimalHDWallet(string mnemonic, string password = "")`, `MinimalHDWallet(string mnemonic, string password, bool validateMnemonic)`, `MinimalHDWallet(byte[] seed)`
+- `EthECKey GetKeyFromPath(string derivationPath)`, `EthECKey GetEthereumKey(int accountIndex)`, `string GetEthereumAddress(int index)`
 
 ### BasicAccount Class
 

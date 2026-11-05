@@ -35,6 +35,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             _fixture = fixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldExtractStateChangesFromUniswapSwapSimulation()
         {
@@ -174,6 +175,7 @@ namespace Nethereum.Contracts.IntegrationTests.EVM
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldExtractStateChangesFromSimpleEthTransfer()
         {

@@ -74,6 +74,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         //    Assert.Equal("https://nethereum.com", url);
         //}
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldBeAbleToCalculateRentPriceAndCommitment()
         {
@@ -96,6 +97,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldFindEthControllerFromMainnet()
         {
@@ -107,6 +109,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ENS forward resolution: name to address", SkillName = "built-in-standards", Order = 3)]
         public async void ShouldResolveAddressFromMainnet()
@@ -119,6 +122,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
         //Food for thought, a simple CID just using IPFS Base58 Defaulting all other values / Swarm
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldRetrieveTheContentHashAndDecodeIt()
         {
@@ -137,6 +141,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
 
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldCreateContentIPFSHash()
         {
@@ -160,6 +165,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
                 "addressOwner").ConfigureAwait(false);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ENS reverse resolution: address to name", SkillName = "built-in-standards", Order = 4)]
         public async void ShouldReverseResolveAddressFromMainnet()
@@ -172,6 +178,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveAddressFromMainnetEmoji()
         {
@@ -222,6 +229,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.Equal(expected, output);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveAddressOffline()
         {
@@ -233,6 +241,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveEmailOffline()
         {
@@ -243,6 +252,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(theAddress));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveDescriptionOffline()
         {
@@ -253,6 +263,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(description));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact(Skip = "This is an example of resolving a name that is only stored offchain, so it will fail if the offchain resolver not running")]
         public async void ShouldResolveAddressOfflineMatoken()
         {
@@ -264,6 +275,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveAddressViaUniversalResolver()
         {
@@ -282,6 +294,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expectedAddress.IsTheSameAddress(resolvedAddress));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveIntegrationTestNameViaUniversalResolver()
         {
@@ -300,6 +313,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expectedAddress.IsTheSameAddress(resolvedAddress));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveMulticallViaUniversalResolver()
         {
@@ -338,6 +352,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.Equal(singleTextValue, textCall.Output.ReturnValue1);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveAddressViaUniversalResolverServiceSeamless()
         {
@@ -347,6 +362,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expectedAddress.IsTheSameAddress(address));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveRecordViaUniversalResolver()
         {
@@ -365,6 +381,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
                 Assert.Equal(avatar, record.Texts["avatar"]);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveMultipleRecordsViaUniversalResolver()
         {
@@ -384,6 +401,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expectedOffchainAddress.IsTheSameAddress(records[2].Address));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveTextsViaUniversalResolver()
         {
@@ -401,6 +419,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.Equal(avatar, texts["avatar"]);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveAddressOfflineViaUniversalResolver()
         {
@@ -411,6 +430,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(theAddress));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldDefaultEnsServiceToUniversalResolver()
         {
@@ -427,6 +447,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             Assert.True(expected.IsTheSameAddress(address));
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldResolveOffchainRecordViaLocalBatchGatewayUsingUniversalResolver()
         {
@@ -459,6 +480,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldReverseResolveAddressMatoken()
         {

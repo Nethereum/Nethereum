@@ -15,6 +15,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
     public class ERC6492Tests
     { 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.SmartContracts, "built-in-standards", "ERC-6492 signature validation for pre-deploy contracts", SkillName = "built-in-standards", Order = 2)]
         public async Task ShouldValidateOfflineAsync()

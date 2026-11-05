@@ -87,12 +87,9 @@ namespace Nethereum.Contracts.IntegrationTests
             var contract = web3.Eth.GetContract(abi, contractAddress);
             var multiplyFunction = contract.GetFunction("multiply");
 
-            //incorrect gas estimation without a parameter
-            //it will ran out of gas
-            var estimatedGas = await multiplyFunction.EstimateGasAsync().ConfigureAwait(false);
 
             var receipt1 = await multiplyFunction.SendTransactionAndWaitForReceiptAsync(accountAddresss,
-                new HexBigInteger(estimatedGas.Value), null, null, 5).ConfigureAwait(false);
+                new HexBigInteger(24000), null, null, 5).ConfigureAwait(false);
 
             Assert.Equal(0, receipt1.Status.Value);
 

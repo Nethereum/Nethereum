@@ -2,6 +2,7 @@
 
 namespace Nethereum.Parity
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "IAdminApiService")]
     public interface IAdminApiService
     {
         IParityListStorageKeys ParityListStorageKeys { get; }

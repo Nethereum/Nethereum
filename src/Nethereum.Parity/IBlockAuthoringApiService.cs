@@ -2,6 +2,7 @@
 
 namespace Nethereum.Parity
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "IBlockAuthoringApiService")]
     public interface IBlockAuthoringApiService
     {
         IParityDefaultExtraData DefaultExtraData { get; }

@@ -7,6 +7,7 @@ using Nethereum.RPC.Accounts;
 
 namespace Nethereum.Rsk
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "Web3Rsk")]
     public class Web3Rsk : Web3.Web3
     {
         public Web3Rsk(IClient client) : base(client)

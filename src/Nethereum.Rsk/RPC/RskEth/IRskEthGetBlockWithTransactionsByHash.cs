@@ -4,6 +4,7 @@ using Nethereum.Rsk.RPC.RskEth.DTOs;
 
 namespace Nethereum.Rsk.RPC.RskEth
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "rsk-client", "IRskEthGetBlockWithTransactionsByHash")]
     public interface IRskEthGetBlockWithTransactionsByHash
     {
         Task<RskBlockWithTransactions> SendRequestAsync(string blockHash, object id = null);

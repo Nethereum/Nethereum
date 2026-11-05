@@ -10,6 +10,9 @@ using Nethereum.XUnitEthereumClients;
 using Xunit;
 using Nethereum.JsonRpc.Client;
 using System.Net.Http;
+using System.Threading;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Signer;
 
 namespace Nethereum.Accounts.IntegrationTests
 {
@@ -157,6 +160,86 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.NotNull(receipt1);
             Assert.NotNull(receipt2);
             Assert.NotNull(receipt3);
+        }
+
+        [Fact]
+        public async Task Given_ASendTheNodeRejects_When_TheNextTransactionIsSent_Then_ItTakesTheReleasedNonceAndIsMined()
+        {
+            var funder = _ethereumClientIntegrationFixture.GetWeb3();
+            var account = new Account(EthECKey.GenerateKey(), EthereumClientIntegrationFixture.ChainId);
+            await funder.Eth.GetEtherTransferService()
+                .TransferEtherAndWaitForReceiptAsync(account.Address, 1m).ConfigureAwait(false);
+
+            var web3 = new Web3.Web3(account, _ethereumClientIntegrationFixture.GetClient());
+            await Assert.ThrowsAsync<RpcResponseException>(() => web3.TransactionManager.SendTransactionAsync(
+                new TransactionInput
+                {
+                    From = account.Address,
+                    To = account.Address,
+                    Gas = new HexBigInteger(900),
+                    Value = new HexBigInteger(0)
+                })).ConfigureAwait(false);
+
+            using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+            var receipt = await web3.Eth.GetEtherTransferService()
+                .TransferEtherAndWaitForReceiptAsync(EthereumClientIntegrationFixture.AccountAddress, 0.1m,
+                    cancellationToken: deadline.Token)
+                .ConfigureAwait(false);
+
+            var mined = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(receipt.TransactionHash)
+                .ConfigureAwait(false);
+            Assert.Equal(0, (int)mined.Nonce.Value);
+        }
+
+        private sealed class StubKzgProvider : Nethereum.Model.IBlobKzgProvider
+        {
+            public byte[] BlobToKzgCommitment(byte[] blob) => new byte[48];
+            public byte[] ComputeBlobKzgProof(byte[] blob, byte[] commitment) => new byte[48];
+            public byte[] ComputeVersionedHash(byte[] commitment)
+            {
+                var hash = new byte[32];
+                hash[0] = 1;
+                return hash;
+            }
+        }
+
+        [Fact]
+        public async Task Given_ASendWithAnExplicitNonceTheNodeRejects_When_ItFails_Then_TheNonceServiceIsLeftAlone()
+        {
+            var account = new Account(EthECKey.GenerateKey(), EthereumClientIntegrationFixture.ChainId);
+            var client = _ethereumClientIntegrationFixture.GetClient();
+            var nonceService = new InMemoryNonceService(account.Address, client) { CurrentNonce = 5 };
+            account.NonceService = nonceService;
+            var web3 = new Web3.Web3(account, client);
+
+            await Assert.ThrowsAsync<RpcResponseException>(() => web3.TransactionManager.SendTransactionAsync(
+                new TransactionInput
+                {
+                    From = account.Address,
+                    To = account.Address,
+                    Gas = new HexBigInteger(900),
+                    Value = new HexBigInteger(0),
+                    Nonce = new HexBigInteger(0)
+                })).ConfigureAwait(false);
+
+            Assert.Equal(5, (int)nonceService.CurrentNonce);
+        }
+
+        [Fact]
+        public async Task Given_ABlobSendTheNodeRejects_When_ItFails_Then_TheNonceServiceIsReset()
+        {
+            var account = new Account(EthECKey.GenerateKey(), EthereumClientIntegrationFixture.ChainId);
+            var client = _ethereumClientIntegrationFixture.GetClient();
+            var nonceService = new InMemoryNonceService(account.Address, client);
+            account.NonceService = nonceService;
+            var web3 = new Web3.Web3(account, client);
+
+            await Assert.ThrowsAsync<RpcResponseException>(() =>
+                ((AccountSignerTransactionManager)web3.TransactionManager).SendBlobTransactionAsync(
+                    new byte[] { 1, 2, 3 }, account.Address, new StubKzgProvider(), new HexBigInteger(1)))
+                .ConfigureAwait(false);
+
+            Assert.Equal(-1, (int)nonceService.CurrentNonce);
         }
     }
 }

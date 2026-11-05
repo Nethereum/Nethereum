@@ -2,6 +2,7 @@
 
 namespace Nethereum.Parity
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "IWeb3Parity")]
     public interface IWeb3Parity: IWeb3
     {
         IAccountsApiService Accounts { get; }

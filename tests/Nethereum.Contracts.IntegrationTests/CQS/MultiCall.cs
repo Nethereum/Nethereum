@@ -27,6 +27,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.SmartContracts, "multicall", "Batch multiple contract queries with Multicall")]
         public async void ShouldCheckBalanceOfMultipleAccounts()
@@ -51,6 +52,7 @@ namespace Nethereum.Contracts.IntegrationTests.CQS
         }
 
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         [NethereumDocExample(DocSection.SmartContracts, "multicall", "Batch queries using RPC batch handler", Order = 1)]
         public async void ShouldCheckBalanceOfMultipleAccountsUsingRpcBatch()

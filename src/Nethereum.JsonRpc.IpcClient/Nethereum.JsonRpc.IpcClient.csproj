@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum.JsonRpc IpcClient for NamedPipes and UnixSockets Class Library</Description>
     <AssemblyTitle>Nethereum.JsonRpc.IpcClient</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(IpcWebSocketsFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.JsonRpc.IpcClient</AssemblyName>
     <PackageId>Nethereum.JsonRpc.IpcClient</PackageId>

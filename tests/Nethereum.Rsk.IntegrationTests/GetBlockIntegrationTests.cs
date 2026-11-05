@@ -11,6 +11,7 @@ namespace Nethereum.Rsk.IntegrationTests
     {
         private string rskUrl = "https://public-node.rsk.co";
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetBlockWithHashesByNumber()
         {
@@ -19,6 +20,7 @@ namespace Nethereum.Rsk.IntegrationTests
             Assert.Equal(59240000, block.GetMinimumGasPriceAsBigInteger());
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetBlockWithTransactionsByNumber()
         {
@@ -27,6 +29,7 @@ namespace Nethereum.Rsk.IntegrationTests
             Assert.Equal(59240000, block.GetMinimumGasPriceAsBigInteger());
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetBlockWithHashesByHash()
         {
@@ -35,6 +38,7 @@ namespace Nethereum.Rsk.IntegrationTests
             Assert.Equal(59240000, block.GetMinimumGasPriceAsBigInteger());
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ShouldGetBlockWithTransactionsByHash()
         {

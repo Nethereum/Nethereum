@@ -3,6 +3,7 @@ using Nethereum.JsonRpc.Client;
 
 namespace Nethereum.Parity.RPC.PubSub
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "ParitySubscribeRequestBuilder")]
     public class ParitySubscribeRequestBuilder : RpcRequestBuilder
     {
         public ParitySubscribeRequestBuilder() : base(ApiMethods.parity_subscribe.ToString())

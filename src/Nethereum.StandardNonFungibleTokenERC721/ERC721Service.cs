@@ -7,6 +7,7 @@ using Nethereum.StandardNonFungibleTokenERC721.ContractDefinition;
 
 namespace Nethereum.StandardNonFungibleTokenERC721
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-erc721", "ERC721Service")]
     public partial class ERC721Service
     {
         public static Task<TransactionReceipt> DeployContractAndWaitForReceiptAsync(Nethereum.Web3.Web3 web3, ERC721Deployment eRC721Deployment, CancellationTokenSource cancellationTokenSource = null)

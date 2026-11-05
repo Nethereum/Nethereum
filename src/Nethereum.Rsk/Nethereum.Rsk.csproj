@@ -2,13 +2,14 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Description>Netherum.Rsk is the extended Web3 library for Rsk. including the non-generic RPC API client methods to interact with the Rsk chain </Description>
+    <Description>Nethereum.Rsk is the extended Web3 library for Rsk. including the non-generic RPC API client methods to interact with the Rsk chain </Description>
     <AssemblyTitle>Nethereum.Rsk</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Rsk</AssemblyName>
     <PackageId>Nethereum.Rsk</PackageId>
-    <PackageTags>Netherum;Rsk;Bitcoin;Rsk;Ethereum;Blockchain</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Nethereum;Rsk;Bitcoin;Rsk;Ethereum;Blockchain</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Nethereum.RPC\Nethereum.RPC.csproj" />
@@ -28,6 +29,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Util\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

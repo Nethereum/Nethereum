@@ -30,6 +30,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             _ethereumClientIntegrationFixture = ethereumClientIntegrationFixture;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldGetTheDaiFromMainnet()
         {
@@ -150,6 +151,7 @@ namespace Nethereum.Contracts.IntegrationTests.SmartContracts.Standards
             public virtual string TokenSymbol { get; set; }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact] //e2e test on multicall and tokenLists
         public async void ERC20TokenBalances()
         {

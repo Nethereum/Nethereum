@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 
 namespace Nethereum.Parity.RPC.Trace.TraceDTOs
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.ClientExtensions, "parity-client", "TraceFilterDTO")]
     public class TraceFilterDTO
     {
         /// <summary>

@@ -149,8 +149,25 @@ namespace Nethereum.Web3.Accounts
                 throw new Exception("Invalid account used for signing, From Address does not match the account address, please ensure that is the same address");
 
             var ethSendTransaction = new EthSendRawTransaction(Client);
+            var nonceFromService = transaction.Nonce == null;
             var signedTransaction = await SignTransactionRetrievingNextNonceAsync(transaction).ConfigureAwait(false);
-            return await ethSendTransaction.SendRequestAsync(signedTransaction.EnsureHexPrefix()).ConfigureAwait(false);
+            return await SendReleasingTheNonceIfRejectedAsync(
+                ethSendTransaction, signedTransaction.EnsureHexPrefix(), nonceFromService).ConfigureAwait(false);
+        }
+
+        private async Task<string> SendReleasingTheNonceIfRejectedAsync(
+            EthSendRawTransaction ethSendTransaction, string signedTransaction, bool nonceFromService)
+        {
+            try
+            {
+                return await ethSendTransaction.SendRequestAsync(signedTransaction).ConfigureAwait(false);
+            }
+            catch (RpcResponseException)
+            {
+                if (nonceFromService && Account.NonceService != null)
+                    await Account.NonceService.ResetNonceAsync().ConfigureAwait(false);
+                throw;
+            }
         }
 
       
@@ -189,6 +206,7 @@ namespace Nethereum.Web3.Accounts
 
             await EnsureChainIdAndChainFeatureIsSetAsync().ConfigureAwait(false);
 
+            var nonceFromService = txInput.Nonce == null;
             var nonce = await GetNonceAsync(txInput).ConfigureAwait(false);
             txInput.Nonce = nonce;
             await SetTransactionFeesOrPricingAsync(txInput).ConfigureAwait(false);
@@ -200,7 +218,8 @@ namespace Nethereum.Web3.Accounts
 
             var rawWithSidecar = tx4844.GetRLPEncodedWithSidecar().ToHex(true);
             var ethSendTransaction = new EthSendRawTransaction(Client);
-            return await ethSendTransaction.SendRequestAsync(rawWithSidecar).ConfigureAwait(false);
+            return await SendReleasingTheNonceIfRejectedAsync(ethSendTransaction, rawWithSidecar, nonceFromService)
+                .ConfigureAwait(false);
         }
 
         public async Task<string> SendBlobTransactionAsync(byte[] data, string to, IBlobKzgProvider kzg)

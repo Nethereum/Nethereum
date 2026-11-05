@@ -15,6 +15,7 @@ namespace Nethereum.StandardTokenEIP20.ContractDefinition
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-eip20", "EIP20DeploymentBase")]
     public class EIP20DeploymentBase : ContractDeploymentMessage
     {
 #if !BYTECODELITE
@@ -180,6 +181,7 @@ namespace Nethereum.StandardTokenEIP20.ContractDefinition
     }
 
     [Event("Transfer")]
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-eip20", "TransferEventDTOBase")]
     public class TransferEventDTOBase : IEventDTO
     {
         [Parameter("address", "_from", 1, true)]
@@ -197,6 +199,7 @@ namespace Nethereum.StandardTokenEIP20.ContractDefinition
     }
 
     [Event("Approval")]
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.SmartContracts, "standard-token-eip20", "ApprovalEventDTOBase")]
     public class ApprovalEventDTOBase : IEventDTO
     {
         [Parameter("address", "_owner", 1, true)]

@@ -131,6 +131,7 @@ namespace Nethereum.Accounts.IntegrationTests
             Assert.NotNull(tran3.GasPrice);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async void ShouldGetTransactionByHash()
         {

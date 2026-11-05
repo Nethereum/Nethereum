@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Nethereum.Circles.IntegrationTests
 {
+    [Trait("Category", "LiveNetwork")]
     public class HubTests
     {
         /*

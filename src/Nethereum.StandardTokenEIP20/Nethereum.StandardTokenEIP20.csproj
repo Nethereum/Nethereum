@@ -3,11 +3,12 @@
   <PropertyGroup>
     <Description>Nethereum.StandardTokenEIP20 Ethereum Service to interact with EIP20 compliant contracts</Description>
     <AssemblyTitle>Nethereum.StandardTokenEIP20</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.StandardTokenEIP20</AssemblyName>
     <PackageId>Nethereum.StandardTokenEIP20</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Crypto 2.0</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,6 +21,10 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.StandardTokenEIP20\Nethereum.StandardTokenEIP20.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.StandardNonFungibleTokenERC721\Nethereum.StandardNonFungibleTokenERC721.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
     <ProjectReference Include="..\Nethereum.XUnitEthereumClients\Nethereum.XUnitEthereumClients.csproj" />
    </ItemGroup>
 

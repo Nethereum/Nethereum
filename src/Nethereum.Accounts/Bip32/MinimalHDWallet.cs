@@ -11,14 +11,20 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Accounts.Bip32
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.CoreFoundation, "account-types", "MinimalHDWallet")]
     public class MinimalHDWallet
     {
         public byte[] Seed { get; }
         public const string MasterKeyHmacKey = "Bitcoin seed";
+        public const int MaxDepth = 255;
 
-        public MinimalHDWallet(string mnemonic, string password = "")
+        public MinimalHDWallet(string mnemonic, string password = "") : this(mnemonic, password, true)
         {
-            Seed = Bip39.MnemonicToSeed(mnemonic, password);
+        }
+
+        public MinimalHDWallet(string mnemonic, string password, bool validateMnemonic)
+        {
+            Seed = Bip39.MnemonicToSeed(mnemonic, password, validateMnemonic);
         }
 
         public MinimalHDWallet(byte[] seed)
@@ -30,9 +36,12 @@ namespace Nethereum.Accounts.Bip32
 
         public EthECKey GetKeyFromPath(string derivationPath)
         {
+            if (derivationPath == null) throw new ArgumentNullException(nameof(derivationPath));
             var segments = derivationPath.Split('/');
-            if (segments.Length == 0 || segments[0] != "m")
+            if (segments[0] != "m")
                 throw new ArgumentException("Derivation path must start with 'm'");
+            if (segments.Length - 1 > MaxDepth)
+                throw new ArgumentException("Derivation path is deeper than " + MaxDepth);
 
             byte[] key, chainCode;
             Span<byte> data = stackalloc byte[37];
@@ -48,10 +57,7 @@ namespace Nethereum.Accounts.Bip32
             for (int i = 1; i < segments.Length; i++)
             {
                 var segment = segments[i];
-                bool hardened = segment.EndsWith("'");
-
-                if (!uint.TryParse(segment.TrimEnd('\''), out uint index))
-                    throw new ArgumentException($"Invalid path segment: {segment}");
+                var index = ParseSegment(segment, out bool hardened);
 
                 if (hardened)
                     index += 0x80000000;
@@ -103,6 +109,21 @@ namespace Nethereum.Accounts.Bip32
             }
 
             return new EthECKey(key, true);
+        }
+
+        private static uint ParseSegment(string segment, out bool hardened)
+        {
+            hardened = segment.Length > 0 && segment[segment.Length - 1] == '\'';
+            var digits = hardened ? segment.Substring(0, segment.Length - 1) : segment;
+            if (digits.Length == 0 || digits.Length > 10 || (digits.Length > 1 && digits[0] == '0'))
+                throw new ArgumentException("Invalid path segment: " + segment);
+            foreach (var c in digits)
+                if (c < '0' || c > '9')
+                    throw new ArgumentException("Invalid path segment: " + segment);
+            if (!uint.TryParse(digits, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var index)
+                || index >= 0x80000000)
+                throw new ArgumentException("Invalid path segment: " + segment);
+            return index;
         }
 
         public EthECKey GetEthereumKey(int accountIndex) => GetKeyFromPath($"m/44'/60'/0'/0/{accountIndex}");
