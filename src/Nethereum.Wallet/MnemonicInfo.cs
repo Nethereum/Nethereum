@@ -10,6 +10,8 @@ public class MnemonicInfo
     public string Mnemonic { get; set; } = string.Empty;
     public string? Passphrase { get; set; }
 
+    public bool RequiresStandardSeedMigration => Nethereum.Accounts.Bip32.Bip39.IsNonStandardMnemonicForm(Mnemonic);
+
     public MnemonicInfo() { }
 
     public MnemonicInfo(string label, string mnemonic, string? passphrase = null)

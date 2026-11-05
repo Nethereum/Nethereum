@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Reusable wallet UI components, view models, and services for Nethereum applications.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components</PackageId>

@@ -19,6 +19,7 @@ namespace Nethereum.Wallet.RpcRequests
                 return InternalError(request.Id, "Wallet context unavailable");
             }
 
+            var dapp = context.SelectedDapp;
             var selectedAccount = context.SelectedWalletAccount;
             if (selectedAccount == null)
             {
@@ -47,7 +48,7 @@ namespace Nethereum.Wallet.RpcRequests
                 return InvalidParams(request.Id, "Addresses do not match");
             }
 
-            var promptContext = CreateSignaturePromptContext(message, address, context.SelectedDapp);
+            var promptContext = CreateSignaturePromptContext(message, address, dapp);
             string? signature;
             try
             {
@@ -101,7 +102,7 @@ namespace Nethereum.Wallet.RpcRequests
 
         private static SignaturePromptContext CreateSignaturePromptContext(string message, string address, DappConnectionContext? dapp)
         {
-            var isHex = message.IsHex();
+            var isHex = message.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && message.IsHex();
             string? decoded = null;
 
             if (isHex)

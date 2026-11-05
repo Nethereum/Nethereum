@@ -96,6 +96,7 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.Mnemonic
             set => SetValue(ComponentWidthProperty, value);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "MnemonicAccountCreation.FormStep")]
         public enum FormStep
         {
             Setup = 0,
@@ -322,6 +323,7 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.Mnemonic
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "WalletSegmentedControlOption")]
     public class WalletSegmentedControlOption
     {
         public bool Value { get; set; }

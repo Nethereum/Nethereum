@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>MAUI helpers and Blazor WebView integration for hosting Nethereum wallet components on mobile and desktop.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Maui</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.Wallet.UI.Components.Maui</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Maui</PackageId>
     <PackageTags>Nethereum;Ethereum;Wallet;MAUI;UI</PackageTags>

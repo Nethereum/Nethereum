@@ -10,8 +10,15 @@ namespace Nethereum.Wallet.WalletAccounts
     {
         public override string Type => MnemonicWalletAccount.TypeName;
 
-        public MnemonicWalletAccountFactory()
+        private readonly bool _validateMnemonic;
+
+        public MnemonicWalletAccountFactory() : this(false)
         {
+        }
+
+        public MnemonicWalletAccountFactory(bool validateMnemonic)
+        {
+            _validateMnemonic = validateMnemonic;
         }
 
         public override IWalletAccount FromJson(JsonElement element, WalletVault vault)
@@ -22,8 +29,12 @@ namespace Nethereum.Wallet.WalletAccounts
             {
                 throw new InvalidOperationException($"Mnemonic with ID {mnemonicId} not found.");
             }
-            var minimalHDWallet = new MinimalHDWallet(mnemonic.Mnemonic, mnemonic.Passphrase ?? string.Empty);
-            return  MnemonicWalletAccount.FromJson(element, minimalHDWallet);
+            if (_validateMnemonic && mnemonic.Mnemonic != Bip39.CanonicalMnemonic(mnemonic.Mnemonic))
+                throw new ArgumentException("Stored mnemonic is not in canonical BIP-39 form");
+            var minimalHDWallet = new MinimalHDWallet(mnemonic.Mnemonic, mnemonic.Passphrase ?? string.Empty, _validateMnemonic);
+            var account = MnemonicWalletAccount.FromJson(element, minimalHDWallet);
+            account.RequiresStandardSeedMigration = mnemonic.RequiresStandardSeedMigration;
+            return account;
 
         }
     }

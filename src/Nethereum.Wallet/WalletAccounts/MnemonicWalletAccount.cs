@@ -16,6 +16,7 @@ public class MnemonicWalletAccount : WalletAccountBase
     public override string Type => TypeName;
     public int Index { get; private set; }
     public string MnemonicId { get; private set; }
+    public bool RequiresStandardSeedMigration { get; internal set; }
     private readonly MinimalHDWallet _wallet;
 
     public override string Name => Label ?? $"Account {Index}";

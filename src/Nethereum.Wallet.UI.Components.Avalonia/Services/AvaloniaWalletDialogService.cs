@@ -4,6 +4,7 @@ using Nethereum.Wallet.UI.Components.Abstractions;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "AvaloniaWalletDialogService")]
     public class AvaloniaWalletDialogService : IWalletDialogService
     {
         public async Task<bool> ShowConfirmationAsync(string title, string message)

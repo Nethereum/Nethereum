@@ -25,6 +25,12 @@ namespace Nethereum.UI
 
         public async Task<SiweMessage> AuthenticateAsync(SiweMessage siweMessage)
         {
+            var authenticated = await AuthenticateWithSignatureAsync(siweMessage).ConfigureAwait(false);
+            return authenticated.Message;
+        }
+
+        public async Task<(SiweMessage Message, string Signature)> AuthenticateWithSignatureAsync(SiweMessage siweMessage)
+        {
             var host = _selectedEthereumHostProviderService.SelectedHost;
             if (host == null || !host.Available)
             {
@@ -35,9 +41,10 @@ namespace Nethereum.UI
             var signedMessage = await host.SignMessageAsync(challenge).ConfigureAwait(false);
             if (await _siweMessageService.IsMessageSignatureValid(siweMessage, signedMessage).ConfigureAwait(false))
             {
-                return siweMessage;
+                return (siweMessage, signedMessage);
             }
-            
+
+            _siweMessageService.InvalidateSession(siweMessage);
             throw new Exception("SiweMessage signed with an invalid Address");
         }
 

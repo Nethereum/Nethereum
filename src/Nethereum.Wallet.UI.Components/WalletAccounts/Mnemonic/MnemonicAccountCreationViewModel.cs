@@ -52,8 +52,19 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
         public string MnemonicStrength => CalculateMnemonicStrength();
         public override bool CanCreateAccount => IsValidMnemonic && (IsGenerateMode ? IsBackedUp : true);
 
+        public bool ShowLegacyWordsHint
+        {
+            get
+            {
+                if (IsGenerateMode || string.IsNullOrWhiteSpace(Mnemonic)) return false;
+                var words = Mnemonic.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                return words.Any(w => string.Equals(w, "true", StringComparison.OrdinalIgnoreCase) || string.Equals(w, "false", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
         partial void OnMnemonicChanged(string value)
         {
+            OnPropertyChanged(nameof(ShowLegacyWordsHint));
             ValidateAndUpdateAddress();
         }
 
@@ -234,9 +245,10 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                     MnemonicLabel = existingAccounts == 0 ? "Main Wallet" : $"Account {existingAccounts + 1}";
                 }
 
-                var mnemonicInfo = new MnemonicInfo(MnemonicLabel, Mnemonic, MnemonicPassphrase);
+                var canonicalMnemonic = Bip39.CanonicalMnemonic(Mnemonic);
+                var mnemonicInfo = new MnemonicInfo(MnemonicLabel, canonicalMnemonic, MnemonicPassphrase);
                 vault.AddMnemonic(mnemonicInfo);
-                var hdWallet = new MinimalHDWallet(Mnemonic, MnemonicPassphrase);
+                var hdWallet = new MinimalHDWallet(canonicalMnemonic, MnemonicPassphrase);
                 var address = hdWallet.GetEthereumAddress(0);
 
                 // Use FinalAccountName for the account name, fallback to generated name if empty

@@ -33,7 +33,6 @@ namespace Nethereum.Blazor.Siwe
 
         public async override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            //doing validation when retrieving the user
             var currentUser = await GetUserAsync();
 
             if (currentUser != null && currentUser.EthereumAddress != null)
@@ -47,7 +46,7 @@ namespace Nethereum.Blazor.Siwe
 
         public async Task AuthenticateAsync(string address = null)
         {
-            
+
             if (EthereumHostProvider == null  || !EthereumHostProvider.Available)
             {
                 throw new Exception("Cannot authenticate user, an Ethereum host is not available");
@@ -61,8 +60,8 @@ namespace Nethereum.Blazor.Siwe
             siweMessage.Address = address.ConvertToEthereumChecksumAddress();
             siweMessage.SetExpirationTime(DateTime.Now.AddMinutes(10)); 
             siweMessage.SetNotBefore(DateTime.Now);
-            var fullMessage = await nethereumSiweAuthenticatorService.AuthenticateAsync(siweMessage);
-            await _accessTokenService.SetAccessTokenAsync(SiweMessageStringBuilder.BuildMessage(fullMessage));
+            var authenticated = await nethereumSiweAuthenticatorService.AuthenticateWithSignatureAsync(siweMessage);
+            await _accessTokenService.SetAccessTokenAsync(BuildToken(authenticated.Message, authenticated.Signature));
             await MarkUserAsAuthenticated();
         }
 
@@ -81,14 +80,14 @@ namespace Nethereum.Blazor.Siwe
             await _accessTokenService.RemoveAccessTokenAsync();
             try
             {
-                var siweMessage = SiweMessageParser.Parse(token);
-                nethereumSiweAuthenticatorService.LogOut(siweMessage);
+                if (TryReadToken(token, out var siweMessage, out _))
+                {
+                    nethereumSiweAuthenticatorService.LogOut(siweMessage);
+                }
             }
             catch
             {
-                // remove from the server but catch gracefully as the token is gone from the state
             }
-            //retrieving the overall authentication state
             var authenticationState = await GetAuthenticationStateAsync();
             NotifyAuthenticationStateChanged(Task.FromResult(authenticationState));
         }
@@ -97,32 +96,51 @@ namespace Nethereum.Blazor.Siwe
         {
             var token = await _accessTokenService.GetAccessTokenAsync();
             if (token == null) return null;
-            var siweMessage = SiweMessageParser.Parse(token);
-            if (_siweMessageService.IsMessageTheSameAsSessionStored(siweMessage))
+            SiweMessage siweMessage;
+            bool current;
+            try
             {
-                if (_siweMessageService.HasMessageDateStartedAndNotExpired(siweMessage))
-                {
-                    if (await _siweMessageService.IsUserAddressRegistered(siweMessage))
-                    {
-                        //add other checks here
-                        return await _userService.GetUserAsync(siweMessage.Address);
-                    }
-                }
+                if (!TryReadToken(token, out siweMessage, out var signature)) return null;
+                current = _siweMessageService.IsMessageTheSameAsSessionStored(siweMessage) &&
+                          _siweMessageService.HasMessageDateStartedAndNotExpired(siweMessage) &&
+                          await _siweMessageService.IsMessageSignatureValid(siweMessage, signature);
+            }
+            catch (Exception ex) when (ex is ArgumentException || ex is FormatException)
+            {
+                return null;
+            }
+
+            if (current && await _siweMessageService.IsUserAddressRegistered(siweMessage))
+            {
+                return await _userService.GetUserAsync(siweMessage.Address);
             }
             return null;
         }
 
+        private static string BuildToken(SiweMessage siweMessage, string signature)
+        {
+            return signature + "\n" + SiweMessageStringBuilder.BuildMessage(siweMessage);
+        }
+
+        private static bool TryReadToken(string token, out SiweMessage siweMessage, out string signature)
+        {
+            siweMessage = null;
+            signature = null;
+            var separator = token.IndexOf('\n');
+            if (separator < 0 || !token.StartsWith("0x", StringComparison.Ordinal)) return false;
+            signature = token.Substring(0, separator);
+            siweMessage = SiweMessageParser.Parse(token.Substring(separator + 1));
+            return true;
+        }
+
         private ClaimsPrincipal GenerateSiweClaimsPrincipal(User currentUser)
         {
-            //create a claims
             var claimName = new Claim(ClaimTypes.Name, currentUser.UserName);
             var claimEthereumAddress = new Claim(ClaimTypes.NameIdentifier, currentUser.EthereumAddress);
             var claimEthereumConnectedRole = new Claim(ClaimTypes.Role, "EthereumConnected");
             var claimSiweAuthenticatedRole = new Claim(ClaimTypes.Role, "SiweAuthenticated");
 
-            //create claimsIdentity
             var claimsIdentity = new ClaimsIdentity(new[] { claimEthereumAddress, claimName, claimEthereumConnectedRole, claimSiweAuthenticatedRole }, "siweAuth");
-            //create claimsPrincipal
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             return claimsPrincipal;

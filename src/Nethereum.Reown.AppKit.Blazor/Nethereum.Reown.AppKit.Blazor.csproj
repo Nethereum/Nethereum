@@ -9,7 +9,7 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>Nethereum.Reown.AppKit.Blazor</AssemblyName>
     <PackageId>Nethereum.Reown.AppKit.Blazor</PackageId>
-    <PackageTags>Netherum;Reown;AppKit;Ethereum;Blockchain</PackageTags>
+    <PackageTags>Nethereum;Reown;AppKit;Ethereum;Blockchain</PackageTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -25,6 +25,14 @@
     <ProjectReference Include="..\Nethereum.UI\Nethereum.UI.csproj" />
     <ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
     <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

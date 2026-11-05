@@ -2,8 +2,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Wallet.UI;
-using System.Text.Json;
+using Nethereum.ABI.EIP712;
 using Nethereum.Wallet.UI.Components.Core.Localization;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Wallet.UI.Components.Services
 {
@@ -34,7 +35,7 @@ namespace Nethereum.Wallet.UI.Components.Services
 
         public async Task<string?> PromptTypedDataSignAsync(TypedDataSignPromptContext context)
         {
-            var formatted = FormatTypedDataJson(context.TypedDataJson);
+            var formatted = FormatDeclaredTypedData(context.TypedDataJson);
 
             var promptInfo = new SignaturePromptInfo
             {
@@ -143,21 +144,22 @@ namespace Nethereum.Wallet.UI.Components.Services
             return info;
         }
 
-        private static string? FormatTypedDataJson(string? json)
+        private static string? FormatDeclaredTypedData(string? json)
         {
             if (string.IsNullOrWhiteSpace(json))
             {
-                return json;
+                return null;
             }
 
             try
             {
-                using var document = JsonDocument.Parse(json);
-                return JsonSerializer.Serialize(document.RootElement, new JsonSerializerOptions { WriteIndented = true });
+                var declared = JObject.Parse(TypedDataRawJsonConversion.DeserialiseJsonToRawTypedData(json).ToJson());
+                declared.Remove("types");
+                return declared.ToString();
             }
             catch
             {
-                return json;
+                return null;
             }
         }
     }

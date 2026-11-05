@@ -51,6 +51,12 @@ namespace Nethereum.WalletConnect
             }
 
            var session = await _connectedData.Approval;
+           var approvedChains = GetApprovedChains(session);
+           if (approvedChains.Length > 0 && !approvedChains.Contains(SelectedChainId))
+           {
+               SelectedChainId = approvedChains[0];
+               await SetHostProviderSelectedChainAsync();
+           }
            var address =  session.CurrentAddress(SelectedChainId);
            SelectedAccount = address.Address;
            await SetHostProviderSelectedAccountAsync();
@@ -73,7 +79,7 @@ namespace Nethereum.WalletConnect
                 Debug.WriteLine(ex.Message);
             }
 
-            SelectedChainId = MAINNET;
+            SelectedChainId = GetRequestedChains(connectionOptions).FirstOrDefault() ?? MAINNET;
             await SetHostProviderSelectedChainAsync();
 
             _connectedData = await WalletConnectClient.Connect(connectionOptions);
@@ -98,6 +104,39 @@ namespace Nethereum.WalletConnect
             });
 
             return _connectedData.Uri;
+        }
+
+        private static string[] GetRequestedChains(ConnectOptions connectionOptions)
+        {
+            var chains = new List<string>();
+            if (connectionOptions.RequiredNamespaces != null && connectionOptions.RequiredNamespaces.TryGetValue("eip155", out var required) && required.Chains != null)
+            {
+                chains.AddRange(required.Chains);
+            }
+            if (connectionOptions.OptionalNamespaces != null && connectionOptions.OptionalNamespaces.TryGetValue("eip155", out var optional) && optional.Chains != null)
+            {
+                chains.AddRange(optional.Chains);
+            }
+            return chains.Distinct().ToArray();
+        }
+
+        private static string[] GetApprovedChains(SessionStruct session)
+        {
+            if (session.Namespaces == null || !session.Namespaces.TryGetValue("eip155", out var approved))
+            {
+                return new string[0];
+            }
+
+            var chains = new List<string>();
+            if (approved.Chains != null)
+            {
+                chains.AddRange(approved.Chains);
+            }
+            if (approved.Accounts != null)
+            {
+                chains.AddRange(approved.Accounts.Select(a => string.Join(":", a.Split(':').Take(2))));
+            }
+            return chains.Distinct().ToArray();
         }
 
         private async Task SetHostProviderSelectedAccountAsync()
@@ -143,13 +182,15 @@ namespace Nethereum.WalletConnect
                 optionalEIP155chainIds = DEFAULT_CHAINS;
             }
 
+            var requiredChains = optionalEIP155chainIds.Length == 0 ? DEFAULT_CHAINS : optionalEIP155chainIds;
+
             var requiredNamespace = new ProposedNamespace()
             {
                 Methods = new[]
                             {
                                 ApiMethods.eth_sendTransaction.ToString(),
                             },
-                Chains = new[] { MAINNET } ,
+                Chains = requiredChains,
                 Events = new[]
                             {
                                 "chainChanged", "accountsChanged", "connect", "disconnect"

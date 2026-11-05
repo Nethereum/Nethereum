@@ -44,6 +44,8 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
 
         public string AccountType => "mnemonic";
 
+        public bool RequiresStandardSeedMigration => (Account as MnemonicWalletAccount)?.RequiresStandardSeedMigration ?? false;
+
         public MnemonicAccountDetailsViewModel(
             IWalletVaultService vaultService,
             IWalletNotificationService notificationService,

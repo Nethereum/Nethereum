@@ -62,6 +62,24 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
         }
         public string SelectedAccountAddress => SelectedAccount?.Address ?? "";
         public bool HasSelectedAccount => SelectedAccount != null;
+
+        [ObservableProperty]
+        private bool _legacySeedWarningDismissed;
+
+        public bool HasLegacySeedAccounts => _walletHostProvider.GetAccounts().OfType<MnemonicWalletAccount>().Any(a => a.RequiresStandardSeedMigration);
+
+        public bool ShowLegacySeedWarning => !LegacySeedWarningDismissed && HasLegacySeedAccounts;
+
+        partial void OnLegacySeedWarningDismissedChanged(bool value)
+        {
+            OnPropertyChanged(nameof(ShowLegacySeedWarning));
+        }
+
+        [CommunityToolkit.Mvvm.Input.RelayCommand]
+        public void DismissLegacySeedWarning()
+        {
+            LegacySeedWarningDismissed = true;
+        }
         public bool HasSelectedNetworkLogo
         {
             get

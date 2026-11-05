@@ -23,6 +23,7 @@ using Nethereum.Wallet.UI.Components.Abstractions;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.Extensions
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "Avalonia wallet registration")]
     public static class ServiceCollectionExtensions
     {
         public static IServiceCollection AddNethereumWalletAvaloniaComponents(this IServiceCollection services, Action<AvaloniaWalletComponentOptions>? configure = null)

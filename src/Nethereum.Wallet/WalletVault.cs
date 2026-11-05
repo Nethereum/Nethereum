@@ -22,7 +22,10 @@ public class WalletVault
 
     public List<IWalletAccountJsonFactory> Factories { get; private set; } = new();
 
-    private readonly IEncryptionStrategy _encryptionStrategy;
+    private IEncryptionStrategy _encryptionStrategy;
+    private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
+
+    public bool HasUnrecognisedContent { get; private set; }
 
     public WalletVault(IEncryptionStrategy encryptionStrategy)
     {
@@ -31,6 +34,29 @@ public class WalletVault
         RegisterFactory(new MnemonicWalletAccountFactory());
         RegisterFactory(new ViewOnlyWalletAccountFactory());
         RegisterFactory(new SmartContractWalletAccountFactory());
+    }
+
+    public IReadOnlyList<MnemonicInfo> MnemonicsWithLegacySeed
+        => Mnemonics.Where(m => m.RequiresStandardSeedMigration).ToList();
+
+    public IReadOnlyList<IWalletAccount> AccountsWithLegacySeed
+        => Accounts.OfType<MnemonicWalletAccount>().Where(a => a.RequiresStandardSeedMigration).Cast<IWalletAccount>().ToList();
+
+    public async Task<bool> IsConsistentAsync()
+    {
+        if (HasUnrecognisedContent) return false;
+        foreach (var account in Accounts)
+        {
+            if (account is not PrivateKeyWalletAccount && account is not MnemonicWalletAccount) continue;
+            var derived = await account.GetAccountAsync();
+            if (!string.Equals(derived.Address, account.Address, StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        return true;
+    }
+
+    public void SetEncryptionStrategy(IEncryptionStrategy encryptionStrategy)
+    {
+        _encryptionStrategy = encryptionStrategy ?? throw new ArgumentNullException(nameof(encryptionStrategy));
     }
 
     public void AddAccount(IWalletAccount account)
@@ -112,10 +138,11 @@ public class WalletVault
     {
         var data = Convert.FromBase64String(encrypted);
         var plainBytes = _encryptionStrategy.Decrypt(data, password);
-        var json = Encoding.UTF8.GetString(plainBytes);
+        var json = StrictUtf8.GetString(plainBytes);
 
         var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
+        HasUnrecognisedContent = root.EnumerateObject().Any(p => p.Name != "mnemonics" && p.Name != "accounts" && p.Name != "hardwareDevices");
 
         Mnemonics = root.GetProperty("mnemonics").EnumerateArray()
             .Select(element =>

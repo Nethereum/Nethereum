@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Blazor components and layouts for building Nethereum-powered wallets.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Blazor</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components.Blazor</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Blazor</PackageId>

@@ -3,6 +3,7 @@ using System;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "AvaloniaWalletNotificationService")]
     public class AvaloniaWalletNotificationService : IWalletNotificationService
     {
         public void ShowNotification(string message, NotificationSeverity severity = NotificationSeverity.Info)

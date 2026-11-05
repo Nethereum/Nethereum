@@ -8,6 +8,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
         public static class Keys
         {
             public const string DisplayName = "DisplayName";
+            public const string LegacyWordsHint = "LegacyWordsHint";
             public const string Description = "Description";
             public const string AccountNameLabel = "AccountNameLabel";
             public const string AccountNameHelperText = "AccountNameHelperText";
@@ -77,6 +78,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             _globalService.RegisterTranslations(_componentName, "en-US", new Dictionary<string, string>
             {
                 [Keys.DisplayName] = "Mnemonic Account",
+                [Keys.LegacyWordsHint] = "If this phrase was created by Nethereum 7.0 and shows TRUE or FALSE in capitals, it may open a different wallet here. Keep your original vault file to access those funds.",
                 [Keys.Description] = "Create accounts using a seed phrase (mnemonic) for secure key derivation",
                 [Keys.AccountNameLabel] = "Account Name",
                 [Keys.AccountNameHelperText] = "Give your account a memorable name (optional)",
@@ -141,6 +143,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             _globalService.RegisterTranslations(_componentName, "es-ES", new Dictionary<string, string>
             {
                 [Keys.DisplayName] = "Cuenta Mnemotécnica",
+                [Keys.LegacyWordsHint] = "Si esta frase fue creada por Nethereum 7.0 y muestra TRUE o FALSE en mayúsculas, puede abrir una cartera diferente aquí. Conserva tu archivo de bóveda original para acceder a esos fondos.",
                 [Keys.Description] = "Crear cuentas usando una frase semilla (mnemotécnica) para derivación segura de claves",
                 [Keys.AccountNameLabel] = "Nombre de Cuenta",
                 [Keys.AccountNameHelperText] = "Dale un nombre memorable a tu cuenta (opcional)",

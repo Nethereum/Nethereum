@@ -9,7 +9,7 @@
 		<TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
 		<AssemblyName>Nethereum.MudBlazorComponents</AssemblyName>
 		<PackageId>Nethereum.MudBlazorComponents</PackageId>
-		<PackageTags>Netherum;EIP6963;Blazor;Metamask;Coinbase;Rabby;Ethereum;Blockchain</PackageTags>
+		<PackageTags>Nethereum;EIP6963;Blazor;Metamask;Coinbase;Rabby;Ethereum;Blockchain</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
@@ -19,6 +19,10 @@
 		<PackageReference Include="MudBlazor" Version="8.*" />
 	</ItemGroup>
 
+	<PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
 	<ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
 		<None Include="..\..\NethereumKey.snk" />
 	</ItemGroup>

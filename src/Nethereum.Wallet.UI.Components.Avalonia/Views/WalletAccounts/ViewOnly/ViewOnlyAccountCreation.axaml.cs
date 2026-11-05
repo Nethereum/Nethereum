@@ -78,6 +78,7 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.ViewOnly
             set => SetValue(IsCompactModeProperty, value);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "ViewOnlyAccountCreation.FormStep")]
         public enum FormStep
         {
             Setup = 0,

@@ -54,7 +54,7 @@ namespace Nethereum.Wallet.UI.Components.Maui.Extensions
 
             builder.Services.TryAddSingleton(options);
 
-            builder.Services.TryAddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
+            builder.Services.TryAddSingleton<IEncryptionStrategy, Aes256GcmEncryptionStrategy>();
             builder.Services.TryAddSingleton<IWalletVaultService, MauiSecureStorageWalletVaultService>();
             builder.Services.TryAddSingleton<IWalletStorageService, MauiPreferencesWalletStorageService>();
             builder.Services.TryAddSingleton<IWalletConfigurationService, InMemoryWalletConfigurationService>();

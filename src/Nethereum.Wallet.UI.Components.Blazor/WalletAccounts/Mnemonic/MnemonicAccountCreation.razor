@@ -122,6 +122,10 @@
                                         : Localizer.GetString(Keys.InvalidMnemonicMessage))
                                 </MudChip>
                             </div>
+                            @if (ViewModel.ShowLegacyWordsHint)
+                            {
+                                <MudAlert Severity="Severity.Info" Dense="true" Class="mt-2">@Localizer.GetString(Keys.LegacyWordsHint)</MudAlert>
+                            }
                         }
                     </WalletFormSection>
                     

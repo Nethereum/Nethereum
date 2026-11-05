@@ -9,7 +9,7 @@
 		<TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
 		<AssemblyName>Nethereum.Metamask.Blazor</AssemblyName>
 		<PackageId>Nethereum.Metamask.Blazor</PackageId>
-		<PackageTags>Netherum;Metamask;Ethereum;Blockchain</PackageTags>
+		<PackageTags>Nethereum;Metamask;Ethereum;Blockchain</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 

@@ -6,6 +6,7 @@ using Nethereum.Wallet.WalletAccounts;
 
 namespace Nethereum.Wallet.Trezor;
 
+[Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "trezor-wallet-accounts", "TrezorWalletAccountService")]
 public class TrezorWalletAccountService
 {
     private readonly WalletVault _vault;

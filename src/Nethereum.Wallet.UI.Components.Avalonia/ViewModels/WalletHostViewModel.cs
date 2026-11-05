@@ -7,6 +7,7 @@ using Nethereum.Wallet.UI.Components.Services;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.ViewModels
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "WalletHostViewModel")]
     public partial class WalletHostViewModel : ObservableObject, IDisposable
     {
         private readonly IPromptOverlayService _overlayService;

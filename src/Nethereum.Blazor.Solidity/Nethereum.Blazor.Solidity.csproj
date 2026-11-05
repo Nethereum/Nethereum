@@ -3,10 +3,12 @@
 	<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
 	<PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
 		<Description>Solidity source viewer and EVM transaction debugger Blazor components with Monaco editor integration.</Description>
 		<AssemblyTitle>Nethereum.Blazor.Solidity</AssemblyTitle>
 		<Version>$(NethereumVersion)</Version>
 		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>Nethereum.Blazor.Solidity</AssemblyName>
 		<PackageId>Nethereum.Blazor.Solidity</PackageId>
 		<PackageTags>Nethereum;Solidity;Monaco;Debugger;EVM;Blazor</PackageTags>
 		<Nullable>enable</Nullable>
@@ -18,12 +20,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Update="Newtonsoft.Json" Version="13.0.4" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Nethereum.EVM\Nethereum.EVM.csproj" />
 		<ProjectReference Include="..\Nethereum.Web3\Nethereum.Web3.csproj" />
 	</ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
 
 </Project>

@@ -33,6 +33,7 @@ namespace Nethereum.Wallet.UI.Components.AccountList
             public const string ManageButton = "ManageButton";
             public const string AccountNameCannotBeEmpty = "AccountNameCannotBeEmpty";
             public const string AccountNameUpdatedSuccessfully = "AccountNameUpdatedSuccessfully";
+            public const string LegacySeedMarker = "LegacySeedMarker";
         }
 
         public AccountListLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -68,7 +69,8 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                 [Keys.SelectButton] = "Select",
                 [Keys.ManageButton] = "Manage",
                 [Keys.AccountNameCannotBeEmpty] = "Account name cannot be empty",
-                [Keys.AccountNameUpdatedSuccessfully] = "Account name updated successfully"
+                [Keys.AccountNameUpdatedSuccessfully] = "Account name updated successfully",
+                [Keys.LegacySeedMarker] = "This wallet's recovery phrase is stored in a non-standard form from an earlier version. Restoring the phrase in another wallet will not show these funds. Create a new wallet and move your funds to it."
             });
             
             // Spanish (Spain) translations
@@ -99,7 +101,8 @@ namespace Nethereum.Wallet.UI.Components.AccountList
                 [Keys.SelectButton] = "Seleccionar",
                 [Keys.ManageButton] = "Gestionar",
                 [Keys.AccountNameCannotBeEmpty] = "El nombre de la cuenta no puede estar vacío",
-                [Keys.AccountNameUpdatedSuccessfully] = "Nombre de cuenta actualizado exitosamente"
+                [Keys.AccountNameUpdatedSuccessfully] = "Nombre de cuenta actualizado exitosamente",
+                [Keys.LegacySeedMarker] = "La frase de recuperación de esta cartera está guardada en una forma no estándar de una versión anterior. Restaurar la frase en otra cartera no mostrará estos fondos. Crea una cartera nueva y traslada tus fondos a ella."
             });
         }
     }

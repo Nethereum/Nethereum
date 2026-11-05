@@ -16,6 +16,7 @@ namespace Nethereum.Wallet.RpcRequests
         {
             try
             {
+                var dapp = context.SelectedDapp;
                 var enabledAccount = await context.EnableProviderAsync().ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(enabledAccount) || context.SelectedWalletAccount == null)
                     return UserRejected(request.Id);
@@ -46,9 +47,9 @@ namespace Nethereum.Wallet.RpcRequests
                         Chain = existingChain,
                         IsKnown = true,
                         AllowAdd = false,
-                        Origin = context.SelectedDapp?.Origin,
-                        DappName = context.SelectedDapp?.Title,
-                        DappIcon = context.SelectedDapp?.Icon
+                        Origin = dapp?.Origin,
+                        DappName = dapp?.Title,
+                        DappIcon = dapp?.Icon
                     };
 
                     var switchResult = await context.RequestChainSwitchAsync(switchRequest).ConfigureAwait(false);
@@ -70,9 +71,9 @@ namespace Nethereum.Wallet.RpcRequests
                 {
                     Parameter = param,
                     SwitchAfterAdd = true,
-                    Origin = context.SelectedDapp?.Origin,
-                    DappName = context.SelectedDapp?.Title,
-                    DappIcon = context.SelectedDapp?.Icon
+                    Origin = dapp?.Origin,
+                    DappName = dapp?.Title,
+                    DappIcon = dapp?.Icon
                 };
 
                 var promptResult = await context.RequestChainAdditionAsync(promptRequest).ConfigureAwait(false);

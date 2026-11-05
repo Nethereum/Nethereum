@@ -30,6 +30,8 @@
                 </StackPanel>
             </Grid>
 
+            <TextBlock Text="{Binding LegacySeedMarkerText}" IsVisible="{Binding RequiresStandardSeedMigration}" Classes="text-secondary" TextWrapping="Wrap" />
+
             <ContentControl Content="{Binding AdditionalChips}" Grid.Column="1" HorizontalAlignment="Right" />
             <Grid ColumnDefinitions="*,Auto,Auto" Grid.Row="4" Grid.ColumnSpan="2">
                 <Grid.IsVisible>

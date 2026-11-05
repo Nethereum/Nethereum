@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Wallet-oriented JSON-RPC handlers for exposing Nethereum wallet capabilities to dapps.</Description>
     <AssemblyTitle>Nethereum.Wallet.RpcRequests</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.RpcRequests</AssemblyName>
     <PackageId>Nethereum.Wallet.RpcRequests</PackageId>

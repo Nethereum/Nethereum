@@ -4,10 +4,11 @@
   <PropertyGroup>
     <Description>Trezor hardware wallet integration for the Nethereum wallet services.</Description>
     <AssemblyTitle>Nethereum.Wallet.Trezor</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.Trezor</AssemblyName>
     <PackageId>Nethereum.Wallet.Trezor</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>Nethereum;Ethereum;Wallet;Trezor;Hardware</PackageTags>
   </PropertyGroup>
 
@@ -24,4 +25,8 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

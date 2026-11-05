@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Core wallet services for managing accounts, vaults, and configuration across the Nethereum stack.</Description>
     <AssemblyTitle>Nethereum.Wallet</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet</AssemblyName>
     <PackageId>Nethereum.Wallet</PackageId>

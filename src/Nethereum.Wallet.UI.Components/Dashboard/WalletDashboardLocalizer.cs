@@ -18,6 +18,7 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
             public const string Close = "Close";
             public const string Navigation = "Navigation";
             public const string Logout = "Logout";
+            public const string LegacySeedWarning = "LegacySeedWarning";
         }
 
         public WalletDashboardLocalizer(IWalletLocalizationService globalService) : base(globalService)
@@ -38,7 +39,8 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
                 [Keys.Menu] = "Menu",
                 [Keys.Close] = "Close",
                 [Keys.Navigation] = "Navigation",
-                [Keys.Logout] = "Logout"
+                [Keys.Logout] = "Logout",
+                [Keys.LegacySeedWarning] = "This wallet's recovery phrase is stored in a non-standard form from an earlier version. Restoring the phrase in another wallet will not show these funds. Create a new wallet and move your funds to it."
             });
             
             // Spanish (Spain) translations
@@ -54,7 +56,8 @@ namespace Nethereum.Wallet.UI.Components.Dashboard
                 [Keys.Menu] = "Menú",
                 [Keys.Close] = "Cerrar",
                 [Keys.Navigation] = "Navegación",
-                [Keys.Logout] = "Cerrar sesión"
+                [Keys.Logout] = "Cerrar sesión",
+                [Keys.LegacySeedWarning] = "La frase de recuperación de esta cartera está guardada en una forma no estándar de una versión anterior. Restaurar la frase en otra cartera no mostrará estos fondos. Crea una cartera nueva y traslada tus fondos a ella."
             });
         }
     }

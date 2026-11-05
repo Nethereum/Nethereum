@@ -88,6 +88,15 @@
                     </viewsShared:WalletHeader.ActionsContent>
                 </viewsShared:WalletHeader>
 
+                <viewsShared:WalletInfoCard Severity="Warning"
+                                            Description="{Binding GetLegacySeedWarning()}"
+                                            Icon="warning"
+                                            IsVisible="{Binding _viewModel.ShowLegacySeedWarning}">
+                    <viewsShared:WalletInfoCard.Actions>
+                        <Button Content="x" Command="{Binding _viewModel.DismissLegacySeedWarningCommand}" />
+                    </viewsShared:WalletInfoCard.Actions>
+                </viewsShared:WalletInfoCard>
+
                 <!-- Plugin Content -->
                 <ContentControl Content="{Binding SelectedPlugin}" ContentTemplate="{StaticResource DashboardPluginTemplateSelector}" />
             </StackPanel>

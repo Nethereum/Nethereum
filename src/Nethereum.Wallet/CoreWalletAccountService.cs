@@ -28,10 +28,11 @@ namespace Nethereum.Wallet
 
         public Task<IWalletAccount> CreateMnemonicAccountAsync(string mnemonic, string? passphrase = null, string? label = null)
         {
-            var hdWallet = new MinimalHDWallet(mnemonic, passphrase ?? string.Empty);
+            var canonicalMnemonic = Bip39.CanonicalMnemonic(mnemonic);
+            var hdWallet = new MinimalHDWallet(canonicalMnemonic, passphrase ?? string.Empty);
             var address = hdWallet.GetEthereumAddress(0);
             var index = 0;
-            var mnemonicInfo = new MnemonicInfo(label ?? address, mnemonic, passphrase);
+            var mnemonicInfo = new MnemonicInfo(label ?? address, canonicalMnemonic, passphrase);
             _walletVault.AddMnemonic(mnemonicInfo);
             var account = new MnemonicWalletAccount(address, label ?? address, index, mnemonicInfo.Id, hdWallet);
             return Task.FromResult<IWalletAccount>(account);

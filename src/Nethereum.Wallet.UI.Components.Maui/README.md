@@ -424,7 +424,7 @@ public static MauiAppBuilder AddNethereumWalletMauiComponents(
 
 **Storage Services** (Lines 57-61):
 ```csharp
-IEncryptionStrategy -> BouncyCastleAes256EncryptionStrategy (Singleton)
+IEncryptionStrategy -> Aes256GcmEncryptionStrategy (Singleton)
 IWalletVaultService -> MauiSecureStorageWalletVaultService (Singleton)
 IWalletStorageService -> MauiPreferencesWalletStorageService (Singleton)
 IWalletConfigurationService -> InMemoryWalletConfigurationService (Singleton)

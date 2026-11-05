@@ -55,8 +55,8 @@ public async Task AuthenticateAsync(string address = null)
     siweMessage.SetExpirationTime(DateTime.UtcNow.AddMinutes(10));
     siweMessage.SetNotBefore(DateTime.UtcNow);
 
-    var fullMessage = await nethereumSiweAuthenticatorService.AuthenticateAsync(siweMessage);
-    await _accessTokenService.SetAccessTokenAsync(SiweMessageStringBuilder.BuildMessage(fullMessage));
+    var authenticated = await nethereumSiweAuthenticatorService.AuthenticateWithSignatureAsync(siweMessage);
+    await _accessTokenService.SetAccessTokenAsync(BuildToken(authenticated.Message, authenticated.Signature));
     await MarkUserAsAuthenticated();
 }
 ```
@@ -65,6 +65,8 @@ The `NethereumSiweAuthenticatorService` (from `Nethereum.UI`) handles:
 - Building the message string with nonce
 - Prompting the wallet to sign via `IEthereumHostProvider`
 - Verifying the signature
+
+The access token carries the message and its signature, and `SiweAuthenticationServerStateProvider` checks the stored session, the time window and the signature on every request. Tokens written by 7.0 are not accepted, so users sign in again after upgrading.
 
 ## Blazor WASM + REST API
 

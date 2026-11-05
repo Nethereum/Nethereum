@@ -142,7 +142,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                     return;
                 }
 
-                var hdWallet = new MinimalHDWallet(selectedMnemonic.Mnemonic, selectedMnemonic.Passphrase);
+                var hdWallet = new MinimalHDWallet(selectedMnemonic.Mnemonic, selectedMnemonic.Passphrase, false);
                 DerivedAddress = hdWallet.GetEthereumAddress(AccountIndex);
             }
             catch (Exception ex)
@@ -260,7 +260,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                     ? AccountName 
                     : $"Account {AccountIndex + 1}";
 
-                var hdWallet = new MinimalHDWallet(selectedMnemonic.Mnemonic, selectedMnemonic.Passphrase);
+                var hdWallet = new MinimalHDWallet(selectedMnemonic.Mnemonic, selectedMnemonic.Passphrase, false);
                 var address = hdWallet.GetEthereumAddress(AccountIndex);
 
                 return new MnemonicWalletAccount(

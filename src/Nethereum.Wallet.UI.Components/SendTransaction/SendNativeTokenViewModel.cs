@@ -409,7 +409,6 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
             var explorerUrl = await GetExplorerUrlAsync();
             if (!string.IsNullOrEmpty(explorerUrl))
             {
-                // Open in browser - implementation would depend on platform
             }
         }
         
@@ -558,23 +557,18 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                     }
                 }
 
-                if (SelectedToken == null || SelectedToken.ChainId != chainId)
+                var tokenToSelect = SelectedToken == null || SelectedToken.ChainId != chainId
+                    ? nativeToken
+                    : AvailableTokens.FirstOrDefault(t => IsSameToken(t, SelectedToken)) ?? nativeToken;
+
+                if (SelectedToken != null && IsSameToken(tokenToSelect, SelectedToken))
                 {
-                    SelectedToken = nativeToken;
+                    SelectedToken = tokenToSelect;
+                    NativeTransfer.AvailableBalance = tokenToSelect.Balance;
                 }
                 else
                 {
-                    var existingToken = AvailableTokens.FirstOrDefault(t =>
-                        string.Equals(t.ContractAddress, SelectedToken.ContractAddress, StringComparison.OrdinalIgnoreCase) &&
-                        t.ChainId == SelectedToken.ChainId);
-                    if (existingToken != null)
-                    {
-                        SelectedToken = existingToken;
-                    }
-                    else
-                    {
-                        SelectedToken = nativeToken;
-                    }
+                    await SelectTokenAsync(tokenToSelect);
                 }
 
                 OnPropertyChanged(nameof(FormattedBalanceValue));
@@ -676,6 +670,10 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction
                 }
             }
         }
+
+        private static bool IsSameToken(AccountToken left, AccountToken right) =>
+            string.Equals(left.ContractAddress, right.ContractAddress, StringComparison.OrdinalIgnoreCase) &&
+            left.ChainId == right.ChainId;
 
         private static decimal ConvertToDecimal(BigInteger balance, int decimals)
         {

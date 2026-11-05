@@ -65,6 +65,17 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views
             set => SetValue(AccountDisplayNameProperty, value);
         }
 
+        public static readonly StyledProperty<string> LegacySeedMarkerTextProperty =
+            AvaloniaProperty.Register<AccountCard, string>(nameof(LegacySeedMarkerText));
+
+        public string LegacySeedMarkerText
+        {
+            get => GetValue(LegacySeedMarkerTextProperty);
+            set => SetValue(LegacySeedMarkerTextProperty, value);
+        }
+
+        public bool RequiresStandardSeedMigration => (Account as MnemonicWalletAccount)?.RequiresStandardSeedMigration == true;
+
         public static readonly StyledProperty<string> AccountIconProperty =
             AvaloniaProperty.Register<AccountCard, string>(nameof(AccountIcon));
 

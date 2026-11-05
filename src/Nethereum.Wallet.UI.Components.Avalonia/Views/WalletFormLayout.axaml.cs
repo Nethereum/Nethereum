@@ -186,6 +186,7 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views
         }
     }
 
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "WalletFormStep")]
     public class WalletFormStep
     {
         public string LocalizationKey { get; set; }

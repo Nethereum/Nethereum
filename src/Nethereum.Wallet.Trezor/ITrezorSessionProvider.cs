@@ -6,6 +6,7 @@ using Nethereum.Signer.Trezor;
 
 namespace Nethereum.Wallet.Trezor;
 
+[Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "trezor-wallet-accounts", "ITrezorSessionProvider")]
 public interface ITrezorSessionProvider
 {
     Task<TrezorSessionExternalSigner> CreateSignerAsync(

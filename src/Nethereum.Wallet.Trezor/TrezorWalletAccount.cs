@@ -11,6 +11,7 @@ using Nethereum.Signer.Trezor;
 
 namespace Nethereum.Wallet.Trezor;
 
+[Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "trezor-wallet-accounts", "TrezorWalletAccount")]
 public class TrezorWalletAccount : WalletAccountBase
 {
     public static readonly string TypeName = "trezor";

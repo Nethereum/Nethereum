@@ -558,7 +558,7 @@ namespace Nethereum.Wallet.Hosting
 
         private SignaturePromptContext CreatePersonalSignContext(string message, string address)
         {
-            var isHex = message.IsHex();
+            var isHex = message.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && message.IsHex();
             string? decoded = null;
 
             if (isHex)

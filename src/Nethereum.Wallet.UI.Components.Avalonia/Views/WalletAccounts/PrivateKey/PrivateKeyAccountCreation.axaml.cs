@@ -87,6 +87,7 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views.WalletAccounts.PrivateKe
             set => SetValue(ComponentWidthProperty, value);
         }
 
+        [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "PrivateKeyAccountCreation.FormStep")]
         public enum FormStep
         {
             Setup = 0,

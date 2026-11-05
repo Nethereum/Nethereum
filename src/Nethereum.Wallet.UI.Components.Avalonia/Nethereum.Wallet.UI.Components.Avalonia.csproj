@@ -4,10 +4,11 @@
   <PropertyGroup>
     <Description>Avalonia host controls and services for Nethereum wallet UI components.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Avalonia</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components.Avalonia</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Avalonia</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>Nethereum;Ethereum;Wallet;Avalonia;UI</PackageTags>
   </PropertyGroup>
 
@@ -36,4 +37,8 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

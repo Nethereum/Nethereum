@@ -107,6 +107,10 @@
                             </StackPanel>
                         </Border>
                     </Border>
+                    <viewsShared:WalletInfoCard Severity="Info"
+                                                Description="{Binding $parent[mnemonicViews:MnemonicAccountCreation].Localizer.GetString(mnemonicLocalizers:MnemonicAccountEditorLocalizer.Keys.LegacyWordsHint)}"
+                                                Icon="info"
+                                                IsVisible="{Binding $parent[mnemonicViews:MnemonicAccountCreation].ViewModel.ShowLegacyWordsHint}" />
                     </StackPanel>
                 </viewsShared:WalletFormSection>
 

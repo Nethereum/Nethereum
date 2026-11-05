@@ -11,13 +11,18 @@ namespace Nethereum.Wallet.RpcRequests
 
         public override async Task<RpcResponseMessage> HandleAsync(RpcRequestMessage request, IWalletContext context)
         {
+            var dapp = context.SelectedDapp;
             var selectedAccount = context.SelectedAccount;
             if (string.IsNullOrWhiteSpace(selectedAccount))
             {
-                return new RpcResponseMessage(request.Id, new JArray());
+                selectedAccount = await context.EnableProviderAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(selectedAccount))
+                {
+                    return UserRejected(request.Id);
+                }
             }
 
-            var origin = context.SelectedDapp?.Origin;
+            var origin = dapp?.Origin;
             if (!string.IsNullOrWhiteSpace(origin))
             {
                 var normalizedOrigin = origin.Trim().ToLowerInvariant();
@@ -25,7 +30,7 @@ namespace Nethereum.Wallet.RpcRequests
 
                 if (!await context.DappPermissions.IsApprovedAsync(normalizedOrigin, normalizedAccount).ConfigureAwait(false))
                 {
-                    var approved = await context.RequestDappPermissionAsync(context.SelectedDapp!, selectedAccount).ConfigureAwait(false);
+                    var approved = await context.RequestDappPermissionAsync(dapp!, selectedAccount).ConfigureAwait(false);
                     if (!approved)
                     {
                         return UserRejected(request.Id);

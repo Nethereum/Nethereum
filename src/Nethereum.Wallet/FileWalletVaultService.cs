@@ -51,6 +51,8 @@ public class FileWalletVaultService : WalletVaultServiceBase
             Directory.CreateDirectory(directory);
         }
 
-        await File.WriteAllTextAsync(_filePath, encrypted);
+        var temporaryPath = _filePath + ".tmp";
+        await File.WriteAllTextAsync(temporaryPath, encrypted);
+        File.Move(temporaryPath, _filePath, true);
     }
 }

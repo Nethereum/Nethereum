@@ -115,7 +115,7 @@ namespace Nethereum.Wallet.UI.Components.Prompts
                 return string.Empty;
             }
 
-            if (isHex || message.IsHex())
+            if (isHex)
             {
                 return message;
             }

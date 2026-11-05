@@ -17,6 +17,7 @@ namespace Nethereum.Wallet.RpcRequests
         {
             var id = request.Id;
 
+            var dapp = context.SelectedDapp;
             var selectedAccount = context.SelectedWalletAccount;
             if (selectedAccount == null)
             {
@@ -37,6 +38,11 @@ namespace Nethereum.Wallet.RpcRequests
             var typedDataJson = parameters[1]?.ToString();
             if (address == null || typedDataJson == null)
                 return InvalidParams(id);
+
+            if (!selectedAccount.Address.IsTheSameAddress(address))
+            {
+                return InvalidParams(id, "Addresses do not match");
+            }
 
             TypedDataRaw typedDataRaw;
             try
@@ -62,9 +68,9 @@ namespace Nethereum.Wallet.RpcRequests
             {
                 Address = address,
                 TypedDataJson = typedDataJson,
-                Origin = context.SelectedDapp?.Origin,
-                DappName = context.SelectedDapp?.Title,
-                DappIcon = context.SelectedDapp?.Icon,
+                Origin = dapp?.Origin,
+                DappName = dapp?.Title,
+                DappIcon = dapp?.Icon,
                 DomainName = domainName,
                 DomainVersion = domainVersion,
                 VerifyingContract = verifyingContract,
@@ -85,11 +91,6 @@ namespace Nethereum.Wallet.RpcRequests
             if (string.IsNullOrEmpty(signature))
             {
                 return UserRejected(id);
-            }
-
-            if(!selectedAccount.Address.IsTheSameAddress(address))
-            {
-                return InvalidParams(id, "Addresses do not match");
             }
 
             return new RpcResponseMessage(id, signature);

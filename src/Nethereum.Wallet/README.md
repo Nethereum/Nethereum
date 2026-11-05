@@ -204,6 +204,10 @@ var seed = Bip39.MnemonicToSeed(mnemonic, passphrase);
 - Salt: "mnemonic" + passphrase
 - PBKDF2 with 2048 iterations using SHA512
 - Returns 64 bytes
+- Rejects (ArgumentException) a mnemonic that is not 12, 15, 18, 21 or 24 words of the BIP-39 English word list with a valid checksum; the mnemonic is canonicalised (NFKD, trimmed, whitespace collapsed, lower-cased) and the seed is derived from the canonical form. Pass `validateMnemonic: false` to `new MinimalHDWallet(mnemonic, passphrase, false)` or `Bip39.MnemonicToSeed(mnemonic, passphrase, false)` for a non-standard mnemonic
+- Mnemonic and passphrase are limited to 4096 characters
+- `Bip39.IsLegacyUppercaseWordMnemonic(mnemonic)` returns true when a word is exactly `TRUE` or `FALSE`; 7.0 generated those capitals and derived a non-standard seed from them. Lenient loading keeps the 7.0 addresses
+- `Bip39.IsNonStandardMnemonicForm(mnemonic)` returns true when the NFKD of the text as given differs from the canonical form (any capital letter, repeated or non-space whitespace, leading or trailing whitespace), meaning 7.0 derived a seed that standard wallets do not. `MnemonicInfo.RequiresStandardSeedMigration`, `MnemonicWalletAccount.RequiresStandardSeedMigration`, `vault.AccountsWithLegacySeed` and `WalletVaultServiceBase.HasAccountsWithLegacySeed` use this check
 
 ### BIP32 Key Derivation
 
@@ -274,6 +278,12 @@ mnemonicInfo.Id; // Guid.NewGuid().ToString()
 
 vault.AddMnemonic(mnemonicInfo);
 vault.FindMnemonicById("mnemonic-id");
+
+mnemonicInfo.RequiresStandardSeedMigration;   // true when the stored phrase is not in canonical form (non-standard 7.0 seed)
+vault.MnemonicsWithLegacySeed;                // IReadOnlyList<MnemonicInfo>
+vault.AccountsWithLegacySeed;                 // IReadOnlyList<IWalletAccount>
+vaultService.AccountsWithLegacySeed;          // same list from WalletVaultServiceBase after unlock
+vaultService.HasAccountsWithLegacySeed;
 ```
 
 **From:** `src/Nethereum.Wallet/MnemonicInfo.cs:8`
@@ -298,7 +308,7 @@ vault.GetHardwareDevicesByType("Trezor");
 
 ### Vault Encryption
 
-Encrypt vault with password using AES-256.
+Encrypt vault with password using AES-256-GCM.
 
 ```csharp
 using Nethereum.Wallet;
@@ -307,7 +317,7 @@ using Nethereum.Wallet.WalletAccounts;
 using Nethereum.Signer;
 
 // Create vault with encryption strategy
-var vault = new WalletVault(new DefaultAes256EncryptionStrategy());
+var vault = new WalletVault(new Aes256GcmEncryptionStrategy());
 
 // Add mnemonic
 var mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -336,7 +346,7 @@ vault.AddAccount(privateAccount);
 var encrypted = vault.Encrypt("password123");
 
 // Decrypt
-var decryptedVault = new WalletVault(new DefaultAes256EncryptionStrategy());
+var decryptedVault = new WalletVault(new Aes256GcmEncryptionStrategy());
 decryptedVault.Decrypt(encrypted, "password123");
 
 // Access accounts
@@ -359,9 +369,26 @@ var accounts = decryptedVault.Accounts; // All accounts restored
 
 ## Encryption Strategies
 
-### DefaultAes256EncryptionStrategy
+### Aes256GcmEncryptionStrategy
 
-AES-256 encryption using .NET Crypto with PBKDF2 key derivation.
+Default strategy for every new vault. Authenticated AES-256-GCM encryption; reads vaults written by the older strategies and `WalletVaultServiceBase` re-saves a legacy vault in this format on the next successful unlock when the configured strategy is this one or one of the obsolete AES strategies (a service configured with `KeyStoreEncryptionStrategy` or a custom strategy keeps its format). A legacy AES-CBC vault whose accounts are not self-consistent is not re-saved. In that case `WalletVaultServiceBase.VaultIntegrityCheckFailed` is true after unlock and saves keep the vault's original legacy format until a later unlock passes the check.
+
+```csharp
+using Nethereum.Wallet;
+
+var strategy = new Aes256GcmEncryptionStrategy();
+```
+
+**Format:**
+- Header: magic `NWV`, version, KDF id, iterations (big-endian), 16-byte random salt, 12-byte random nonce; the header is the GCM associated data
+- PBKDF2-HMAC-SHA256 with 600,000 iterations; iterations above 10,000,000 are rejected on read
+- Uses `AesGcm` where the platform supports it, BouncyCastle otherwise (`new Aes256GcmEncryptionStrategy(true)` forces BouncyCastle); both write the same bytes
+
+**From:** `src/Nethereum.Wallet/Aes256GcmEncryptionStrategy.cs`
+
+### DefaultAes256EncryptionStrategy (obsolete)
+
+Obsolete: writes the `Aes256GcmEncryptionStrategy` format and still reads the legacy format below.
 
 ```csharp
 using Nethereum.Wallet;
@@ -369,7 +396,7 @@ using Nethereum.Wallet;
 var strategy = new DefaultAes256EncryptionStrategy();
 ```
 
-**Algorithm:**
+**Legacy format (read only):**
 - AES-256-CBC
 - PBKDF2 with 10,000 iterations, SHA256
 - Fixed salt: "NethereumWallet16"
@@ -377,9 +404,9 @@ var strategy = new DefaultAes256EncryptionStrategy();
 
 **From:** `src/Nethereum.Wallet/DefaultAes256EncryptionStrategy.cs:12`
 
-### BouncyCastleAes256EncryptionStrategy
+### BouncyCastleAes256EncryptionStrategy (obsolete)
 
-AES-256 encryption using BouncyCastle library.
+Obsolete: writes the `Aes256GcmEncryptionStrategy` format using BouncyCastle only and still reads the legacy AES-256-CBC format (PBKDF2-HMAC-SHA1, 10,000 iterations).
 
 ```csharp
 using Nethereum.Wallet;
@@ -427,7 +454,7 @@ var vaultService = new FileWalletVaultService("./vault.json");
 // Or with custom encryption strategy
 var vaultService2 = new FileWalletVaultService(
     "./vault.json",
-    new BouncyCastleAes256EncryptionStrategy());
+    new Aes256GcmEncryptionStrategy());
 
 // Create vault (saves to file)
 await vaultService.CreateNewAsync("password123");
@@ -956,7 +983,7 @@ var mnemonic = Bip39.GenerateMnemonic(12);
 var hdWallet = new MinimalHDWallet(mnemonic, password: "");
 
 // 3. Create vault
-var vault = new WalletVault(new DefaultAes256EncryptionStrategy());
+var vault = new WalletVault(new Aes256GcmEncryptionStrategy());
 
 // 4. Add mnemonic to vault
 var mnemonicInfo = new MnemonicInfo("Main Wallet", mnemonic, null);

@@ -219,7 +219,6 @@
             }
             catch
             {
-                // Error message handled in ViewModel
             }
         }
         else if (!string.IsNullOrEmpty(ViewModel.SignaturePreview))
@@ -240,6 +239,11 @@
         if (SignatureInfo == null)
         {
             return string.Empty;
+        }
+
+        if (SignatureInfo.Method == "eth_signTypedData_v4")
+        {
+            return SignatureInfo.DecodedMessage ?? string.Empty;
         }
 
         if (_showRaw || string.IsNullOrEmpty(SignatureInfo.DecodedMessage))

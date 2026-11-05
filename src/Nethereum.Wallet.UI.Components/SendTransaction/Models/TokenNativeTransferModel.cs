@@ -125,6 +125,7 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
         partial void OnAvailableBalanceChanged(BigInteger value)
         {
             ValidateAmountBalance();
+            OnPropertyChanged(nameof(IsValid));
         }
         
         partial void OnTokenSymbolChanged(string value) { }
@@ -136,7 +137,6 @@ namespace Nethereum.Wallet.UI.Components.SendTransaction.Models
         
         partial void OnNonceChanged(string value)
         {
-            // Custom validation for nonce (must be non-negative BigInteger)
             if (!string.IsNullOrWhiteSpace(value))
             {
                 if (!BigInteger.TryParse(value, out var n) || n < 0)

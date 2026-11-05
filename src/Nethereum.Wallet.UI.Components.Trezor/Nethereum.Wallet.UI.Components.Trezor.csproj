@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Shared view models and helpers for integrating Trezor devices into Nethereum wallet UIs.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Trezor</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components.Trezor</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Trezor</PackageId>

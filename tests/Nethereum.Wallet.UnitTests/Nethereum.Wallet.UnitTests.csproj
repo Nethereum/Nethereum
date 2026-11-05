@@ -15,7 +15,9 @@
 
 
   <ItemGroup>
+    <PackageReference Include="NBitcoin" Version="7.0.6" />
     <ProjectReference Include="..\..\src\Nethereum.Wallet\Nethereum.Wallet.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Wallet.Trezor\Nethereum.Wallet.Trezor.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Documentation\Nethereum.Documentation.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.TokenServices\Nethereum.TokenServices.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DataServices\Nethereum.DataServices.csproj" />

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.Wallet.Trezor;
 
+[Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "trezor-wallet-accounts", "ITrezorDeviceDiscoveryService")]
 public interface ITrezorDeviceDiscoveryService
 {
     Task<IReadOnlyList<TrezorDerivationPreview>> DiscoverAsync(
@@ -15,4 +16,5 @@ public interface ITrezorDeviceDiscoveryService
         CancellationToken cancellationToken = default);
 }
 
+[Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "trezor-wallet-accounts", "TrezorDerivationPreview")]
 public record TrezorDerivationPreview(uint Index, string Address);

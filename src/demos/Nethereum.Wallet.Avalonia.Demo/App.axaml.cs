@@ -38,7 +38,7 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<IEncryptionStrategy, DefaultAes256EncryptionStrategy>();
+        services.AddSingleton<IEncryptionStrategy, Aes256GcmEncryptionStrategy>();
 
         services.AddSingleton<IWalletVaultService>(sp =>
         {

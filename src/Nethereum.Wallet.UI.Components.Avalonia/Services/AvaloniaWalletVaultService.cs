@@ -8,6 +8,7 @@ using Nethereum.Wallet;
 
 namespace Nethereum.Wallet.UI.Components.Avalonia.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.WalletUI, "avalonia-wallet-components", "AvaloniaWalletVaultService")]
     public class AvaloniaWalletVaultService : WalletVaultServiceBase
     {
         private readonly string _vaultPath;

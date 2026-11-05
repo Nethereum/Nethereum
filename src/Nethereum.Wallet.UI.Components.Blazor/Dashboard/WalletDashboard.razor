@@ -98,6 +98,10 @@
         
         <!-- Main Content -->
         <div class="pa-3" style="flex: 1; overflow-y: auto;">
+            @if (ViewModel.ShowLegacySeedWarning)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-3" ShowCloseIcon="true" CloseIconClicked="@ViewModel.DismissLegacySeedWarning">@Localizer.GetString(Keys.LegacySeedWarning)</MudAlert>
+            }
             @if (SelectedPlugin != null)
             {
                 <DynamicComponent Type="@GetPluginComponentType(SelectedPlugin)" 

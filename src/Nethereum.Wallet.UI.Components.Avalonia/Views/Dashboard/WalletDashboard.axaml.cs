@@ -406,6 +406,11 @@ namespace Nethereum.Wallet.UI.Components.Avalonia.Views.Dashboard
             await _dashboardNavService.NavigateToPluginAsync("network_management", parameters);
         }
 
+        public string GetLegacySeedWarning()
+        {
+            return _localizer.GetString(WalletDashboardLocalizer.Keys.LegacySeedWarning);
+        }
+
         public bool ShouldShowSidebar()
         {
             return _globalConfig.DrawerBehavior switch

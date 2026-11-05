@@ -26,6 +26,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
             public const string RemoveAccount = "RemoveAccount";
             public const string CannotRemoveLastAccount = "CannotRemoveLastAccount";
             public const string SecurityWarning = "SecurityWarning";
+            public const string LegacySeedMarker = "LegacySeedMarker";
             public const string SecurityWarningMessage = "SecurityWarningMessage";
             public const string RevealPrivateKey = "RevealPrivateKey";
             public const string EnterPasswordTitle = "EnterPasswordTitle";
@@ -98,6 +99,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 [Keys.RemoveAccount] = "Remove Account",
                 [Keys.CannotRemoveLastAccount] = "Cannot remove the last account",
                 [Keys.SecurityWarning] = "Security Warning",
+                [Keys.LegacySeedMarker] = "This wallet's recovery phrase is stored in a non-standard form from an earlier version. Restoring the phrase in another wallet will not show these funds. Create a new wallet and move your funds to it.",
                 [Keys.SecurityWarningMessage] = "Never share your private key with anyone. Only reveal it in a secure environment.",
                 [Keys.RevealPrivateKey] = "Reveal Private Key",
                 [Keys.EnterPasswordTitle] = "Enter Password",
@@ -164,6 +166,7 @@ namespace Nethereum.Wallet.UI.Components.WalletAccounts.Mnemonic
                 [Keys.RemoveAccount] = "Eliminar Cuenta",
                 [Keys.CannotRemoveLastAccount] = "No se puede eliminar la última cuenta",
                 [Keys.SecurityWarning] = "Advertencia de Seguridad",
+                [Keys.LegacySeedMarker] = "La frase de recuperación de esta cartera está guardada en una forma no estándar de una versión anterior. Restaurar la frase en otra cartera no mostrará estos fondos. Crea una cartera nueva y traslada tus fondos a ella.",
                 [Keys.SecurityWarningMessage] = "Nunca compartas tu clave privada con nadie. Solo revélala en un entorno seguro.",
                 [Keys.RevealPrivateKey] = "Revelar Clave Privada",
                 [Keys.EnterPasswordTitle] = "Ingresa Contraseña",

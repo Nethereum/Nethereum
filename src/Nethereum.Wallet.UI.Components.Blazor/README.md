@@ -49,7 +49,7 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddSingleton<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddSingleton<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, Aes256GcmEncryptionStrategy>();
 
 await builder.Build().RunAsync();
 ```
@@ -67,7 +67,7 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddScoped<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddScoped<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, Aes256GcmEncryptionStrategy>();
 
 var app = builder.Build();
 app.Run();
@@ -1015,7 +1015,7 @@ builder.Services.AddNethereumWalletUI();
 // Register storage services
 builder.Services.AddSingleton<IWalletVaultService, LocalStorageWalletVaultService>();
 builder.Services.AddSingleton<IWalletStorageService, LocalStorageWalletStorageService>();
-builder.Services.AddSingleton<IEncryptionStrategy, BouncyCastleAes256EncryptionStrategy>();
+builder.Services.AddSingleton<IEncryptionStrategy, Aes256GcmEncryptionStrategy>();
 
 // Configure wallet UI
 builder.Services.AddSingleton<INethereumWalletUIConfiguration>(sp =>

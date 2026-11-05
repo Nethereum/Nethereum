@@ -2,9 +2,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Helpers for integrating raw Android USB access into MAUI applications (used by hardware wallet flows).</Description>
     <AssemblyTitle>Nethereum.Maui.AndroidUsb</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <AssemblyName>Nethereum.Maui.AndroidUsb</AssemblyName>
     <PackageId>Nethereum.Maui.AndroidUsb</PackageId>
     <PackageTags>Nethereum;Ethereum;MAUI;Android;USB</PackageTags>
@@ -29,4 +30,8 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

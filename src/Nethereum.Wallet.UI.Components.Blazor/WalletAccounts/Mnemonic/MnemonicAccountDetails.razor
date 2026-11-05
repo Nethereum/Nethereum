@@ -67,6 +67,11 @@
                                     Style="max-width: 500px; margin: 0 auto; margin-top: -1rem;">
                     
                     <WalletBreadcrumb Items="@GetBreadcrumbItems()" />
+
+                    @if (ViewModel.RequiresStandardSeedMigration)
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">@Localizer.GetString(Keys.LegacySeedMarker)</MudAlert>
+                    }
                     
                     <div class="account-description">
                         <MudText Typo="Typo.body2" Class="text-center">

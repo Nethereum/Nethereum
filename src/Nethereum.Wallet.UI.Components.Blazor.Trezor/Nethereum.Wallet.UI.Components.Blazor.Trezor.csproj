@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Description>Blazor prompt components and services tailored for Trezor hardware wallets.</Description>
     <AssemblyTitle>Nethereum.Wallet.UI.Components.Blazor.Trezor</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(WalletUIFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.Wallet.UI.Components.Blazor.Trezor</AssemblyName>
     <PackageId>Nethereum.Wallet.UI.Components.Blazor.Trezor</PackageId>
