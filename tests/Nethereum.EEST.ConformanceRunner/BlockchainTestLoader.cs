@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Text.Json;
@@ -14,7 +15,7 @@ namespace Nethereum.EEST.ConformanceRunner
         {
             public string Name { get; set; } = "";
             public string Network { get; set; } = "";
-            public BigInteger ChainId { get; set; }
+            public BigInteger ChainId { get; set; } = BigInteger.One;
             public Dictionary<string, AccountData> Pre { get; set; } = new();
             public Dictionary<string, AccountData> PostState { get; set; } = new();
             public BlockHeader GenesisBlockHeader { get; set; } = new();
@@ -161,7 +162,7 @@ namespace Nethereum.EEST.ConformanceRunner
 
                 if (testData.TryGetProperty("blocks", out var blocks))
                 {
-                    test.Blocks = ParseBlocks(blocks);
+                    test.Blocks = ParseBlocks(blocks, test.Network);
                 }
 
                 tests.Add(test);
@@ -284,10 +285,20 @@ namespace Nethereum.EEST.ConformanceRunner
             return header;
         }
 
+        private static string? ExpectedExceptionFor(JsonElement block, string network)
+        {
+            foreach (var key in new[] { "expectException", "expectException" + network, "expectExceptionALL" })
+            {
+                if (block.TryGetProperty(key, out var expected) && expected.ValueKind == JsonValueKind.String)
+                    return expected.GetString();
+            }
+            return null;
+        }
+
         private static bool TryGetRequestsHash(JsonElement element, out JsonElement value) =>
             element.TryGetProperty("requestsHash", out value) || element.TryGetProperty("requestsRoot", out value);
 
-        private static List<BlockData> ParseBlocks(JsonElement element)
+        private static List<BlockData> ParseBlocks(JsonElement element, string network)
         {
             var blocks = new List<BlockData>();
 
@@ -300,13 +311,13 @@ namespace Nethereum.EEST.ConformanceRunner
 
                 if (blockEl.TryGetProperty("blocknumber", out var blockNum))
                 {
-                    block.BlockNumber = int.Parse(blockNum.GetString() ?? "0");
+                    block.BlockNumber = (int)ParseBigInteger(blockNum.GetString());
                 }
 
-                if (blockEl.TryGetProperty("expectException", out var expectException))
-                {
-                    block.ExpectException = expectException.GetString();
-                }
+                block.ExpectException = ExpectedExceptionFor(blockEl, network)
+                    ?? (blockEl.TryGetProperty("blockHeader", out _) || blockEl.TryGetProperty("rlp_decoded", out _)
+                        ? null
+                        : ExpectedRejectionMatcher.UnspecifiedRejection);
 
                 if (blockEl.TryGetProperty("blockHeader", out var header))
                 {

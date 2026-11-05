@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using Microsoft.Extensions.Configuration;
+using Nethereum.Testing;
 using Nethereum.RPC.Extensions;
 
 namespace Nethereum.XUnitEthereumClients
@@ -25,21 +25,21 @@ namespace Nethereum.XUnitEthereumClients
 
         public StrictBundlerFixture()
         {
-            var settings = new EthereumClientIntegrationFixture.EthereumTestSettings();
-            var config = EthereumClientIntegrationFixture.InitConfiguration();
-            config?.GetSection("EthereumTestSettings").Bind(settings);
+            var strictBundlerPath = TestEnvironment.HasExternalPath("StrictBundler")
+                ? TestEnvironment.ExternalPath("StrictBundler")
+                : null;
 
-            if (string.IsNullOrEmpty(settings.StrictBundlerPath))
+            if (string.IsNullOrEmpty(strictBundlerPath))
             {
                 IsAvailable = false;
                 UnavailableReason =
-                    "No strict bundler configured. Set EthereumTestSettings.StrictBundlerPath in " +
+                    "No strict bundler configured. Set ExternalPaths:StrictBundler in " +
                     "appsettings.test.local.json to a yarn-installed checkout of " +
                     "github.com/eth-infinitism/bundler and rebuild.";
                 return;
             }
 
-            BundlerRepoPath = settings.StrictBundlerPath;
+            BundlerRepoPath = strictBundlerPath;
             Fork = new AnvilMainnetForkFixture();
             if (!Fork.IsAvailable)
             {
@@ -53,7 +53,7 @@ namespace Nethereum.XUnitEthereumClients
             web3.Eth.Anvil().SetBalance.SendRequestAsync(BENEFICIARY,
                 new Nethereum.Hex.HexTypes.HexBigInteger(Nethereum.Web3.Web3.Convert.ToWei(10000))).Wait();
 
-            var mnemonicPath = Path.Combine(settings.StrictBundlerPath,
+            var mnemonicPath = Path.Combine(strictBundlerPath,
                 "packages", "bundler", "localconfig", "mnemonic.txt");
             if (!File.Exists(mnemonicPath))
             {
@@ -61,7 +61,7 @@ namespace Nethereum.XUnitEthereumClients
                     "test test test test test test test test test test test junk");
             }
 
-            var configPath = Path.Combine(settings.StrictBundlerPath,
+            var configPath = Path.Combine(strictBundlerPath,
                 "packages", "bundler", "localconfig", "bundler.nethereum.config.json");
             File.WriteAllText(configPath, $@"{{
   ""chainId"": {Fork.ChainId},
@@ -84,13 +84,14 @@ namespace Nethereum.XUnitEthereumClients
             _logPath = Path.Combine(Path.GetTempPath(), $"strict-bundler-{PORT}.log");
             try
             {
-                _process = Process.Start(new ProcessStartInfo("cmd.exe",
-                    $"/c yarn run bundler --unsafe --config ./localconfig/bundler.nethereum.config.json > \"{_logPath}\" 2>&1")
-                {
-                    WorkingDirectory = settings.StrictBundlerPath,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                });
+                var command = $"yarn run bundler --unsafe --config ./localconfig/bundler.nethereum.config.json > \"{_logPath}\" 2>&1";
+                var startInfo = OperatingSystem.IsWindows()
+                    ? new ProcessStartInfo("cmd.exe", "/c " + command)
+                    : new ProcessStartInfo("/bin/sh", new[] { "-c", command });
+                startInfo.WorkingDirectory = strictBundlerPath;
+                startInfo.UseShellExecute = false;
+                startInfo.CreateNoWindow = true;
+                _process = Process.Start(startInfo);
                 if (_process == null)
                     throw new InvalidOperationException("Process.Start returned no process for the bundler.");
             }

@@ -20,12 +20,13 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateStateFeeTests : IClassFixture<SimulateStateFeeFixture>
     {
         private const string GethValidationFalseStateRoot =
-            "0x147e5101af51b06bae5b89d574a38f6711ecb3582a465a9a4e2aa9e7a1dbc345";
+            "0x026d07e9a1fb2c8e737ede84b4d70fd2c3be2872646b9ff1d13c215eb81354e5";
         private const string GethValidationTrueStateRoot =
-            "0x375829e5373817d26b84d5314208af86f54a32669d9a82495b3f11aa9e98ad22";
+            "0x9779f0b3e1d8059dc2c74634288ba0d5e68794d7dededc67025a3af544603b9b";
 
         private readonly SimulateStateFeeFixture _fixture;
 

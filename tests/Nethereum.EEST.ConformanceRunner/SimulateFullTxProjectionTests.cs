@@ -24,6 +24,7 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateFullTxProjectionTests : IClassFixture<SimulateFullTxProjectionFixture>
     {
         private const string GethTx0Hash = "0xc2df7444d2b0604cdfaa20cad5855422b575d8d2ec02868ed9eb45eb20490f66";
@@ -151,14 +152,14 @@ namespace Nethereum.EEST.ConformanceRunner
         {
             const string request =
                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getTransactionByHash\",\"params\":[" +
-                "\"0x0d6999c0e9e4bec347945593e97bdcdf7c25be08ca1a1efdc520dbe75be985f3\"]}";
+                "\"0x3fbac8b19b59077cd29bbacc3815d73577b45a4d976cae80b04c98c793684c07\"]}";
 
             var tx = await DispatchAsync(request);
 
             Assert.Equal("0x7435ed30a8b4aeb0877cef0c6e8cffe834eb865f", ((string)tx["from"]).ToLowerInvariant());
-            Assert.Equal("0x1b", (string)tx["v"]);
-            Assert.Equal("0xfad01b9a15db73d59b0a74b3d85718dfebb7cde80f916840a006ef5f2a85769e", ((string)tx["r"]).ToLowerInvariant());
-            Assert.Equal("0x60b08e6b12604d91c6e2c514f2c020562b61f97973ada18a1701937d3302e5f3", ((string)tx["s"]).ToLowerInvariant());
+            Assert.Equal("0x1c", (string)tx["v"]);
+            Assert.Equal("0xce1cb09c08ecf5c7b63f0ebd9601ad68c83d1084e8b726b94503bbe0aa3b8ffd", ((string)tx["r"]).ToLowerInvariant());
+            Assert.Equal("0x6111304284f68b77a35ef8ec5309314645da11a22f5f87ab81a0ac6a467680c7", ((string)tx["s"]).ToLowerInvariant());
             Assert.NotEqual("0x0", (string)tx["r"]);
             Assert.NotEqual("0x0", (string)tx["s"]);
         }

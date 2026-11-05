@@ -1,0 +1,5 @@
+# <project> <trait> <value>...
+# Each value runs as its own `dotnet test --filter <trait>=<value>` (own timeout, trx and summary line);
+# one last run covers every test carrying none of the values.
+Nethereum.EEST.ConformanceRunner Corpus eest-blockchain eest-state ethereum-tests legacy-cancun legacy-constantinople
+Nethereum.CoreChain.RocksDB.UnitTests Slice Freezer Flat

@@ -1,0 +1,7 @@
+NetDapps
+Nethereum.HybridWebView
+Nethereum.Maui.AndroidUsb
+Nethereum.Wallet.UI.Components.Maui
+Nethereum.Unity
+Nethereum.BigInteger.N351
+Nethereum.ClassDiagrams

@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup Condition="'$([MSBuild]::IsOSPlatform(Linux))' == 'true' And Exists('/usr/lib/x86_64-linux-gnu/libjemalloc.so.2') And '$(RunSettingsFilePath)' == ''">
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)jemalloc.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+</Project>

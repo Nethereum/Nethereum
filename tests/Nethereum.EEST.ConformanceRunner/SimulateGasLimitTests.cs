@@ -20,6 +20,7 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateGasLimitTests : IClassFixture<SimulateGasLimitFixture>
     {
         private readonly SimulateGasLimitFixture _fixture;

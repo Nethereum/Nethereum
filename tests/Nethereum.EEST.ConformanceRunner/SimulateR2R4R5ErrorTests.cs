@@ -16,6 +16,7 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateR2R4R5ErrorTests : IClassFixture<SimulateR2R4R5ErrorFixture>
     {
         private readonly SimulateR2R4R5ErrorFixture _fixture;

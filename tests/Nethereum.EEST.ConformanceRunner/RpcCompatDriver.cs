@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Rpc;
@@ -40,7 +41,13 @@ namespace Nethereum.EEST.ConformanceRunner
                         $"method '{request.Method}' has no handler on the node");
 
                 if (expectsError)
-                    return ConformanceCaseResult.Ok();
+                {
+                    var expectedCode = (int?)expected["error"]["code"];
+                    return response.Error.Code == expectedCode
+                        ? ConformanceCaseResult.Ok()
+                        : ConformanceCaseResult.Fail("errorMismatch",
+                            $"expected error code {expectedCode} but node returned {response.Error.Code}: {response.Error.Message}");
+                }
 
                 return ConformanceCaseResult.Fail("servedError",
                     $"expected a result but node returned error {response.Error.Code}: {response.Error.Message}");
@@ -103,7 +110,7 @@ namespace Nethereum.EEST.ConformanceRunner
                     return arr;
                 case JTokenType.String:
                     var s = (string)token;
-                    return s != null && s.StartsWith("0x") ? s.ToLowerInvariant() : s;
+                    return s;
                 default:
                     return token;
             }
@@ -118,12 +125,16 @@ namespace Nethereum.EEST.ConformanceRunner
                 return true;
 
             if (actual == null) return false;
+            if (!requireKeys && actual.Type == JTokenType.Null) return true;
             if (BaseType(expected) != BaseType(actual)) return false;
 
             switch (expected.Type)
             {
                 case JTokenType.Object:
                     var eo = (JObject)expected;
+                    if (eo.Count > 0 && eo.Properties().All(p => IsWord(p.Name)))
+                        return ((JObject)actual).Properties().All(p => IsWord(p.Name)
+                            && ShapeConforms(eo.Properties().First().Value, p.Value, requireKeys: false));
                     var ao = (JObject)actual;
                     foreach (var prop in eo)
                     {
@@ -140,10 +151,34 @@ namespace Nethereum.EEST.ConformanceRunner
                     var ea = (JArray)expected;
                     var aa = (JArray)actual;
                     if (ea.Count == 0 || aa.Count == 0) return true;
-                    return ShapeConforms(ea[0], aa[0], requireKeys: false);
+                    var union = MergeShapes(ea);
+                    return aa.All(item => ShapeConforms(union, item, requireKeys: false));
+                case JTokenType.String:
+                    return StringFormatConforms((string)expected, (string)actual);
                 default:
                     return true;
             }
+        }
+
+        private static bool IsWord(string text) =>
+            System.Text.RegularExpressions.Regex.IsMatch(text, "^0x[0-9a-fA-F]{64}$");
+
+        private static JToken MergeShapes(JArray items)
+        {
+            if (items[0].Type != JTokenType.Object) return items[0];
+            var merged = new JObject();
+            foreach (var item in items.OfType<JObject>())
+                foreach (var prop in item.Properties())
+                    if (!merged.ContainsKey(prop.Name) || merged[prop.Name].Type == JTokenType.Null)
+                        merged[prop.Name] = prop.Value;
+            return merged;
+        }
+
+        private static bool StringFormatConforms(string expected, string actual)
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(expected, "^0x[0-9a-fA-F]*$")) return true;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(actual, "^0x[0-9a-fA-F]*$")) return false;
+            return true;
         }
 
         private static JTokenType BaseType(JToken token)

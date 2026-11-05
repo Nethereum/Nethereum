@@ -1,0 +1,151 @@
+{
+  "groups": {
+    "fixtures": ["ethereum-tests", "legacytests", "eest-stable", "eest-amsterdam", "eest-fusaka-devnet-5", "execution-apis"],
+    "geth-tools": ["geth", "geth-1.13.15", "evm-1.14.12", "go-ethereum", "devp2p", "geth-reference-decoder"],
+    "aa": ["bundler", "bundler-spec-tests"],
+    "npm": ["privacy-pools-crosssdk", "x402-reference"]
+  },
+  "externals": [
+    {
+      "name": "ethereum-tests",
+      "kind": "git",
+      "repo": "https://github.com/ethereum/tests.git",
+      "commit": "c67e485ff8b5be9abc8ad15345ec21aa22e290d9",
+      "dest": "external/ethereum-tests",
+      "post": [["tar", "xzf", "fixtures_general_state_tests.tgz"]]
+    },
+    {
+      "name": "legacytests",
+      "kind": "git",
+      "repo": "https://github.com/ethereum/legacytests.git",
+      "commit": "1f581b8ccdc4c63acf5f2c5c1b155c690c32a8eb",
+      "dest": "external/legacytests"
+    },
+    {
+      "name": "eest-stable",
+      "kind": "archive",
+      "url": "https://github.com/ethereum/execution-specs/releases/download/tests%40v20.0.2/fixtures.tar.gz",
+      "sha256": "1280540950a4c3470a421416b6f35458a9b635827265c29e5aef1ae839ae1788",
+      "dest": "external/eest/stable-v20.0.2"
+    },
+    {
+      "name": "eest-amsterdam",
+      "kind": "archive",
+      "url": "https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet%40v8.1.0/fixtures_glamsterdam-devnet.tar.gz",
+      "sha256": "3bdb3783c988d8a2dbc0dd6bb2dc0986b4559829513229a48bcc2840557c2e22",
+      "dest": "external/eest/glamsterdam-devnet-v8.1.0",
+      "keep": ["fixtures/*/for_amsterdam/amsterdam/"],
+      "lift": "for_amsterdam/"
+    },
+    {
+      "name": "eest-fusaka-devnet-5",
+      "kind": "archive",
+      "url": "https://github.com/ethereum/execution-spec-tests/releases/download/fusaka-devnet-5%40v2.1.0/fixtures_fusaka-devnet-5.tar.gz",
+      "sha256": "96a39d8eb8de742e450a7e7c63ffb4c2b82187f4fed9c1406f39ff3ef9f53a91",
+      "dest": "external/eest/fusaka-devnet-5-v2.1.0",
+      "keep": ["fixtures/blockchain_tests/osaka/eip7918_blob_reserve_price/"]
+    },
+    {
+      "name": "execution-apis",
+      "kind": "git",
+      "repo": "https://github.com/ethereum/execution-apis.git",
+      "commit": "34151926fbf395e66797add1f60fd759681678e6",
+      "dest": "external/execution-apis"
+    },
+    {
+      "name": "geth",
+      "kind": "binaries",
+      "version": "1.17.4",
+      "linux": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-linux-amd64-1.17.4-36a7dc72.tar.gz",
+        "sha256": "7424a07bad62aa16482e2857b3021ced4840d31f5e59f62d588579ec568a138d"
+      },
+      "windows": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-windows-amd64-1.17.4-36a7dc72.zip",
+        "sha256": "873eabab528b87dd79b4968397b0fcb324af50d2539bd4b64ead49bab5de0806"
+      },
+      "install": { "geth": "external/bin/geth", "evm": "external/bin/evm" }
+    },
+    {
+      "name": "geth-1.13.15",
+      "kind": "binaries",
+      "version": "1.13.15",
+      "linux": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-linux-amd64-1.13.15-c5ba367e.tar.gz",
+        "sha256": "2f153cdcd9801d748d8f812cce9d7a432d155f52eb78018d09d881dfe354dfdd"
+      },
+      "windows": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-windows-amd64-1.13.15-c5ba367e.zip",
+        "sha256": "9f1c80ed57bd9fa08e7b9ddeef77a5b783d461ae7b5cf5ffa4f0b4518fbe99cc"
+      },
+      "install": { "geth": "external/bin/geth-1.13.15" }
+    },
+    {
+      "name": "evm-1.14.12",
+      "kind": "binaries",
+      "version": "1.14.12",
+      "linux": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-linux-amd64-1.14.12-293a300d.tar.gz",
+        "sha256": "32eff52de3674cc6a497be1917c5bf844e78dbd1f20f7e3f6046834214c70aab"
+      },
+      "windows": {
+        "url": "https://gethstore.blob.core.windows.net/builds/geth-alltools-windows-amd64-1.14.12-293a300d.zip",
+        "sha256": "eec9a726c904114290b53d2c0033a35f8328b1336df33b99d778181e0c9d853b"
+      },
+      "install": { "evm": "external/bin/evm-1.14.12" }
+    },
+    {
+      "name": "go-ethereum",
+      "kind": "git",
+      "repo": "https://github.com/ethereum/go-ethereum.git",
+      "commit": "36a7dc72e96b3f42846be925cfeb2fad18489917",
+      "tag": "v1.17.4",
+      "dest": "external/go-ethereum"
+    },
+    {
+      "name": "devp2p",
+      "kind": "go-build",
+      "source": "external/go-ethereum",
+      "package": "./cmd/devp2p",
+      "output": "external/bin/devp2p"
+    },
+    {
+      "name": "geth-reference-decoder",
+      "kind": "go-build",
+      "source": "tools/geth-reference-decoder",
+      "depends": "go-ethereum",
+      "replace": "github.com/ethereum/go-ethereum",
+      "package": ".",
+      "output": "external/bin/geth-reference-decoder"
+    },
+    {
+      "name": "bundler",
+      "kind": "git",
+      "repo": "https://github.com/eth-infinitism/bundler.git",
+      "commit": "aae77140e5c2b1386d04eaeba2d23fc17a62bd87",
+      "dest": "external/bundler",
+      "submodules": { "submodules/account-abstraction": "1c6b669d0eea734e09a87e095ba15e076151718a" },
+      "patch": "tests/Nethereum.AccountAbstraction.IntegrationTests/E2E/MainnetFork/nethereum-strict-bundler.patch",
+      "post": [["yarn", "install"], ["yarn", "--cwd", "submodules/account-abstraction", "install"], ["yarn", "--cwd", "submodules/account-abstraction/contracts", "prepack"], ["yarn", "preprocess2"]]
+    },
+    {
+      "name": "bundler-spec-tests",
+      "kind": "git",
+      "repo": "https://github.com/eth-infinitism/bundler-spec-tests.git",
+      "commit": "17bd608d96bc4676a5fdb9fda1a5d9dfaac0a38e",
+      "dest": "external/bundler-spec-tests",
+      "submodules": {},
+      "post": [["uv", "venv", "--python", "3.10", ".venv"], ["pdm", "install", "--prod", "--no-self", "--frozen-lockfile"], ["yarn", "--cwd", "spec", "install"], ["yarn", "--cwd", "spec", "build"]]
+    },
+    {
+      "name": "privacy-pools-crosssdk",
+      "kind": "npm",
+      "dir": "tests/Nethereum.PrivacyPools.CrossSdk.Tests/scripts"
+    },
+    {
+      "name": "x402-reference",
+      "kind": "npm",
+      "dir": "ci/externals/x402"
+    }
+  ]
+}

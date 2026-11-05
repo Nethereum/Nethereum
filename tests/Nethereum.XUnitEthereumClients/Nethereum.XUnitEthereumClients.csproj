@@ -17,6 +17,9 @@
     <PackageReference Include="xunit" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="appsettings.test.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="appsettings.test.local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('appsettings.test.local.json')" />
   </ItemGroup>

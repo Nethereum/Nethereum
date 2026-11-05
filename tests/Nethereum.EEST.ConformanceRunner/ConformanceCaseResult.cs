@@ -7,6 +7,7 @@ namespace Nethereum.EEST.ConformanceRunner
         public string Detail { get; private init; } = "";
 
         public static ConformanceCaseResult Ok() => new() { Success = true, Kind = "pass", Detail = "" };
+        public static ConformanceCaseResult Skipped(string reason) => new() { Success = true, Kind = "skipped", Detail = reason };
         public static ConformanceCaseResult Fail(string kind, string detail) => new() { Success = false, Kind = kind, Detail = detail };
     }
 }

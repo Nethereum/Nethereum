@@ -1,0 +1,11 @@
+Nethereum.Geth.IntegrationTests
+Nethereum.Besu.IntegrationTests
+Nethereum.Optimism.Testing
+Nethereum.Quorum.Tests
+Nethereum.Parity.IntegrationTests
+Nethereum.ENS.IntegrationTests
+Nethereum.ENS.UnitTests
+Nethereum.StandardTokenEIP20.IntegrationTests
+Nethereum.Signer.Ledger.IntegrationTests
+Nethereum.XUnitEthereumClients
+Nethereum.RPC.IntegrationTests

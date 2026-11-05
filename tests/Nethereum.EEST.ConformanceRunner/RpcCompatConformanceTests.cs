@@ -13,6 +13,8 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [TestCaseOrderer("Nethereum.EEST.ConformanceRunner.RpcCompatCaseOrderer", "Nethereum.EEST.ConformanceRunner")]
+    [Trait("Requires", "Externals")]
     public class RpcCompatConformanceTests
     {
         private readonly HiveResultsSink _sink;
@@ -42,13 +44,15 @@ namespace Nethereum.EEST.ConformanceRunner
             }
         }
 
-        public static TheoryData<string> Cases() => FixtureCatalog.RpcCompatCases();
+        public static TheoryData<string> Cases() => Corpora.TheoryCases(Corpora.RpcCompat);
 
         [Theory]
         [MemberData(nameof(Cases))]
-        public async Task Vector(string file)
+        public async Task Vector(string caseId)
         {
-            if (file == FixtureCatalog.MissingCacheSentinel)
+            if (caseId == Corpora.FilteredOutSentinel) return;
+
+            if (caseId == Corpora.MissingCacheSentinel)
             {
                 Assert.Fail(
                     $"ethereum/execution-apis vectors not found at '{FixtureProvisioning.ExecutionApisTestsRoot}'. " +
@@ -56,7 +60,7 @@ namespace Nethereum.EEST.ConformanceRunner
                 return;
             }
 
-            if (file == FixtureCatalog.NoFixturesSentinel)
+            if (caseId == Corpora.NoFixturesSentinel)
             {
                 Assert.Fail(
                     $"execution-apis tests root at '{FixtureProvisioning.ExecutionApisTestsRoot}' exists but contains " +
@@ -64,15 +68,19 @@ namespace Nethereum.EEST.ConformanceRunner
                 return;
             }
 
+            var conformanceCase = Corpora.RpcCompat.Find(caseId);
+            Assert.True(conformanceCase != null, $"Case '{caseId}' is not in the corpus at '{Corpora.RpcCompat.Root}'.");
+
+            var file = conformanceCase.File;
+            var hiveCaseId = Corpora.HiveCaseId(conformanceCase);
             var start = DateTimeOffset.UtcNow;
-            var caseId = RelativePath(file);
             var chain = await GetChainAsync();
 
             var exchanges = RpcCompatVectorLoader.Load(file);
             if (exchanges.Count == 0)
             {
                 var end0 = DateTimeOffset.UtcNow;
-                _sink.Record(caseId, caseId, false, "[malformedVector] no request/response exchange in file", start, end0);
+                _sink.Record(hiveCaseId, hiveCaseId, false, "[malformedVector] no request/response exchange in file", start, end0);
                 Assert.Fail($"No request/response exchange in {file}.");
                 return;
             }
@@ -94,16 +102,9 @@ namespace Nethereum.EEST.ConformanceRunner
 
             var end = DateTimeOffset.UtcNow;
             var details = result.Success ? "" : $"[{result.Kind}] {result.Detail}";
-            _sink.Record(caseId, caseId, result.Success, details, start, end);
+            _sink.Record(hiveCaseId, hiveCaseId, result.Success, details, start, end);
 
             Assert.True(result.Success, details);
-        }
-
-        private static string RelativePath(string file)
-        {
-            var root = FixtureCatalog.RepoRoot;
-            if (root == null) return file;
-            return Path.GetRelativePath(root, file).Replace('\\', '/');
         }
     }
 }

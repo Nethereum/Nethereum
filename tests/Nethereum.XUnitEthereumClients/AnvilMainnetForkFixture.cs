@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Threading;
-using Microsoft.Extensions.Configuration;
+using Nethereum.Testing;
 
 namespace Nethereum.XUnitEthereumClients
 {
@@ -26,21 +26,19 @@ namespace Nethereum.XUnitEthereumClients
 
         public AnvilMainnetForkFixture()
         {
-            var settings = new EthereumClientIntegrationFixture.EthereumTestSettings();
-            var config = EthereumClientIntegrationFixture.InitConfiguration();
-            config?.GetSection("EthereumTestSettings").Bind(settings);
+            var forkUrl = TestEnvironment.ServiceOrNull("AnvilForkUrl");
 
-            if (string.IsNullOrEmpty(settings.AnvilForkUrl))
+            if (string.IsNullOrEmpty(forkUrl))
             {
                 IsAvailable = false;
                 UnavailableReason =
-                    "No fork url configured. Set EthereumTestSettings.AnvilForkUrl in " +
+                    "No fork url configured. Set Services:AnvilForkUrl in " +
                     "appsettings.test.local.json (kept out of git) to a node rpc url and rebuild " +
                     "to enable the mainnet fork tests.";
                 return;
             }
 
-            var forkSource = new Web3.Web3(settings.AnvilForkUrl);
+            var forkSource = new Web3.Web3(forkUrl);
             var tip = forkSource.Eth.Blocks.GetBlockNumber.SendRequestAsync().Result.Value;
             ForkBlockNumber = tip - FORK_BLOCK_SAFETY_MARGIN;
 
@@ -49,8 +47,8 @@ namespace Nethereum.XUnitEthereumClients
 
             try
             {
-                _process = Process.Start(new ProcessStartInfo("anvil",
-                    $"--fork-url {settings.AnvilForkUrl} --fork-block-number {ForkBlockNumber} --port {PORT} --no-rate-limit --block-time 1")
+                _process = Process.Start(new ProcessStartInfo(TestEnvironment.Tool("Anvil"),
+                    $"--fork-url {forkUrl} --fork-block-number {ForkBlockNumber} --port {PORT} --no-rate-limit --block-time 1")
                 {
                     UseShellExecute = false,
                     CreateNoWindow = true,

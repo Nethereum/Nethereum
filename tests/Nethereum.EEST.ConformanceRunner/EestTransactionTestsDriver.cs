@@ -1,3 +1,4 @@
+using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -136,6 +137,7 @@ namespace Nethereum.EEST.ConformanceRunner
             "TYPE_4_INVALID_AUTHORITY_SIGNATURE",
             "TYPE_4_INVALID_AUTHORITY_SIGNATURE_S_TOO_HIGH",
             "TYPE_3_TX_WITH_FULL_BLOBS",
+            "NONCE_OVERFLOW",
         };
 
         private static bool SatisfiedByRefusalToForm(string expectException)

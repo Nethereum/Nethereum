@@ -250,6 +250,10 @@
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
+    <Project Path="src/Nethereum.EngineApi.Hosting/Nethereum.EngineApi.Hosting.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
     <Project Path="src/Nethereum.DevChain/Nethereum.DevChain.csproj">
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Debug" />
@@ -383,11 +387,31 @@
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
+    <Project Path="tests/Nethereum.EVM.Microbench/Nethereum.EVM.Microbench.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
     <Project Path="tests/Nethereum.EVM.UnitTests/Nethereum.EVM.UnitTests.csproj">
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>
     <Project Path="tests/Nethereum.EVM.Core.Tests/Nethereum.EVM.Core.Tests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EVM.Precompiles.Bn254PortableTests/Nethereum.EVM.Precompiles.Bn254PortableTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EVM.Precompiles.ModExpPortableTests/Nethereum.EVM.Precompiles.ModExpPortableTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EEST.Conformance/Nethereum.EEST.Conformance.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Debug" />
+    </Project>
+    <Project Path="tests/Nethereum.EEST.ConformanceRunner/Nethereum.EEST.ConformanceRunner.csproj">
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Debug" />
     </Project>
@@ -588,6 +612,10 @@
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>
+    <Project Path="tests/Nethereum.Mud.Repositories.Postgres.UnitTests/Nethereum.Mud.Repositories.Postgres.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Debug" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
   </Folder>
   <Folder Name="/src/Mud/TestExampleProjects/">
     <Project Path="consoletests/NethereumMudLogProcessing/NethereumMudLogProcessing.csproj">
@@ -710,7 +738,7 @@
     </Project>
   </Folder>
   <Folder Name="/src/RSK/">
-    <Project Path="src/Nethereum.RSK/Nethereum.Rsk.csproj">
+    <Project Path="src/Nethereum.Rsk/Nethereum.Rsk.csproj">
       <BuildType Solution="ExportDebug|*" Project="Debug" />
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>
@@ -1017,6 +1045,14 @@
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>
     <Project Path="src/Nethereum.Wallet/Nethereum.Wallet.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Wallet.UI.Components.Avalonia.UnitTests/Nethereum.Wallet.UI.Components.Avalonia.UnitTests.csproj">
+      <BuildType Solution="ExportDebug|*" Project="Release" />
+      <BuildType Solution="ExportRelease|*" Project="Release" />
+    </Project>
+    <Project Path="tests/Nethereum.Wallet.UI.Components.UnitTests/Nethereum.Wallet.UI.Components.UnitTests.csproj">
       <BuildType Solution="ExportDebug|*" Project="Release" />
       <BuildType Solution="ExportRelease|*" Project="Release" />
     </Project>

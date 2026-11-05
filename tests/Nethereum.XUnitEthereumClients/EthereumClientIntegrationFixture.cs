@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Nethereum.JsonRpc.Client;
+using Nethereum.Testing;
 using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.Web3.Accounts;
 using Nethereum.Web3.Accounts.Managed;
@@ -42,7 +43,7 @@ namespace Nethereum.XUnitEthereumClients
     public class EthereumClientIntegrationFixture : IDisposable
     {
         public const string ETHEREUM_CLIENT_COLLECTION_DEFAULT = "Ethereum client Test";
-        public static string GethClientPath { get; set; } = @"..\..\..\..\..\testchain\clique\geth.exe";
+        public static string GethClientPath { get; set; } = TestEnvironment.Tool("Geth");
         public static string ParityClientPath { get; set; } = @"..\..\..\..\..\testchain\parity poa\parity.exe";
 
         public static string HardhatClientPath { get; set; } = @"..\..\..\..\testchain\hardhat";
@@ -148,7 +149,7 @@ namespace Nethereum.XUnitEthereumClients
                 }
                 throw new InvalidOperationException(
                     $"The test node did not become available at {HttpUrl} within 30 seconds. Last error: {lastError}. " +
-                    "If geth.exe is missing or outdated, run testchain/clique/get-geth.ps1 to install the pinned version.");
+                    "If geth is missing or outdated, run dotnet run ci/fetch-externals.cs or set Tools:Geth in appsettings.test.local.json.");
             }
         }
 
@@ -221,10 +222,6 @@ namespace Nethereum.XUnitEthereumClients
             public string InfuraId { get; set; }
 
             public string HttpUrl { get; set; }
-
-            public string AnvilForkUrl { get; set; }
-
-            public string StrictBundlerPath { get; set; }
         }
 
         public EthereumClientIntegrationFixture()
@@ -255,42 +252,6 @@ namespace Nethereum.XUnitEthereumClients
                 }
             }
 
-            var client = Environment.GetEnvironmentVariable("ETHEREUM_CLIENT");
-
-            if (client == null)
-            {
-                Console.WriteLine("**************TEST CLIENT NOT CONFIGURED IN ENVIRONMENT USING DEFAULT");
-            }
-            else
-            {
-                Console.WriteLine("************ENVIRONMENT CONFIGURED WITH CLIENT: " + client.ToString());
-            }
-
-            if (string.IsNullOrEmpty(client))
-            {
-
-            }
-            else if (client == "geth")
-            {
-                EthereumClient = EthereumClient.Geth;
-                Console.WriteLine("********TESTING WITH GETH****************");
-            }
-            else if (client == "parity")
-            {
-                EthereumClient = EthereumClient.OpenEthereum;
-                Console.WriteLine("******* TESTING WITH PARITY ****************");
-            }
-            else if (client == "ganache")
-            {
-                EthereumClient = EthereumClient.Ganache;
-                Console.WriteLine("******* TESTING WITH GANACHE ****************");
-            }
-            else if (client == "hardhat")
-            {
-                EthereumClient = EthereumClient.Hardhat;
-                Console.WriteLine("******* TESTING WITH HARDHat ****************");
-            }
-
             if (EthereumClient == EthereumClient.Geth)
             {
 
@@ -301,13 +262,11 @@ namespace Nethereum.XUnitEthereumClients
                 DeleteData();
 
                 var psi = new ProcessStartInfo(_exePath,
-                    @" --dev --nodiscover --http --datadir=devChain --keystore devChain/keystore --dev.period 1 --dev.gaslimit 60000000 --http.corsdomain ""*"" --ws --http.api ""eth,web3,net,admin,debug"" --http.addr ""0.0.0.0"" --password ""pass.txt"" --verbosity 0 console")
+                    @" --dev --nodiscover --http --datadir=devChain --keystore devChain/keystore --dev.period 1 --dev.gaslimit 60000000 --http.corsdomain ""*"" --ws --http.api ""eth,web3,net,admin,debug"" --http.addr ""0.0.0.0"" --password ""pass.txt"" --verbosity 0")
                 {
-                    CreateNoWindow = false,
-                    WindowStyle = ProcessWindowStyle.Normal,
-                    UseShellExecute = true,
-                    WorkingDirectory = Path.GetDirectoryName(_exePath)
-
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    WorkingDirectory = GethDataRoot
                 };
                 _process = Process.Start(psi);
                 WaitForNodeReadyOrThrow();
@@ -384,6 +343,8 @@ namespace Nethereum.XUnitEthereumClients
             }
         }
 
+        private static string GethDataRoot => Path.Combine(TestEnvironment.RepoRoot, "testchain", "clique");
+
         private void DeleteData()
         {
             var attempts = 0;
@@ -408,7 +369,7 @@ namespace Nethereum.XUnitEthereumClients
         {
             if (EthereumClient == EthereumClient.Geth)
             {
-                var pathData = Path.Combine(Path.GetDirectoryName(_exePath), @"devChain\geth");
+                var pathData = Path.Combine(GethDataRoot, "devChain", "geth");
 
                 if (Directory.Exists(pathData))
                 {

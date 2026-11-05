@@ -31,7 +31,9 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="..\Nethereum.EEST.Conformance\Nethereum.EEST.Conformance.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.DevChain\Nethereum.DevChain.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Node.HarnessServer\Nethereum.Node.HarnessServer.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.EVM.Precompiles.Kzg\Nethereum.EVM.Precompiles.Kzg.csproj" />
@@ -75,6 +77,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\ExpectedRejectionMatcher.cs"
+             Link="ExpectedRejectionMatcher.cs" />
   </ItemGroup>
 
 </Project>

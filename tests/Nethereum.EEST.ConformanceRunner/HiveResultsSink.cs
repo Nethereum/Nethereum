@@ -19,19 +19,21 @@ namespace Nethereum.EEST.ConformanceRunner
         private string _suiteName = "Unconfigured conformance suite";
 
         public static readonly string ResultsDir = Path.Combine(
-            FixtureCatalog.RepoRoot ?? Directory.GetCurrentDirectory(),
+            Corpora.RepoRoot ?? Directory.GetCurrentDirectory(),
             ".testresults", "hive", "workspace", "logs");
 
-        public void EnsureSuite(IConformanceDriver driver)
+        public void EnsureSuite(IConformanceDriver driver) => EnsureSuite(driver.SuiteId, driver.SuiteName);
+
+        public void EnsureSuite(string suiteId, string suiteName)
         {
-            if (_suiteId == driver.SuiteId) return;
+            if (_suiteId == suiteId) return;
             if (_suiteId != "unconfigured-suite")
                 throw new InvalidOperationException(
-                    $"HiveResultsSink already configured for suite '{_suiteId}'; refusing to also report '{driver.SuiteId}' " +
+                    $"HiveResultsSink already configured for suite '{_suiteId}'; refusing to also report '{suiteId}' " +
                     "into the same file - give each driver its own collection/sink.");
 
-            _suiteId = driver.SuiteId;
-            _suiteName = driver.SuiteName;
+            _suiteId = suiteId;
+            _suiteName = suiteName;
         }
 
         public void Record(string caseId, string name, bool pass, string details, DateTimeOffset start, DateTimeOffset end)

@@ -1,0 +1,15 @@
+{
+  "name": "nethereum-x402-reference-sign",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@x402/core": "2.28.0",
+    "@x402/core-2-10": "npm:@x402/core@2.10.0",
+    "@x402/evm": "2.28.0",
+    "@x402/evm-2-10": "npm:@x402/evm@2.10.0",
+    "@x402/extensions": "2.28.0",
+    "@x402/fetch": "2.28.0",
+    "@x402/fetch-2-10": "npm:@x402/fetch@2.10.0",
+    "viem": "2.38.3"
+  }
+}

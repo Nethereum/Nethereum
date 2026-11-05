@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <LD_PRELOAD>/usr/lib/x86_64-linux-gnu/libjemalloc.so.2</LD_PRELOAD>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>

@@ -1,3 +1,5 @@
+using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
+using Nethereum.Node.HarnessServer;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -33,7 +35,7 @@ namespace Nethereum.EEST.ConformanceRunner
             ChainForkSchedule schedule;
             try
             {
-                schedule = ForkScheduleResolver.Resolve(test.Network);
+                schedule = ForkScheduleResolver.Resolve(test.Network, test.BlobSchedule);
             }
             catch (Exception ex)
             {
@@ -43,15 +45,14 @@ namespace Nethereum.EEST.ConformanceRunner
 
             var genesisFork = schedule.ResolveActivations().ResolveAt(0, 0);
             var document = EestGenesisBuilder.BuildGenesisDocument(test);
-            var registry = FixtureBlobScheduleOverride.BuildRegistry(FixtureRegistry, test.BlobSchedule);
 
-            await using var harness = await FullNodeHarness.ComposeAsync(document, schedule, registry).ConfigureAwait(false);
+            await using var harness = await HarnessNodeHost.ComposeInProcessAsync(document, schedule).ConfigureAwait(false);
             var node = harness.Node;
 
             var genesisCheck = await VerifyGenesisAsync(node, test, genesisFork).ConfigureAwait(false);
             if (genesisCheck != null) return genesisCheck;
 
-            var engine = harness.BuildEngineApiService();
+            var engine = harness.Engine;
 
             byte[] lastValidHash = null;
             for (int i = 0; i < payloads.Count; i++)

@@ -9,6 +9,7 @@ using Xunit;
 namespace Nethereum.EEST.ConformanceRunner
 {
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateReadOnlyTests
     {
         // System-call contracts warm-start dirties every block: EIP-4788 beacon roots, EIP-2935 history.

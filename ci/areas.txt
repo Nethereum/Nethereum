@@ -1,0 +1,8 @@
+# area   project-name prefixes; a project belongs to the first area it matches, anything unmatched is "rest"
+evm        Nethereum.EVM. Nethereum.Merkle.
+eest       Nethereum.EEST.
+corechain  Nethereum.CoreChain. Nethereum.Freezer. Nethereum.ChainStateVerification. Nethereum.DevChain. Nethereum.BlockProver.
+appchain   Nethereum.AppChain. Nethereum.MainnetChain.
+devp2p     Nethereum.DevP2P. Nethereum.Sync. Nethereum.Consensus. Nethereum.Ssz. Nethereum.Model.SSZ.
+aa         Nethereum.AccountAbstraction. Nethereum.WebAuthn.
+zk         Nethereum.PrivacyPools. Nethereum.ZkProofs

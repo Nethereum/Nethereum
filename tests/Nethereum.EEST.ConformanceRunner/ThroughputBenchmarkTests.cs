@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EEST.ConformanceRunner
 {
+    [Trait("Requires", "Externals")]
     public class ThroughputBenchmarkTests
     {
         private readonly ITestOutputHelper _output;
@@ -25,7 +26,7 @@ namespace Nethereum.EEST.ConformanceRunner
         [Fact]
         public async Task MeasureRepresentativeBatch_SingleThreaded()
         {
-            Assert.True(FixtureCatalog.CacheIsPresent, $"cache missing at {FixtureCatalog.BlockchainTestsRoot}");
+            Assert.True(Corpora.Blockchain.IsPresent, $"cache missing at {Corpora.Blockchain.Root}");
 
             var cases = SampleCases(BatchSize);
             Assert.True(cases.Count > 0, "no fixture cases available to sample");
@@ -81,7 +82,7 @@ namespace Nethereum.EEST.ConformanceRunner
             var meanMs = totalMs / timings.Count;
             var p50 = timings[timings.Count / 2];
             var p95 = timings[(int)(timings.Count * 0.95)];
-            var totalFixtures = FixtureCatalog.CountAllCases();
+            var totalFixtures = Corpora.Blockchain.Cases.Count;
 
             _output.WriteLine("=== EEST Conformance Runner — Throughput (single-threaded) ===");
             _output.WriteLine($"Sampled: {timings.Count} fixtures (pass={pass}, fail={fail})");
@@ -101,7 +102,7 @@ namespace Nethereum.EEST.ConformanceRunner
 
         private static List<(string File, BlockchainTestLoader.BlockchainTest Test)> SampleCases(int max)
         {
-            var files = FixtureCatalog.AllFixtureFiles;
+            var files = Corpora.Blockchain.Files;
             var result = new List<(string, BlockchainTestLoader.BlockchainTest)>(max);
             var rnd = new Random(1234567);
             var shuffled = files.OrderBy(_ => rnd.Next()).ToList();

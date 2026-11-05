@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Nethereum.EEST.Conformance - conformance cases, the fixture corpora they come from and the geth diagnosis of a failing case</Description>
+    <Authors>JuanFran</Authors>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Nethereum.EEST.Conformance</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>

@@ -52,6 +52,7 @@
     <Compile Remove="Nethereum.GSN.UnitTests\**" />
     <Compile Remove="Nethereum.Mud.IntegrationTests\**" />
     <Compile Remove="Nethereum.Mud.UnitTests\**" />
+    <Compile Remove="Nethereum.Mud.Repositories.Postgres.UnitTests\**" />
     <Compile Remove="Nethereum.Parity.IntegrationTests\**" />
     <Compile Remove="Nethereum.Quorum.Tests\**" />
     <Compile Remove="Nethereum.RPC.IntegrationTests\**" />
@@ -78,6 +79,7 @@
     <None Remove="Nethereum.Mud.IntegrationTests\**" />
 
     <None Remove="Nethereum.Mud.UnitTests\**" />
+    <None Remove="Nethereum.Mud.Repositories.Postgres.UnitTests\**" />
   
 
     <None Remove="Nethereum.Parity.IntegrationTests\**" />
@@ -111,6 +113,7 @@
     <EmbeddedResource Remove="Nethereum.Mud.IntegrationTests\**" />
 
     <EmbeddedResource Remove="Nethereum.Mud.UnitTests\**" />
+    <EmbeddedResource Remove="Nethereum.Mud.Repositories.Postgres.UnitTests\**" />
 
     <EmbeddedResource Remove="Nethereum.Parity.IntegrationTests\**" />
 

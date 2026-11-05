@@ -1,3 +1,4 @@
+using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,10 +29,18 @@ namespace Nethereum.EEST.ConformanceRunner
 
         public Task<ConformanceCaseResult> RunAsync(
             StateTestLoader.StateTest test, string fork, int dataIndex, int gasIndex, int valueIndex) =>
-            RunAsyncCore(test, fork, dataIndex, gasIndex, valueIndex);
+            RunAsyncCore(test, fork, dataIndex, gasIndex, valueIndex, null);
+
+        public async Task<StateCaseExecution> ExecuteWithTraceAsync(
+            StateTestLoader.StateTest test, string fork, int dataIndex, int gasIndex, int valueIndex)
+        {
+            var capture = new StateCaseExecution();
+            capture.Result = await RunAsyncCore(test, fork, dataIndex, gasIndex, valueIndex, capture).ConfigureAwait(false);
+            return capture;
+        }
 
         private static async Task<ConformanceCaseResult> RunAsyncCore(
-            StateTestLoader.StateTest test, string fork, int dataIndex, int gasIndex, int valueIndex)
+            StateTestLoader.StateTest test, string fork, int dataIndex, int gasIndex, int valueIndex, StateCaseExecution? capture)
         {
             HardforkName hardfork;
             try
@@ -76,17 +85,28 @@ namespace Nethereum.EEST.ConformanceRunner
             TransactionExecutionContext ctx;
             try
             {
-                ctx = BuildExecutionContext(test, expected, executionState);
+                ctx = BuildExecutionContext(test, expected, executionState, capture != null);
             }
             catch (Exception ex)
             {
                 return ClassifyPreDispatchFailure(expected, ex);
             }
 
+            var nonceMismatch = SenderNonceMismatch(test, ctx);
+            if (nonceMismatch != null)
+                return RejectedBeforeExecution(expected, TransactionError.NonceMismatch, nonceMismatch);
+
             TransactionExecutionResult result;
             try
             {
                 result = await new TransactionExecutor(config).ExecuteAsync(ctx).ConfigureAwait(false);
+                if (capture != null)
+                {
+                    capture.Traces = result.Traces;
+                    capture.ExecutionState = executionState;
+                    capture.Sender = ctx.Sender;
+                    capture.Coinbase = ctx.Coinbase;
+                }
             }
             catch (Exception ex)
             {
@@ -140,6 +160,23 @@ namespace Nethereum.EEST.ConformanceRunner
             return ConformanceCaseResult.Ok();
         }
 
+        private static string? SenderNonceMismatch(StateTestLoader.StateTest test, TransactionExecutionContext ctx)
+        {
+            var account = test.Pre.FirstOrDefault(p => string.Equals(p.Key, ctx.Sender, StringComparison.OrdinalIgnoreCase)).Value;
+            var accountNonce = string.IsNullOrEmpty(account?.Nonce) ? EvmUInt256.Zero : EvmUInt256.Parse(account.Nonce);
+            return accountNonce == ctx.Nonce ? null : $"transaction nonce {ctx.Nonce} but the sender's account nonce is {accountNonce}";
+        }
+
+        private static ConformanceCaseResult RejectedBeforeExecution(StateTestLoader.PostEntry expected, TransactionError error, string detail)
+        {
+            if (string.IsNullOrEmpty(expected.ExpectException))
+                return ConformanceCaseResult.Fail("validationError", $"{error}: {detail}");
+
+            return ExpectedRejectionMatcher.Satisfies(expected.ExpectException, error, out var matchDetail)
+                ? ConformanceCaseResult.Ok()
+                : ConformanceCaseResult.Fail("rejectionReasonMismatch", matchDetail);
+        }
+
         private static ConformanceCaseResult ClassifyPreDispatchFailure(StateTestLoader.PostEntry expected, Exception ex)
         {
             if (!string.IsNullOrEmpty(expected.ExpectException))
@@ -190,7 +227,7 @@ namespace Nethereum.EEST.ConformanceRunner
         }
 
         private static TransactionExecutionContext BuildExecutionContext(
-            StateTestLoader.StateTest test, StateTestLoader.PostEntry expected, ExecutionStateService executionState)
+            StateTestLoader.StateTest test, StateTestLoader.PostEntry expected, ExecutionStateService executionState, bool traceEnabled)
         {
             var env = test.Env;
             var tx = test.Transaction;
@@ -320,8 +357,22 @@ namespace Nethereum.EEST.ConformanceRunner
                 DeclaredChainId = declaredChainId,
 
                 ExecutionState = executionState,
-                TraceEnabled = false
+                TraceEnabled = traceEnabled,
+                Signature = SignatureFromTxBytes(expected.TxBytes)
             };
+        }
+
+        private static ISignature? SignatureFromTxBytes(string? txBytes)
+        {
+            if (string.IsNullOrEmpty(txBytes)) return null;
+            try
+            {
+                return TransactionFactory.CreateTransaction(txBytes).Signature;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static BigInteger ParseScalar(LegacyTransactionField field, string text)

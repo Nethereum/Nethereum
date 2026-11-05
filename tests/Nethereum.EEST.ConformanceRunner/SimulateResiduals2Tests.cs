@@ -15,6 +15,7 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateResiduals2Tests : IClassFixture<SimulateResiduals2Fixture>
     {
         private readonly SimulateResiduals2Fixture _fixture;
@@ -81,7 +82,7 @@ namespace Nethereum.EEST.ConformanceRunner
             await AssertVectorMatchesGethAsync("ethSimulate-move-two-accounts-to-same-38023.io");
 
             var blocks = await DispatchAsync(RpcCompatVectorLoader.Load(VectorPath("ethSimulate-move-two-accounts-to-same-38023.io")).Single().RequestJson);
-            Assert.Equal("0x8b8964bfcf7d8e280ed6812a581f67beda47d2b0f6316e1709bcff7d093e02b7", (string)blocks[0]["hash"]);
+            Assert.Equal("0x3fbf6ce5817de3f70675b5dd105def1c5c2081bb4d46273eef744e7bbb78ea97", (string)blocks[0]["hash"]);
         }
 
         [Fact]
@@ -103,9 +104,10 @@ namespace Nethereum.EEST.ConformanceRunner
             await AssertVectorMatchesGethAsync("ethSimulate-blockhash-start-before-head.io");
 
             var blocks = await DispatchAsync(RpcCompatVectorLoader.Load(VectorPath("ethSimulate-blockhash-start-before-head.io")).Single().RequestJson);
-            var b32 = blocks.Single(b => (string)b["number"] == "0x32")["calls"];
-            Assert.Equal("0x1ea03bc2ea7e70947269e14de3883459eb81a64780c99da31804a73f9f4cdfc7", (string)b32[0]["returnData"]);
-            Assert.NotEqual(new string('0', 64), ((string)b32[0]["returnData"]).Substring(2));
+            var b3b = blocks.Single(b => (string)b["number"] == "0x3b")["calls"];
+            var b3a = blocks.Single(b => (string)b["number"] == "0x3a");
+            Assert.Equal((string)b3a["hash"], (string)b3b[0]["returnData"]);
+            Assert.NotEqual(new string('0', 64), ((string)b3b[0]["returnData"]).Substring(2));
         }
 
         [Fact]
@@ -120,6 +122,27 @@ namespace Nethereum.EEST.ConformanceRunner
             Assert.Equal("0x1", (string)calls[1]["status"]);
 
             await AssertVectorMatchesGethAsync("ethSimulate-overflow-nonce-validation.io");
+        }
+        [Fact]
+        [Trait("Rule", "SIM2-LOGINDEX-BLOCK-ORDINAL")]
+        public async Task Given_ARevertedChildFrameThatLogged_When_TheParentLogsAfterIt_Then_TheKeptLogTakesTheNextBlockOrdinalAndTheNextCallContinuesIt()
+        {
+            const string request = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_simulateV1\",\"params\":[{\"blockStateCalls\":[{"
+                + "\"stateOverrides\":{"
+                + "\"0xc1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1\":{\"code\":\"0x60006000a060006000fd\"},"
+                + "\"0xd2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2\":{\"code\":\"0x6000600060006000600073c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c161fffff15060006000a000\"}},"
+                + "\"calls\":[{\"from\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"to\":\"0xd2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2\"},"
+                + "{\"from\":\"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"to\":\"0xd2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2\"}]}]},\"latest\"]}";
+
+            var blocks = await DispatchAsync(request);
+
+            var calls = blocks[0]["calls"];
+            var first = (JArray)calls[0]["logs"];
+            var second = (JArray)calls[1]["logs"];
+            Assert.Single(first);
+            Assert.Single(second);
+            Assert.Equal("0x1", (string)first[0]["logIndex"]);
+            Assert.Equal("0x3", (string)second[0]["logIndex"]);
         }
     }
 }

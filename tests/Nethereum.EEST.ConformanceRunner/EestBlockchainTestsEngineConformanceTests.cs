@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.EEST.Conformance;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,29 +15,35 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(EestEngineConformanceCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class EestBlockchainTestsEngineConformanceTests
     {
         private readonly HiveResultsSink _sink;
         private readonly ITestOutputHelper _output;
-        private readonly EestBlockchainTestsEngineDriver _driver = EestBlockchainTestsEngineDriver.Instance;
 
         public EestBlockchainTestsEngineConformanceTests(HiveResultsSink sink, ITestOutputHelper output)
         {
             _sink = sink;
             _output = output;
-            _sink.EnsureSuite(_driver);
+            _sink.EnsureSuite(EestBlockchainTestsEngineDriver.Instance);
         }
 
         [Fact]
-        public async Task AllEngineFixtures()
-        {
-            Assert.True(FixtureCatalog.BlockchainTestsEngineCacheIsPresent,
-                $"EEST blockchain_tests_engine fixture cache not found at " +
-                $"'{FixtureCatalog.BlockchainTestsEngineRoot}'. See external/README.md / run-acceptance.sh.");
+        public Task AllEngineFixtures() =>
+            EngineCorpusRun.RunAllAsync(Corpora.BlockchainEngine, "EestStable", _sink, _output);
+    }
 
-            var cases = FixtureCatalog.EngineCaseList();
+    public static class EngineCorpusRun
+    {
+        public static async Task RunAllAsync(ICorpusSource source, string settingsKey, HiveResultsSink sink, ITestOutputHelper output)
+        {
+            Assert.True(source.IsPresent,
+                $"blockchain_tests_engine fixture cache not found at '{source.Root}'. Set ExternalPaths:{settingsKey} (see external/README.md).");
+
+            var cases = Corpora.Selected(source).Select(c => (c.File, c.Name)).ToList();
+            if (cases.Count == 0 && !string.IsNullOrEmpty(ConformanceSettings.Case)) return;
             Assert.True(cases.Count > 0,
-                $"blockchain_tests_engine cache at '{FixtureCatalog.BlockchainTestsEngineRoot}' contains zero cases - never silently skip.");
+                $"blockchain_tests_engine cache at '{source.Root}' contains zero cases - never silently skip.");
 
             EnginePayloadFileCache.Prime(cases);
             var failuresByKind = new ConcurrentDictionary<string, int>();
@@ -46,22 +51,22 @@ namespace Nethereum.EEST.ConformanceRunner
             await Parallel.ForEachAsync(
                 cases,
                 new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                async (item, ct) => await RunOneAsync(item.File, item.Name, failuresByKind));
+                async (item, ct) => await RunOneAsync(item.File, item.Name, sink, failuresByKind));
 
-            var (passed, failed, total) = _sink.Counts;
-            _output.WriteLine($"consume-engine: {passed}/{total} passed, {failed} failed");
+            var (passed, failed, total) = sink.Counts;
+            output.WriteLine($"consume-engine: {passed}/{total} passed, {failed} failed");
             foreach (var kv in failuresByKind.OrderByDescending(k => k.Value))
-                _output.WriteLine($"   [{kv.Key}] x{kv.Value}");
+                output.WriteLine($"   [{kv.Key}] x{kv.Value}");
 
             Assert.True(failed == 0,
                 $"consume-engine: {failed} of {total} cases failed ({passed} passed) - failure kinds: " +
                 string.Join(", ", failuresByKind.OrderByDescending(k => k.Value).Select(k => $"{k.Key}={k.Value}")));
         }
 
-        private async Task RunOneAsync(string file, string testName, ConcurrentDictionary<string, int> failuresByKind)
+        private static async Task RunOneAsync(string file, string testName, HiveResultsSink sink, ConcurrentDictionary<string, int> failuresByKind)
         {
             var start = DateTimeOffset.UtcNow;
-            var caseId = $"{RelativePath(file)}::{testName}";
+            var caseId = $"{Corpora.RelativePath(file)}::{testName}";
 
             ConformanceCaseResult result;
             try
@@ -75,7 +80,7 @@ namespace Nethereum.EEST.ConformanceRunner
                 else
                 {
                     var payloads = await EnginePayloadFileCache.GetEntriesAsync(file, testName);
-                    result = await _driver.RunAsync(test, payloads);
+                    result = await EestBlockchainTestsEngineDriver.Instance.RunAsync(test, payloads);
                 }
             }
             catch (Exception ex)
@@ -89,16 +94,9 @@ namespace Nethereum.EEST.ConformanceRunner
 
             var end = DateTimeOffset.UtcNow;
             var details = result.Success ? "" : $"[{result.Kind}] {result.Detail}";
-            _sink.Record(caseId, testName, result.Success, details, start, end);
+            sink.Record(caseId, testName, result.Success, details, start, end);
             if (!result.Success)
                 failuresByKind.AddOrUpdate(result.Kind, 1, (_, n) => n + 1);
-        }
-
-        private static string RelativePath(string file)
-        {
-            var root = FixtureCatalog.RepoRoot;
-            if (root == null) return file;
-            return Path.GetRelativePath(root, file).Replace('\\', '/');
         }
     }
 }

@@ -15,6 +15,7 @@ namespace Nethereum.EEST.ConformanceRunner
     }
 
     [Collection(RpcCompatCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class SimulateResidualsTests : IClassFixture<SimulateResidualsFixture>
     {
         private readonly SimulateResidualsFixture _fixture;

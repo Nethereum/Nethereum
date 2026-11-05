@@ -1,3 +1,4 @@
+using Nethereum.Node.HarnessServer;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EEST.ConformanceRunner
 {
+    [Trait("Requires", "Externals")]
     public class GenesisDivergenceDiagnosticTests
     {
         private readonly ITestOutputHelper _output;
@@ -16,12 +18,12 @@ namespace Nethereum.EEST.ConformanceRunner
         [Fact]
         public async Task DiagnoseFirstAmsterdamGenesisDivergence()
         {
-            Assert.True(FixtureCatalog.CacheIsPresent);
+            Assert.True(Corpora.Blockchain.IsPresent);
 
             BlockchainTestLoader.BlockchainTest? found = null;
             string? foundFile = null;
 
-            foreach (var file in FixtureCatalog.AllFixtureFiles)
+            foreach (var file in Corpora.Blockchain.Files)
             {
                 List<BlockchainTestLoader.BlockchainTest> tests;
                 try { tests = BlockchainTestLoader.LoadFromFile(file); }
@@ -30,8 +32,8 @@ namespace Nethereum.EEST.ConformanceRunner
                 foreach (var candidate in tests.Where(t => t.Network == "Amsterdam"))
                 {
                     var doc = EestGenesisBuilder.BuildGenesisDocument(candidate);
-                    await using var probe = await FullNodeHarness.ComposeAsync(
-                        doc, Nethereum.EVM.HardforkName.Amsterdam, EestBlockchainTestsRlpDriver.FixtureRegistry);
+                    await using var probe = await HarnessNodeHost.ComposeInProcessAsync(
+                        doc, new Nethereum.EVM.ChainForkSchedule { Hardfork = nameof(Nethereum.EVM.HardforkName.Amsterdam) });
                     var probeHeader = await probe.Node.Blocks.GetByNumberAsync(0);
                     var probeHash = Nethereum.CoreChain.BlockHashCalculator.ForFork(probeHeader, Nethereum.EVM.HardforkName.Amsterdam);
                     if (!probeHash.SequenceEqual(candidate.GenesisBlockHeader.Hash))
@@ -53,8 +55,8 @@ namespace Nethereum.EEST.ConformanceRunner
             _output.WriteLine($"Using MISMATCHING fixture: {foundFile} :: {found!.Name}");
 
             var document = EestGenesisBuilder.BuildGenesisDocument(found);
-            await using var harness = await FullNodeHarness.ComposeAsync(
-                document, Nethereum.EVM.HardforkName.Amsterdam, EestBlockchainTestsRlpDriver.FixtureRegistry);
+            await using var harness = await HarnessNodeHost.ComposeInProcessAsync(
+                document, new Nethereum.EVM.ChainForkSchedule { Hardfork = nameof(Nethereum.EVM.HardforkName.Amsterdam) });
 
             var actual = await harness.Node.Blocks.GetByNumberAsync(0);
             var expected = found.GenesisBlockHeader;
