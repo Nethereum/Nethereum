@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Nethereum.Testing;
 using Nethereum.EVM.Witness;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
@@ -39,10 +40,8 @@ namespace Nethereum.EVM.Core.Tests
                 }
             };
 
-            var bytes = BinaryBlockWitness.Serialize(block);
-            var outputPath = Path.Combine(
-                Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "zisk", "output", "test_sstore.bin");
+            var bytes = BinaryBlockWitness.Serialize(block.AddRequestPredeploys());
+            var outputPath = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), "test_sstore.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
@@ -55,12 +54,7 @@ namespace Nethereum.EVM.Core.Tests
             Assert.Equal(block.Accounts.Count, deserialized.Accounts.Count);
         }
 
-        [Theory]
-        [InlineData("eth_transfer_noroot", false, false, false)]
-        [InlineData("eth_transfer_patricia", true, true, false)]
-        [InlineData("sstore_noroot", false, false, true)]
-        [InlineData("sstore_patricia", true, true, true)]
-        public void GenerateZiskWitness(string name, bool computeRoot, bool commitments, bool useSstore)
+        private static BlockWitnessData CreateTransferOrSstoreBlock(bool computeRoot, bool commitments, bool useSstore)
         {
             var receiver = "0x1111111111111111111111111111111111111111";
             var contractCode = useSstore ? new byte[] { 0x60, 0x42, 0x60, 0x00, 0x55, 0x00 } : null;
@@ -90,10 +84,20 @@ namespace Nethereum.EVM.Core.Tests
                 }
             };
 
-            var bytes = BinaryBlockWitness.Serialize(block);
-            var outputPath = Path.Combine(
-                Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "zisk", "output", $"witness_{name}.bin");
+            return block;
+        }
+
+        [Theory]
+        [InlineData("eth_transfer_noroot", false, false, false)]
+        [InlineData("eth_transfer_patricia", true, true, false)]
+        [InlineData("sstore_noroot", false, false, true)]
+        [InlineData("sstore_patricia", true, true, true)]
+        public void GenerateZiskWitness(string name, bool computeRoot, bool commitments, bool useSstore)
+        {
+            var block = CreateTransferOrSstoreBlock(computeRoot, commitments, useSstore);
+
+            var bytes = BinaryBlockWitness.Serialize(block.AddRequestPredeploys());
+            var outputPath = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), $"witness_{name}.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
@@ -110,6 +114,61 @@ namespace Nethereum.EVM.Core.Tests
             }
 
             Assert.True(bytes.Length > 0);
+        }
+
+        [Fact]
+        public void GenerateAnchorBoundEthTransferWitness()
+        {
+            var block = CreateTransferOrSstoreBlock(true, true, false).AddRequestPredeploys();
+            var host = BlockExecutionHelper.ExecuteBlock(block);
+
+            var zero = new byte[32];
+            var domainTag = new Sha3Keccack().CalculateHash(System.Text.Encoding.UTF8.GetBytes("appchain:v1:blockhashes"));
+            var leaf = new Sha3Keccack().CalculateHash(Concat(domainTag, host.BlockHash));
+            var words = new List<EvmUInt256>
+            {
+                new EvmUInt256(1337), new EvmUInt256(1), new EvmUInt256(2),
+                new EvmUInt256((ulong)block.BlockNumber), new EvmUInt256((ulong)block.BlockNumber),
+                EvmUInt256.FromBigEndian(zero), EvmUInt256.FromBigEndian(host.StateRoot),
+                EvmUInt256.FromBigEndian(zero), EvmUInt256.FromBigEndian(host.BlockHash),
+                EvmUInt256.FromBigEndian(leaf), EvmUInt256.FromBigEndian(zero)
+            };
+            block.AnchorInputs = AnchorBinding.Encode(words);
+
+            var bytes = BinaryBlockWitness.Serialize(block);
+            var directory = Path.GetFullPath(TestEnvironment.ExternalPath("ZiskOutput"));
+            Directory.CreateDirectory(directory);
+            File.WriteAllBytes(Path.Combine(directory, "witness_eth_transfer_anchor.bin"), bytes);
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write((ulong)(16 + bytes.Length));
+                bw.Write((ulong)0);
+                bw.Write((ulong)bytes.Length);
+                bw.Write(bytes);
+                File.WriteAllBytes(Path.Combine(directory, "witness_eth_transfer_anchor_standard.bin"), ms.ToArray());
+            }
+
+            var inputs = System.Text.Json.JsonSerializer.Serialize(
+                words.ConvertAll(w => w.ToBigEndian().ToHex(true)),
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(Path.Combine(directory, "anchor_inputs_eth_transfer.json"), inputs);
+
+            Assert.Equal(11, words.Count);
+        }
+
+        private static byte[] Concat(params byte[][] parts)
+        {
+            var total = 0;
+            foreach (var part in parts) total += part.Length;
+            var result = new byte[total];
+            var offset = 0;
+            foreach (var part in parts)
+            {
+                Array.Copy(part, 0, result, offset, part.Length);
+                offset += part.Length;
+            }
+            return result;
         }
 
         [Fact]
@@ -303,10 +362,8 @@ namespace Nethereum.EVM.Core.Tests
 
         private void WriteWitness(BlockWitnessData block, string name)
         {
-            var bytes = BinaryBlockWitness.Serialize(block);
-            var outputPath = Path.Combine(
-                Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "zisk", "output", $"witness_{name}.bin");
+            var bytes = BinaryBlockWitness.Serialize(block.AddRequestPredeploys());
+            var outputPath = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), $"witness_{name}.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
@@ -360,10 +417,8 @@ namespace Nethereum.EVM.Core.Tests
                 }
             };
 
-            var bytes = BinaryBlockWitness.Serialize(block);
-            var outputPath = Path.Combine(
-                Path.GetDirectoryName(typeof(GenerateTestWitness).Assembly.Location),
-                "..", "..", "..", "..", "..", "zisk", "output", $"test_sstore_binary_{name}.bin");
+            var bytes = BinaryBlockWitness.Serialize(block.AddRequestPredeploys());
+            var outputPath = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), $"test_sstore_binary_{name}.bin");
             outputPath = Path.GetFullPath(outputPath);
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
             File.WriteAllBytes(outputPath, bytes);
@@ -518,7 +573,7 @@ namespace Nethereum.EVM.Core.Tests
 
             var g2xi = "198e9393920d483a7260bfb731fb5d25f1aa493335a9e71297e485b7aef312c2".HexToByteArray();
             var g2xr = "1800deef121f1e76426a00665e5c4479674322d4f75edadd46debd5cd992f6ed".HexToByteArray();
-            var g2yi = "090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acddb9e557b7367".HexToByteArray();
+            var g2yi = "090689d0585ff075ec9e99ad690c3395bc4b313370b38ef355acdadcd122975b".HexToByteArray();
             var g2yr = "12c85ea5db8c6deb4aab71808dcb408fe3d1e7690c43d37b4ce6cc0166fa7daa".HexToByteArray();
 
             var code = new List<byte>();

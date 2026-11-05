@@ -2,7 +2,7 @@ using System;
 
 namespace Nethereum.EVM
 {
-    public sealed class PreviewingChainActivations : IChainActivations
+    public sealed class PreviewingChainActivations : IChainActivations, IChainBlobSchedule
     {
         private readonly IChainActivations _chainSchedule;
         private readonly ForkActivation _preview;
@@ -25,5 +25,10 @@ namespace Nethereum.EVM
             _preview.HasBeenReachedAt(blockNumber, timestamp)
                 ? _preview.Fork
                 : _chainSchedule.ResolveAt(blockNumber, timestamp);
+
+        public BlobParameters? BlobParametersAt(long blockNumber, ulong timestamp) =>
+            _preview.HasBeenReachedAt(blockNumber, timestamp)
+                ? null
+                : _chainSchedule.BlobParametersAt(blockNumber, timestamp);
     }
 }

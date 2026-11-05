@@ -19,6 +19,8 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             _cost = cost;
         }
 
+        public long Cost => _cost;
+
         public long GetGasCost(Program program) => _cost;
     }
 }

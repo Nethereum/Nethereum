@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);MODEXP_PORTABLE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Core\Nethereum.EVM.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles\Backends\DefaultModExpBackend.cs" Link="ModExpSources\DefaultModExpBackend.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles\Backends\ModExp\*.cs" Link="ModExpSources\%(Filename)%(Extension)" />
+    <Compile Include="..\Nethereum.EVM.Core.Tests\ModExp\DefaultModExpBackendDifferentialTests.cs" Link="ModExp\DefaultModExpBackendDifferentialTests.cs" />
+  </ItemGroup>
+</Project>

@@ -66,7 +66,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             if (program.HasExecutionError) return 0;
 #endif
 
-            CallTargetRecorder.Record(program, toAddress.ToHexLower());
+            CallTargetRecorder.Record(program, toAddress);
 
             var transfer = CallTransfer.OfTheValueAlone(value);
             var verdict = _rule.JudgeTheTransfer(transfer);

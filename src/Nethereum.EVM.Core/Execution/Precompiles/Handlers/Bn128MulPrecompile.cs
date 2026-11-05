@@ -6,10 +6,12 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
     public sealed class Bn128MulPrecompile : PrecompileHandlerBase
     {
         private readonly IBn128Backend _backend;
+        private readonly IBn128OutcomeBackend _outcomes;
 
         public Bn128MulPrecompile(IBn128Backend backend)
         {
             _backend = backend ?? throw new ArgumentNullException(nameof(backend));
+            _outcomes = backend as IBn128OutcomeBackend;
         }
 
         public override int AddressNumeric => 7;
@@ -17,6 +19,12 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
         public override byte[] Execute(byte[] input)
         {
             return _backend.Mul(input);
+        }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            if (_outcomes != null) return _outcomes.TryMul(input, out output);
+            return TryThroughThrowingOperation(() => _backend.Mul(input), out output);
         }
     }
 }

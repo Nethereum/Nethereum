@@ -3,6 +3,9 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "Zisk")]
+    [Trait("Category", "GeneralStateTests")]
     public class ZiskQuickTest
     {
         private readonly ITestOutputHelper _output;

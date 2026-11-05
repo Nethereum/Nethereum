@@ -1,3 +1,5 @@
+using Nethereum.Testing;
+using Nethereum.EEST.Conformance.Diagnosis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class TraceComparerTests
     {
         private readonly ITestOutputHelper _output;
@@ -160,7 +163,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            var testResult = await _runner.RunTestWithTraceAsync(testFile);
+            var testResult = await _runner.RunTestWithExecutorAsync(testFile, captureTraces: true);
 
             foreach (var singleResult in testResult.Results.Where(r => !r.Skipped))
             {
@@ -221,7 +224,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
 
                 _output.WriteLine($"\nAnalyzing: {relPath}");
-                var testResult = await _runner.RunTestWithTraceAsync(testFile);
+                var testResult = await _runner.RunTestWithExecutorAsync(testFile, captureTraces: true);
 
                 foreach (var singleResult in testResult.Results.Where(r => !r.Skipped && !r.Passed))
                 {
@@ -342,7 +345,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
 
             _output.WriteLine($"Running test: {testFile}");
-            var testResult = await _runner.RunTestWithTraceAsync(testFile);
+            var testResult = await _runner.RunTestWithExecutorAsync(testFile, captureTraces: true);
 
             foreach (var result in testResult.Results)
             {
@@ -361,30 +364,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private string FindTestVectorsDirectory()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var searchPaths = new[]
-            {
-                Path.Combine(baseDir, "Tests", "GeneralStateTests"),
-                Path.Combine(baseDir, "..", "..", "..", "Tests", "GeneralStateTests"),
-                Path.Combine(baseDir, "..", "..", "..", "..", "tests", "Nethereum.EVM.UnitTests", "Tests", "GeneralStateTests"),
-            };
-
-            foreach (var path in searchPaths)
-            {
-                if (Directory.Exists(path))
-                    return Path.GetFullPath(path);
-            }
-
-            var dir = baseDir;
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir, "tests", "Nethereum.EVM.UnitTests", "Tests", "GeneralStateTests");
-                if (Directory.Exists(candidate))
-                    return candidate;
-                dir = Directory.GetParent(dir)?.FullName;
-            }
-
-            return null;
+            var testDir = Path.Combine(TestEnvironment.ExternalPath("EthereumTests"), "GeneralStateTests");
+            return Directory.Exists(testDir) ? testDir : null;
         }
 
         private string FindGethTraceFile()
@@ -542,7 +523,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Contains("456", str);
         }
 
-        [Fact(Skip = "Run manually - requires geth-tools/evm.exe and test vectors")]
+        [Fact(Skip = "Run manually - requires Tools:Evm and test vectors")]
         public async Task GethEvmRunner_RunStateTestAsync_ExecutesSuccessfully()
         {
             var testDir = FindTestVectorsDirectory();
@@ -559,7 +540,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            var gethRunner = new GethEvmRunner();
+            var gethRunner = GethTools.EvmRunner();
             var result = await gethRunner.RunStateTestAsync(testFile);
 
             _output.WriteLine($"Success: {result.Success}");
@@ -580,7 +561,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.True(result.Steps.Count > 0, "No steps captured from geth");
         }
 
-        [Fact(Skip = "Run manually - requires geth-tools/evm.exe and test vectors")]
+        [Fact(Skip = "Run manually - requires Tools:Evm and test vectors")]
         public async Task RunAndValidate_SimpleTest()
         {
             var testDir = FindTestVectorsDirectory();
@@ -607,7 +588,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.True(result.IsValid, result.ToString());
         }
 
-        [Fact(Skip = "Run manually - requires geth-tools/evm.exe and test vectors")]
+        [Fact(Skip = "Run manually - requires Tools:Evm and test vectors")]
         public async Task RunAndValidateFull_WithDiagnostics()
         {
             var testDir = FindTestVectorsDirectory();
@@ -685,7 +666,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.True(validation.IsValid, validation.ToString());
         }
 
-        [Fact(Skip = "Run manually - requires geth-tools/evm.exe and test vectors")]
+        [Fact(Skip = "Run manually - requires Tools:Evm and test vectors")]
         public async Task ValidateCategory_stExample()
         {
             var testDir = FindTestVectorsDirectory();

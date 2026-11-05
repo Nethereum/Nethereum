@@ -1,5 +1,6 @@
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 {
@@ -49,58 +50,135 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stExample()
             => _runner.RunCategoryZiskEmu("stExample", maxTests: 5);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stArgsZeroOneBalance()
             => _runner.RunCategoryZiskEmu("stArgsZeroOneBalance", maxTests: 3);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stSStoreTest()
             => _runner.RunCategoryZiskEmu("stSStoreTest", maxTests: 3);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stPreCompiledContracts()
             => _runner.RunCategoryZiskEmu("stPreCompiledContracts", maxTests: 100);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stPreCompiledContracts2()
             => _runner.RunCategoryZiskEmu("stPreCompiledContracts2", maxTests: 100);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stShift()
             => _runner.RunCategoryZiskEmu("stShift", maxTests: 3);
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_stCallCodes()
             => _runner.RunCategoryZiskEmu("stCallCodes", maxTests: 3);
 
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_Prague_Eip2537_Bls12_381()
             => _runner.RunCategoryZiskEmu(
-                GetExecutionSpecTestPath("state_tests/prague/eip2537_bls_12_381_precompiles"),
+                GetExecutionSpecTestPath("state_tests/for_prague/prague/eip2537_bls_12_381_precompiles"),
                 maxTests: 50, hardfork: "Prague");
 
         [Fact]
-        public void ZiskEmu_Cancun_Eip4844_KzgPointEvaluation()
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip4844_KzgPointEvaluation()
             => _runner.RunCategoryZiskEmu(
-                GetExecutionSpecTestPath("state_tests/cancun/eip4844_blobs"),
-                maxTests: 10, hardfork: "Cancun");
+                GetExecutionSpecTestPath("state_tests/for_prague/cancun/eip4844_blobs"),
+                maxTests: 10, hardfork: "Prague");
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void ZiskEmu_Osaka_Eip7951_P256Verify()
             => _runner.RunCategoryZiskEmu(
-                GetExecutionSpecTestPath("state_tests/osaka/eip7951_p256verify_precompiles"),
+                GetExecutionSpecTestPath("state_tests/for_osaka/osaka/eip7951_p256verify_precompiles"),
                 maxTests: 20, hardfork: "Osaka");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip196_Bn254_AddMul_InvalidInputs()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_prague/byzantium/eip196_ec_add_mul"),
+                maxTests: 50, hardfork: "Prague");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip197_Bn254_Pairing_InvalidInputs()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_prague/byzantium/eip197_ec_pairing"),
+                maxTests: 50, hardfork: "Prague");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip152_Blake2f_InvalidInputs()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_prague/istanbul/eip152_blake2"),
+                maxTests: 50, hardfork: "Prague");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip4844_PointEvaluation_InvalidInputs()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_prague/cancun/eip4844_blobs/point_evaluation_precompile"),
+                maxTests: 50, hardfork: "Prague");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Prague_Eip198_ModExp_Bounds()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_prague/byzantium/eip198_modexp_precompile"),
+                maxTests: 50, hardfork: "Prague");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_Osaka_Eip7823_ModExp_UpperBounds()
+            => _runner.RunCategoryZiskEmu(
+                GetExecutionSpecTestPath("state_tests/for_osaka/osaka/eip7823_modexp_upper_bounds"),
+                maxTests: 50, hardfork: "Osaka");
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_stBadOpcode_UndefinedBytesHaltWithoutCrashing()
+            => _runner.RunCategoryZiskEmu("stBadOpcode", maxTests: 50);
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void ZiskEmu_stStackTests_OverflowAndUnderflowHaltWithoutCrashing()
+            => _runner.RunCategoryZiskEmu("stStackTests", maxTests: 50);
 
         private static string GetExecutionSpecTestPath(string relative)
         {
-            var projectRoot = FindProjectRoot(System.IO.Directory.GetCurrentDirectory());
-            return projectRoot == null
-                ? null
-                : System.IO.Path.Combine(projectRoot, "external", "execution-spec-tests", "fixtures", relative);
+            return System.IO.Path.Combine(TestEnvironment.RequireExternalPath("EestStable"), relative);
         }
 
 
@@ -178,20 +256,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 
         private static string GetWitnessOutputDir()
         {
-            var projectRoot = FindProjectRoot(System.IO.Directory.GetCurrentDirectory());
-            return System.IO.Path.Combine(projectRoot, "scripts", "zisk-output", "witnesses");
-        }
-
-        private static string FindProjectRoot(string dir)
-        {
-            while (dir != null)
-            {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir, "Nethereum.slnx")) ||
-                    System.IO.File.Exists(System.IO.Path.Combine(dir, "Nethereum.sln")))
-                    return dir;
-                dir = System.IO.Path.GetDirectoryName(dir);
-            }
-            return null;
+            return System.IO.Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), "witnesses");
         }
     }
 }

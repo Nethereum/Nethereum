@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 #if !EVM_SYNC
 using System.Threading.Tasks;
 #endif
@@ -10,7 +9,6 @@ namespace Nethereum.EVM.Execution
 {
     public class EvmCodeExecution
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CodeCopy(Program program)
         {
             var byteCode = program.ByteCode;
@@ -42,23 +40,10 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CodeCopyInternal(Program program, byte[] byteCode, int byteCodeLength, int indexInMemory, int indexOfByteCode, int lengthOfByteCodeToCopy)
         {
-            byte[] byteCodeCopy = new byte[lengthOfByteCodeToCopy];
-
-            if (indexOfByteCode < byteCodeLength)
-            {
-                var totalSizeToBeCopied = lengthOfByteCodeToCopy;
-                if (indexOfByteCode + lengthOfByteCodeToCopy > byteCodeLength)
-                {
-                    totalSizeToBeCopied = byteCodeLength - indexOfByteCode;
-                }
-
-                Array.Copy(byteCode, indexOfByteCode, byteCodeCopy, 0, totalSizeToBeCopied);
-            }
-
-            program.WriteToMemory(indexInMemory, lengthOfByteCodeToCopy, byteCodeCopy);
+            var totalSizeToBeCopied = Math.Min(lengthOfByteCodeToCopy, byteCodeLength - indexOfByteCode);
+            program.CopyToMemory(indexInMemory, lengthOfByteCodeToCopy, byteCode, indexOfByteCode, totalSizeToBeCopied);
             program.Step();
         }
 
@@ -113,7 +98,6 @@ namespace Nethereum.EVM.Execution
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CodeSize(Program program)
         {
             var size = program.ByteCode.Length;

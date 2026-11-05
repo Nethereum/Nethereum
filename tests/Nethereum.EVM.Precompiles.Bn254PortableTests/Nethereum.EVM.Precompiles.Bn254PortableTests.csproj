@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <DefineConstants>$(DefineConstants);BN254_PORTABLE_MULTIPLY</DefineConstants>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Nethereum.EVM.Core\Nethereum.EVM.Core.csproj" />
+    <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Nethereum.Signer\Crypto\BN128Curve.cs" Link="Bn254Sources\BN128Curve.cs" />
+    <Compile Include="..\..\src\Nethereum.Signer\Crypto\BN128\*.cs" Link="Bn254Sources\BN128\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Nethereum.Signer\Crypto\BN128\Managed\*.cs" Link="Bn254Sources\Managed\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles\Backends\ManagedBn254Backend.cs" Link="Bn254Sources\ManagedBn254Backend.cs" />
+    <Compile Include="..\..\src\Nethereum.EVM.Precompiles\Backends\DefaultBn128Backend.cs" Link="Bn254Sources\DefaultBn128Backend.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Nethereum.EVM.Core.Tests\Bn254\Bn254Oracle.cs" Link="Bn254\Bn254Oracle.cs" />
+    <Compile Include="..\Nethereum.EVM.Core.Tests\Bn254\ManagedBn254BackendVectorTests.cs" Link="Bn254\ManagedBn254BackendVectorTests.cs" />
+    <Compile Include="..\Nethereum.EVM.Core.Tests\Bn254\ManagedBn254BackendDifferentialTests.cs" Link="Bn254\ManagedBn254BackendDifferentialTests.cs" />
+    <Compile Include="..\Nethereum.EVM.Core.Tests\Bn254\ManagedBn254BackendArithmeticTests.cs" Link="Bn254\ManagedBn254BackendArithmeticTests.cs" />
+    <None Include="..\Nethereum.EVM.Core.Tests\Bn254\TestData\**\*.json" Link="Bn254\TestData\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class AsyncRequestSystemCallTests
     {
         private static Task<Nethereum.EVM.Execution.BlockExecutionResult> RunAsync(HardforkName fork)

@@ -59,21 +59,26 @@ namespace Nethereum.EVM
                 await FinalizeTransactionAsync(ctx, result);
 #endif
                 CaptureAccountsRemovedFromState(ctx, result);
+                CommitTheSnapshotsTheExecutorTook(ctx);
             }
             catch (TransactionValidationException ex)
             {
                 SettleAsAValidationError(result, ex);
             }
-            catch (Exception ex) when (BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                SettleAsAFailedTransaction(result, ex);
-            }
 
             return result;
+        }
+
+        private static void CommitTheSnapshotsTheExecutorTook(TransactionExecutionContext ctx)
+        {
+            CommitWhenTaken(ctx, ctx.TransactionSnapshotId);
+            CommitWhenTaken(ctx, ctx.PrepPhaseSnapshotId);
+        }
+
+        private static void CommitWhenTaken(TransactionExecutionContext ctx, int snapshotId)
+        {
+            if (snapshotId != TransactionExecutionContext.NotTaken)
+                ctx.ExecutionState.CommitSnapshot(snapshotId);
         }
 
         private static void SettleAsAValidationError(TransactionExecutionResult result, TransactionValidationException ex)
@@ -84,12 +89,6 @@ namespace Nethereum.EVM
             result.IsValidationError = true;
         }
 
-        private static void SettleAsAFailedTransaction(TransactionExecutionResult result, Exception ex)
-        {
-            result.Success = false;
-            result.Error = ex.Message;
-        }
-
 #if EVM_SYNC
         private void SetupState(TransactionExecutionContext ctx, TransactionExecutionResult result)
 #else
@@ -97,9 +96,10 @@ namespace Nethereum.EVM
 #endif
         {
             Execution.AccessSetWarmUp.WarmOriginPrecompilesAndCoinbase(
-                ctx.ExecutionState, _config, ctx.Sender, ctx.Coinbase);
+                ctx.ExecutionState, _config, ctx.SenderAddress,
+                string.IsNullOrEmpty(ctx.Coinbase) ? (EvmAddress?)null : ctx.CoinbaseAddress);
 
-            ctx.SenderAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.Sender);
+            ctx.SenderAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.SenderAddress);
 
             #if EVM_SYNC
             EnsureSenderNonceLoaded(ctx);
@@ -211,9 +211,9 @@ namespace Nethereum.EVM
                 return;
 
 #if EVM_SYNC
-            var senderCode = ctx.ExecutionState.GetCode(ctx.Sender);
+            var senderCode = ctx.ExecutionState.GetCode(ctx.SenderAddress);
 #else
-            var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.Sender);
+            var senderCode = await ctx.ExecutionState.GetCodeAsync(ctx.SenderAddress);
 #endif
             if (senderCode != null && senderCode.Length > 0)
             {
@@ -394,13 +394,13 @@ namespace Nethereum.EVM
         private async Task SetupCallTargetAsync(TransactionExecutionContext ctx)
 #endif
         {
-            ctx.ExecutionState.MarkAddressAsWarm(ctx.To);
+            ctx.ExecutionState.MarkAddressAsWarm(ctx.ToAddress);
 #if EVM_SYNC
-            ctx.Code = ctx.ExecutionState.GetCode(ctx.To);
+            ctx.Code = ctx.ExecutionState.GetCode(ctx.ToAddress);
             if (_config.TransactionSetupRules != null)
                 _config.TransactionSetupRules.ApplyCodeResolution(ctx, null);
 #else
-            ctx.Code = await ctx.ExecutionState.GetCodeAsync(ctx.To);
+            ctx.Code = await ctx.ExecutionState.GetCodeAsync(ctx.ToAddress);
             if (_config.TransactionSetupRules != null)
                 await _config.TransactionSetupRules.ApplyCodeResolutionAsync(ctx, null);
 #endif
@@ -590,7 +590,9 @@ namespace Nethereum.EVM
             var programContext = BuildTopFrameProgramContext(ctx, callContext);
             PersistTouchesOnRevertWhereCleanupRuns(ctx);
 
-            var program = new Program(ctx.Code, programContext);
+            var program = ctx.IsContractCreation
+                ? Program.ForInitCode(ctx.Code, programContext)
+                : new Program(ctx.Code, programContext);
             GrantTopFrameStateGasReservoir(ctx, program);
 
             if (!TryChargeNewAccountStateGasForCreationFrame(ctx, result, program, programContext))
@@ -696,7 +698,10 @@ namespace Nethereum.EVM
             programContext.SstoreSetRefund = _config.SstoreSetRefund;
             programContext.SstoreResetRefund = _config.SstoreResetRefund;
             programContext.SstoreRefundRule = _config.SstoreRefundRule;
-            programContext.EthTransferLogRule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
+            programContext.EthTransferLogRule = ResolveTransferRule(ctx);
+#if !EVM_SYNC
+            programContext.LogIndexCounter = ctx.LogIndexCounter;
+#endif
             return programContext;
         }
 
@@ -732,7 +737,7 @@ namespace Nethereum.EVM
 
         private void EmitTransactionTransferLog(TransactionExecutionContext ctx, Program program, string targetAddress)
         {
-            var transferRule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
+            var transferRule = ResolveTransferRule(ctx);
             transferRule.Emit(program.ProgramResult.Logs, ctx.Sender, targetAddress, ctx.Value);
         }
 
@@ -864,16 +869,18 @@ namespace Nethereum.EVM
         {
             var registry = _config.Precompiles;
             int precompileAddr;
-            var isPrecompile = Execution.Precompiles.PrecompileRelocationResolver.TryResolve(
-                ctx.PrecompileRelocations,
-                registry,
-                Execution.Precompiles.PrecompileRelocationResolver.Normalize(ctx.To),
-                out precompileAddr);
+            precompileAddr = -1;
+            var isPrecompile = CouldBeAPrecompile(ctx, registry)
+                && Execution.Precompiles.PrecompileRelocationResolver.TryResolve(
+                    ctx.PrecompileRelocations,
+                    registry,
+                    Execution.Precompiles.PrecompileRelocationResolver.Normalize(ctx.To),
+                    out precompileAddr);
 
 #if EVM_SYNC
-            var targetIsAlive = ctx.ExecutionState.AccountExists(ctx.To);
+            var targetIsAlive = ctx.ExecutionState.AccountExists(ctx.ToAddress);
 #else
-            var targetIsAlive = await ctx.ExecutionState.AccountExistsAsync(ctx.To);
+            var targetIsAlive = await ctx.ExecutionState.AccountExistsAsync(ctx.ToAddress);
 #endif
             var stateGasBeforeValueTransferCharge = CaptureStateGasBaseline(ctx);
 
@@ -889,6 +896,9 @@ namespace Nethereum.EVM
                 SettleTopLevelValueTransfer(ctx, result);
             }
         }
+
+        private static bool CouldBeAPrecompile(TransactionExecutionContext ctx, Execution.Precompiles.PrecompileRegistry registry) =>
+            registry != null && (ctx.PrecompileRelocations != null || registry.Handles(ctx.ToAddress));
 
         private static bool TryResolveWiredPrecompile(Execution.Precompiles.PrecompileRegistry registry, string to, out int precompileAddr)
         {
@@ -940,27 +950,26 @@ namespace Nethereum.EVM
 
             result.GasUsed = ctx.IntrinsicExecutionGas + precompileGasCost
                 + ctx.PreDispatchExecutionGasConsumed;
-            try
-            {
-                result.ReturnData = registry.Execute(precompileAddr, precompileInput);
-                result.Success = true;
-
-                if (!ctx.Value.IsZero)
-                {
-                    ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
-                    var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.To);
-                    receiverAccount.Balance.CreditExecutionBalance(ctx.Value);
-                }
-
-                ctx.ExecutionState.CommitSnapshot(ctx.TransactionSnapshotId);
-
-                var transferRule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
-                transferRule.Emit(result.Logs, ctx.Sender, ctx.To, ctx.Value);
-            }
-            catch (Exception ex) when (!BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
+            if (!registry.TryExecute(precompileAddr, precompileInput, out var precompileOutput))
             {
                 FailTopLevelPrecompileDispatch(ctx, result, stateGasBaseline, "PRECOMPILE_FAILED");
+                return;
             }
+
+            result.ReturnData = precompileOutput;
+            result.Success = true;
+
+            if (!ctx.Value.IsZero)
+            {
+                ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
+                var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.ToAddress);
+                receiverAccount.Balance.CreditExecutionBalance(ctx.Value);
+            }
+
+            ctx.ExecutionState.CommitSnapshot(ctx.TransactionSnapshotId);
+
+            var transferRule = ResolveTransferRule(ctx);
+            transferRule.Emit(result.Logs, ctx.Sender, ctx.To, ctx.Value);
         }
 
         private void SettleTopLevelValueTransfer(TransactionExecutionContext ctx, TransactionExecutionResult result)
@@ -971,11 +980,11 @@ namespace Nethereum.EVM
             {
                 ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
             }
-            var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.To);
+            var receiverAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.ToAddress);
             receiverAccount.Balance.CreditExecutionBalance(ctx.Value);
             ctx.ExecutionState.CommitSnapshot(ctx.TransactionSnapshotId);
 
-            var transferRule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
+            var transferRule = ResolveTransferRule(ctx);
             transferRule.Emit(result.Logs, ctx.Sender, ctx.To, ctx.Value);
         }
 

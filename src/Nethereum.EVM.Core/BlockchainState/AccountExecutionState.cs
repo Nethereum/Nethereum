@@ -24,17 +24,88 @@ namespace Nethereum.EVM.BlockchainState
             Balance = new AccountExecutionBalance();
         }
 
-        public Dictionary<EvmUInt256, byte[]> Storage { get; set; } = new Dictionary<EvmUInt256, byte[]>();
+        internal StateJournal Journal;
+
+        private Dictionary<EvmUInt256, byte[]> _storage = new Dictionary<EvmUInt256, byte[]>();
+        public Dictionary<EvmUInt256, byte[]> Storage
+        {
+            get => _storage;
+            set
+            {
+                Journal?.StorageReplaced(this, _storage);
+                _storage = value;
+            }
+        }
         public Dictionary<EvmUInt256, byte[]> OriginalStorageValues { get; } = new();
         public HashSet<EvmUInt256> WarmStorageKeys { get; } = new();
 
-        public EvmUInt256? Nonce { get; set; }
-        public byte[] Code { get; set; }
-        public bool IsNewContract { get; set; }
+        private EvmUInt256? _nonce;
+        public EvmUInt256? Nonce
+        {
+            get => _nonce;
+            set
+            {
+                Journal?.NonceChanged(this, _nonce);
+                _nonce = value;
+            }
+        }
 
-        public bool IsTouched { get; set; }
+        private byte[] _code;
+        public byte[] Code
+        {
+            get => _code;
+            set
+            {
+                Journal?.CodeChanged(this, _code);
+                _code = value;
+            }
+        }
 
-        public bool IsRemoved { get; set; }
+        private bool _chainHoldsNoCode;
+
+        internal bool IsCodeResolved => _code != null || _chainHoldsNoCode;
+
+        internal void RecordChainCode(byte[] chainCode)
+        {
+            _chainHoldsNoCode = chainCode == null;
+            Code = chainCode;
+        }
+
+        private bool _isNewContract;
+        public bool IsNewContract
+        {
+            get => _isNewContract;
+            set
+            {
+                if (_isNewContract == value) return;
+                Journal?.IsNewContractChanged(this, _isNewContract);
+                _isNewContract = value;
+            }
+        }
+
+        private bool _isTouched;
+        public bool IsTouched
+        {
+            get => _isTouched;
+            set
+            {
+                if (_isTouched == value) return;
+                Journal?.IsTouchedChanged(this, _isTouched);
+                _isTouched = value;
+            }
+        }
+
+        private bool _isRemoved;
+        public bool IsRemoved
+        {
+            get => _isRemoved;
+            set
+            {
+                if (_isRemoved == value) return;
+                Journal?.IsRemovedChanged(this, _isRemoved);
+                _isRemoved = value;
+            }
+        }
 
         /// <summary>
         /// EIP-161 §Specification: <i>"An account is considered empty when it has no code and
@@ -69,10 +140,59 @@ namespace Nethereum.EVM.BlockchainState
 
         public void ResetStorageForOverride()
         {
-            Storage.Clear();
+            ClearStorage();
             OriginalStorageValues.Clear();
             IsStorageReset = true;
         }
+
+        private void PutStorage(EvmUInt256 key, byte[] value)
+        {
+            var journal = Journal;
+            if (journal != null && journal.Recording)
+            {
+                var hadPrior = _storage.TryGetValue(key, out var prior);
+                journal.StorageSet(this, key, hadPrior, prior);
+            }
+            _storage[key] = value;
+        }
+
+        private void ClearStorage()
+        {
+            var journal = Journal;
+            if (journal != null && journal.Recording && _storage.Count > 0)
+            {
+                var cleared = new KeyValuePair<EvmUInt256, byte[]>[_storage.Count];
+                ((ICollection<KeyValuePair<EvmUInt256, byte[]>>)_storage).CopyTo(cleared, 0);
+                journal.StorageCleared(this, cleared);
+            }
+            _storage.Clear();
+        }
+
+        internal void RestoreNonce(EvmUInt256? nonce) => _nonce = nonce;
+
+        internal void RestoreCode(byte[] code) => _code = code;
+
+        internal void RestoreIsNewContract(bool value) => _isNewContract = value;
+
+        internal void RestoreIsTouched(bool value) => _isTouched = value;
+
+        internal void RestoreIsRemoved(bool value) => _isRemoved = value;
+
+        internal void RestoreStorageSlot(EvmUInt256 key, bool hadPrior, byte[] prior)
+        {
+            if (hadPrior) _storage[key] = prior;
+            else _storage.Remove(key);
+        }
+
+        internal void RestoreClearedStorage(KeyValuePair<EvmUInt256, byte[]>[] cleared)
+        {
+            _storage.Clear();
+            for (var i = 0; i < cleared.Length; i++) _storage[cleared[i].Key] = cleared[i].Value;
+        }
+
+        internal void RestoreStorageDictionary(Dictionary<EvmUInt256, byte[]> storage) => _storage = storage;
+
+        internal void RestoreWarmStorageKeyRemoved(EvmUInt256 key) => WarmStorageKeys.Remove(key);
 
         public bool StorageContainsKey(EvmUInt256 key)
         {
@@ -85,25 +205,18 @@ namespace Nethereum.EVM.BlockchainState
             {
                 OriginalStorageValues[key] = value;
             }
-            Storage[key] = value;
+            PutStorage(key, value);
         }
 
         public void UpsertStorageValue(EvmUInt256 key, byte[] value)
         {
             IsTouched = true;
-            if (!Storage.ContainsKey(key))
-            {
-                Storage.Add(key, value);
-            }
-            else
-            {
-                Storage[key] = value;
-            }
+            PutStorage(key, value);
         }
 
         public void SetPreStateStorage(EvmUInt256 key, byte[] value)
         {
-            Storage[key] = value;
+            PutStorage(key, value);
             OriginalStorageValues[key] = value;
         }
 
@@ -142,13 +255,16 @@ namespace Nethereum.EVM.BlockchainState
         /// </summary>
         public void ClearStorageForNewContract()
         {
-            Storage.Clear();
+            ClearStorage();
             OriginalStorageValues.Clear();
         }
 
         public bool IsStorageKeyWarm(EvmUInt256 key) => WarmStorageKeys.Contains(key);
 
-        public void MarkStorageKeyAsWarm(EvmUInt256 key) => WarmStorageKeys.Add(key);
+        public void MarkStorageKeyAsWarm(EvmUInt256 key)
+        {
+            if (WarmStorageKeys.Add(key)) Journal?.WarmStorageKeyAdded(this, key);
+        }
 
         public Dictionary<string, string> GetContractStorageAsHex()
         {

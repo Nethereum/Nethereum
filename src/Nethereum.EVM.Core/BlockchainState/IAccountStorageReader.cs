@@ -15,6 +15,15 @@ namespace Nethereum.EVM.BlockchainState
 #endif
     }
 
+    public interface IAccountStorageAddressReader : IAccountStorageReader
+    {
+#if EVM_SYNC
+        bool AccountHasStorage(EvmAddress address);
+#else
+        Task<bool> AccountHasStorageAsync(EvmAddress address);
+#endif
+    }
+
     public static class AccountStorageValues
     {
         public static bool AnyNonZero(IEnumerable<byte[]> values)

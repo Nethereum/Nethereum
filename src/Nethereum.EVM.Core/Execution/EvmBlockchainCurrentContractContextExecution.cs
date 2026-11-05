@@ -102,7 +102,7 @@ namespace Nethereum.EVM.Execution
                 {
                     program.ExpandMemory(memoryEnd);
                 }
-                data = program.Memory.GetRange(index, length).ToArray();
+                data = program.ReadMemory(index, length);
             }
 
             var encoded = Sha3Keccack.Current.CalculateHash(data);
@@ -197,44 +197,27 @@ namespace Nethereum.EVM.Execution
         public void TLoad(Program program)
         {
             var key = program.StackPopU256();
-            var address = Nethereum.Util.EvmAddress.FromHex(program.ProgramContext.AddressContract);
+            var address = EvmAddress.From(program.ProgramContext.AddressContractEncoded);
             var transientStorage = program.ProgramContext.ExecutionStateService.TransientStorage;
 
-            byte[] value = new byte[32];
-            if (transientStorage.TryGetValue(address, out var addressStorage))
+            if (transientStorage.TryGetValue(address, out var addressStorage) && addressStorage.TryGetValue(key, out var value))
             {
-                if (addressStorage.TryGetValue(key, out var val))
-                {
-                    value = val;
-                }
+                program.StackPush(value);
+            }
+            else
+            {
+                program.StackPush(EvmUInt256.Zero);
             }
 
-            program.StackPush(value);
             program.Step();
         }
 
         public void TStore(Program program)
         {
             var key = program.StackPopU256();
-            var value = program.StackPop().PadTo32Bytes();
-            var address = Nethereum.Util.EvmAddress.FromHex(program.ProgramContext.AddressContract);
-            var transientStorage = program.ProgramContext.ExecutionStateService.TransientStorage;
-
-            if (program.ProgramContext.IsStatic)
-            {
-#if EVM_SYNC
-                program.SetExecutionError(); return;
-#else
-                throw new Exception("TSTORE not allowed in static context");
-#endif
-            }
-
-            if (!transientStorage.TryGetValue(address, out var addressStorage))
-            {
-                addressStorage = new Dictionary<EvmUInt256, byte[]>();
-                transientStorage[address] = addressStorage;
-            }
-            addressStorage[key] = value;
+            var value = program.StackPopU256().ToBigEndian();
+            var address = EvmAddress.From(program.ProgramContext.AddressContractEncoded);
+            program.ProgramContext.ExecutionStateService.SetTransientStorage(address, key, value);
 
             program.Step();
         }

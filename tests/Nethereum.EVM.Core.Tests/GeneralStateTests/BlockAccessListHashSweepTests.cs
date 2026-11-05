@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Nethereum.Testing;
 using System.Linq;
 using System.Text.Json;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -11,33 +12,18 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
     public class BlockAccessListHashSweepTests
     {
         private readonly ITestOutputHelper _output;
-        private readonly string _amsterdamFixtures;
 
         public BlockAccessListHashSweepTests(ITestOutputHelper output)
         {
             _output = output;
-            _amsterdamFixtures = FindAmsterdamFixtures();
         }
 
-        private static string FindAmsterdamFixtures()
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                {
-                    var path = Path.Combine(dir.FullName, "external", "execution-spec-tests",
-                        "fixtures", "blockchain_tests", "amsterdam");
-                    if (Directory.Exists(path)) return path;
-                }
-                dir = dir.Parent;
-            }
-            return null;
-        }
+        private static string AmsterdamFixtures =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EestAmsterdam"), "blockchain_tests", "amsterdam");
 
         private static EvmUInt256 Num(string hex)
         {
@@ -99,15 +85,12 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         [Trait("Category", "EIP7928")]
         public void Given_EveryAmsterdamFixtureAccessList_When_Hashed_Then_ItMatchesTheHeader()
         {
-            Assert.True(_amsterdamFixtures != null,
-                "Amsterdam fixtures not found - this sweep cannot report a meaningful result without them");
-
             var checkedBlocks = 0;
             var rejectionBlocks = 0;
             var mismatches = new List<string>();
             var coverage = new HashSet<string>();
 
-            foreach (var file in Directory.EnumerateFiles(_amsterdamFixtures, "*.json", SearchOption.AllDirectories))
+            foreach (var file in Directory.EnumerateFiles(AmsterdamFixtures, "*.json", SearchOption.AllDirectories))
             {
                 JsonDocument doc;
                 try { doc = JsonDocument.Parse(File.ReadAllText(file)); }

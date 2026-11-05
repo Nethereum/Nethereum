@@ -26,12 +26,14 @@ namespace Nethereum.EVM
             var gasU256 = program.StackPopU256();
             var gas = gasU256.ToLongSafe();
             var codeAddress = program.StackPop();
+            var codeAddressValue = EvmAddress.From(codeAddress);
+            var codeAddressNormalized = codeAddressValue.ToHexLower();
             EvmUInt256 value = EvmUInt256.Zero;
             string from;
             string to;
             bool isStatic = false;
 
-            PopCallParticipants(program, callType, codeAddress, out from, out to, out value, out isStatic);
+            PopCallParticipants(program, callType, codeAddressNormalized, out from, out to, out value, out isStatic);
 
             var dataInputIndexBig = program.StackPopU256();
             var dataInputLengthBig = program.StackPopU256();
@@ -50,8 +52,6 @@ namespace Nethereum.EVM
             var resultMemoryDataIndex = resultMemoryDataIndexBig.FitsInInt ? resultMemoryDataIndexBig.ToInt() : int.MaxValue;
             var resultMemoryDataLength = resultMemoryDataLengthBig.FitsInInt ? resultMemoryDataLengthBig.ToInt() : int.MaxValue;
 
-            var codeAddressValue = EvmAddress.From(codeAddress);
-            var codeAddressNormalized = codeAddressValue.ToHexLower();
             program.ProgramContext.RecordAddressAccess(codeAddressNormalized);
 
             var registry = Config.Precompiles;
@@ -82,16 +82,6 @@ namespace Nethereum.EVM
             ExpandMemoryForCallRegions(program, dataInputIndex, dataInputLength, resultMemoryDataIndex, resultMemoryDataLength);
 
             var dataInput = ReadCallInputFromMemory(program, dataInputIndex, dataInputLength);
-
-            var callInput = new EvmCallContext
-            {
-                From = from,
-                Value = value,
-                To = to,
-                Data = dataInput,
-                Gas = gas,
-                ChainId = program.ProgramContext.ChainId
-            };
 
             var shouldTransferValue = TransfersValue(callType);
 
@@ -133,6 +123,11 @@ namespace Nethereum.EVM
                 }
                 else
                 {
+#if EVM_SYNC
+                    TouchStaticCallTarget(program, callType, codeAddressValue);
+#else
+                    await TouchStaticCallTargetAsync(program, callType, codeAddressValue);
+#endif
                     SettleNonPrecompileCallTarget(program, snapshotId, shouldTransferValue, value);
                 }
 
@@ -140,6 +135,16 @@ namespace Nethereum.EVM
 
                 return SucceedCodelessCall(program, gasToForwardForTrace);
             }
+
+            var callInput = new EvmCallContext
+            {
+                From = from,
+                Value = value,
+                To = to,
+                Data = dataInput,
+                Gas = gas,
+                ChainId = program.ProgramContext.ChainId
+            };
 
             var programContext = BuildChildProgramContext(
                 program, parentFrame, callInput, codeAddressNormalized, isStatic);
@@ -246,9 +251,9 @@ namespace Nethereum.EVM
             if (shouldTransferValue && value > 0)
             {
 #if EVM_SYNC
-                var callerBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(program.ProgramContext.AddressContract);
+                var callerBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(program.ProgramContext.AddressContractValue);
 #else
-                var callerBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContract);
+                var callerBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(program.ProgramContext.AddressContractValue);
 #endif
                 if (callerBalance < value)
                 {
@@ -272,7 +277,7 @@ namespace Nethereum.EVM
 #else
                 await ReadThePayerAccountAsync(program);
 #endif
-                program.ProgramContext.ExecutionStateService.DebitBalance(program.ProgramContext.AddressContract, value);
+                program.ProgramContext.ExecutionStateService.DebitBalance(program.ProgramContext.AddressContractValue, value);
             }
         }
 
@@ -382,38 +387,20 @@ namespace Nethereum.EVM
         private static void ReadThePayerAccount(Program program)
         {
             program.ProgramContext.ExecutionStateService
-                .LoadBalanceNonceAndCodeFromStorage(program.ProgramContext.AddressContract);
+                .LoadBalanceNonceAndCodeFromStorage(program.ProgramContext.AddressContractValue);
         }
 #else
         private static Task<AccountExecutionState> ReadThePayerAccountAsync(Program program)
         {
             return program.ProgramContext.ExecutionStateService
-                .LoadBalanceNonceAndCodeFromStorageAsync(program.ProgramContext.AddressContract);
+                .LoadBalanceNonceAndCodeFromStorageAsync(program.ProgramContext.AddressContractValue);
         }
 #endif
 
         private const int RipemdPrecompileAddress = 3;
 
-        private static bool TryParsePrecompileAddress(string normalizedAddress, out int addressInt)
-        {
-            addressInt = -1;
-            if (string.IsNullOrEmpty(normalizedAddress)) return false;
-            var compact = normalizedAddress.ToHexCompact();
-            return int.TryParse(compact, System.Globalization.NumberStyles.HexNumber, null, out addressInt);
-        }
-
-        private static string NormalizeCallTargetAddress(byte[] codeAddress)
-        {
-            return NormalizeCallTargetAddressValue(codeAddress).ToHexLower();
-        }
-
-        private static EvmAddress NormalizeCallTargetAddressValue(byte[] codeAddress)
-        {
-            return EvmAddress.From(codeAddress);
-        }
-
         private static void PopCallParticipants(
-            Program program, CallFrameType callType, byte[] codeAddress,
+            Program program, CallFrameType callType, string codeAddressNormalized,
             out string from, out string to, out EvmUInt256 value, out bool isStatic)
         {
             value = EvmUInt256.Zero;
@@ -422,7 +409,7 @@ namespace Nethereum.EVM
             {
                 case CallFrameType.StaticCall:
                     from = program.ProgramContext.AddressContract;
-                    to = NormalizeCallTargetAddress(codeAddress);
+                    to = codeAddressNormalized;
                     isStatic = true;
                     break;
                 case CallFrameType.DelegateCall:
@@ -438,31 +425,18 @@ namespace Nethereum.EVM
                 default:
                     value = program.StackPopU256();
                     from = program.ProgramContext.AddressContract;
-                    to = NormalizeCallTargetAddress(codeAddress);
+                    to = codeAddressNormalized;
                     break;
             }
         }
 
         private static byte[] ReadCallInputFromMemory(Program program, int dataInputIndex, int dataInputLength)
         {
-            var dataInput = new byte[0];
-            if (dataInputLength != 0)
+            var dataInput = new byte[dataInputLength];
+            var availableLength = Math.Min(dataInputLength, program.Memory.Count - dataInputIndex);
+            if (availableLength > 0)
             {
-                dataInput = new byte[dataInputLength];
-                if (dataInputIndex + dataInputLength > program.Memory.Count)
-                {
-                    var availableLength = Math.Max(0, program.Memory.Count - dataInputIndex);
-                    if (availableLength > 0)
-                    {
-                        var dataToCopy = program.Memory.GetRange(dataInputIndex, availableLength);
-                        dataToCopy.CopyTo(dataInput, 0);
-                    }
-                }
-                else
-                {
-                    var sourceData = program.Memory.GetRange(dataInputIndex, dataInputLength);
-                    sourceData.CopyTo(dataInput, 0);
-                }
+                program.Memory.CopyTo(dataInputIndex, dataInput, 0, availableLength);
             }
             return dataInput;
         }
@@ -509,6 +483,9 @@ namespace Nethereum.EVM
                 programContext.PrecompileRelocations = program.ProgramContext.PrecompileRelocations;
                 programContext.StateGasActive = program.ProgramContext.StateGasActive;
                 programContext.TransientStorage = program.ProgramContext.TransientStorage;
+#if !EVM_SYNC
+                programContext.LogIndexCounter = program.ProgramContext.LogIndexCounter;
+#endif
                 programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
                 programContext.BlobHashes = program.ProgramContext.BlobHashes;
                 programContext.BlobBaseFee = program.ProgramContext.BlobBaseFee;
@@ -571,6 +548,22 @@ namespace Nethereum.EVM
         private static bool TouchesTheTarget(CallFrameType callType)
             => callType == CallFrameType.Call || callType == CallFrameType.StaticCall;
 
+#if EVM_SYNC
+        private static void TouchStaticCallTarget(Program program, CallFrameType callType, EvmAddress target)
+        {
+            if (callType != CallFrameType.StaticCall) return;
+            var targetAccount = program.ProgramContext.ExecutionStateService
+                .LoadBalanceNonceAndCodeFromStorage(target);
+#else
+        private static async Task TouchStaticCallTargetAsync(Program program, CallFrameType callType, EvmAddress target)
+        {
+            if (callType != CallFrameType.StaticCall) return;
+            var targetAccount = await program.ProgramContext.ExecutionStateService
+                .LoadBalanceNonceAndCodeFromStorageAsync(target);
+#endif
+            targetAccount.IsTouched = true;
+        }
+
 
 #if EVM_SYNC
         private static SubCallSetup DispatchPrecompileCall(
@@ -603,24 +596,7 @@ namespace Nethereum.EVM
             program.GasRemaining -= precompileGasCost;
             program.TotalGasUsed += precompileGasCost;
 
-            try
-            {
-                byte[] precompiledResult = registry.Execute(precompileAddress, dataInput);
-                var resultLength = Math.Min(resultMemoryDataLength, precompiledResult?.Length ?? 0);
-                program.WriteToMemory(resultMemoryDataIndex, resultLength, precompiledResult);
-                program.ProgramResult.LastCallReturnData = precompiledResult;
-                program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
-                if (shouldTransferValue && value > 0)
-                {
-                    RestoreValueTransferStipend(program);
-                }
-            }
-            catch (Exception ex) when (BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
-            {
-                program.ProgramContext.ExecutionStateService.RevertToSnapshot(snapshotId);
-                throw;
-            }
-            catch
+            if (!registry.TryExecute(precompileAddress, dataInput, out var precompiledResult))
             {
                 var remainingForwardedGas = gasToForwardForTrace - precompileGasCost;
                 if (remainingForwardedGas > 0)
@@ -629,6 +605,15 @@ namespace Nethereum.EVM
                     program.TotalGasUsed += remainingForwardedGas;
                 }
                 return FailPrecompileCall(program, snapshotId, newAccountStateGasCharged, gasToForwardForTrace);
+            }
+
+            var resultLength = Math.Min(resultMemoryDataLength, precompiledResult?.Length ?? 0);
+            program.WriteToMemory(resultMemoryDataIndex, resultLength, precompiledResult);
+            program.ProgramResult.LastCallReturnData = precompiledResult;
+            program.ProgramContext.ExecutionStateService.CommitSnapshot(snapshotId);
+            if (shouldTransferValue && value > 0)
+            {
+                RestoreValueTransferStipend(program);
             }
 
             return null;
@@ -698,7 +683,7 @@ namespace Nethereum.EVM
         private static SubCallSetup ForfeitFrameOnForwardEverythingOverspend(Program program)
         {
             program.TotalGasUsed += program.GasRemaining;
-            HaltFrameExceptionally(program);
+            program.MarkHalted(EvmHaltReason.OutOfGas);
             return new SubCallSetup { ShouldCreateSubCall = false };
         }
 

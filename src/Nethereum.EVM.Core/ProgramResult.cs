@@ -26,9 +26,13 @@ namespace Nethereum.EVM
 #else
         public string GetRevertMessage()
         {
-            if (!IsRevert) return null;
-            if( Result == null ||  Result.Length < 5 ) return null;
-            return new FunctionCallDecoder().DecodeFunctionErrorMessage(Result.ToHex(true));
+            return IsRevert ? DecodeRevertMessage(Result) : null;
+        }
+
+        internal static string DecodeRevertMessage(byte[] revertData)
+        {
+            if (revertData == null || revertData.Length < 5) return null;
+            return new FunctionCallDecoder().DecodeFunctionErrorMessage(revertData.ToHex(true));
         }
 #endif
         public bool IsSelfDestruct { get; set; }

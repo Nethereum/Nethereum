@@ -69,5 +69,6 @@ namespace Nethereum.EVM
         TransactionTypeNotSupported,
         InvalidChainId,
         NonceMismatch,
+        InvalidSignature,
     }
 }

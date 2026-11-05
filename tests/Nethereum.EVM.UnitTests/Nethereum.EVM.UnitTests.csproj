@@ -22,10 +22,36 @@
          three different answers. -->
     <Compile Include="..\Nethereum.CoreChain.IntegrationTests\BlockchainTests\ExpectedRejectionMatcher.cs"
              Link="BlockchainTests\ExpectedRejectionMatcher.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\HaltReasonParityTests.cs"
+             Link="HaltReasonParityTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\DecoderAndJumpDestinationParityTests.cs"
+             Link="DecoderAndJumpDestinationParityTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\ProgramInstructionIndexApiTests.cs"
+             Link="ProgramInstructionIndexApiTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\PushValueReadTests.cs"
+             Link="PushValueReadTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\ProgramJumpBitmapIsKeyedByCodeHashTests.cs"
+             Link="ProgramJumpBitmapIsKeyedByCodeHashTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\TraceDigestParityTests.cs"
+             Link="TraceDigestParityTests.cs" />
+
+    <Compile Include="..\Nethereum.EVM.Core.Tests\SnapshotJournalOracleTests.cs"
+             Link="SnapshotJournalOracleTests.cs" />
+
+    <None Include="..\Nethereum.EVM.Core.Tests\DecoderCorpus\*.hex"
+          Link="DecoderCorpus\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 <ItemGroup>
     <ProjectReference Include="..\..\src\Nethereum.EVM\Nethereum.EVM.csproj" />
+    <ProjectReference Include="..\Nethereum.EEST.Conformance\Nethereum.EEST.Conformance.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.CoreChain\Nethereum.CoreChain.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.ABI\Nethereum.ABI.csproj" />
     <ProjectReference Include="..\..\src\Nethereum.Signer\Nethereum.Signer.csproj" />
@@ -53,7 +79,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.0-beta4-build3742" />
@@ -251,6 +277,11 @@
     <None Update="Tests\VMTests\vmTests\swap.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestEnvironment.cs" Link="Shared\TestEnvironment.cs" />
+    <Compile Include="..\Shared\ZiskHost.cs" Link="Shared\ZiskHost.cs" />
   </ItemGroup>
 
 </Project>

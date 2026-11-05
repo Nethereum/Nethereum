@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Nethereum.EVM.Core.Tests.GeneralStateTests;
 using Nethereum.EVM.Witness;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
@@ -90,8 +91,8 @@ namespace Nethereum.EVM.Core.Tests
             _output.WriteLine($"block_hash:  {result.BlockHash.ToHex(true)}");
             _output.WriteLine($"gas:         {result.CumulativeGasUsed}");
 
-            Assert.Equal("0x0b3895e5a62c18c1dfe47b8ed0eba0522bea1e7fc444801ab6858a0520d758ec", result.StateRoot.ToHex(true));
-            Assert.Equal("0x59874593eba5c3bbe3bdd5d2d82f020349597a6b7119a8edc137411736f4fb94", result.BlockHash.ToHex(true));
+            Assert.Equal("0x98f27cabfd72400aa9c064c68fb66e00de59ca0e3b586bc63b0ff5ac05712070", result.StateRoot.ToHex(true));
+            Assert.Equal("0x3421f169cc0cd1b7f637dc4972828d0ead8ea1b76fe485852c2a3b54dcb8aad9", result.BlockHash.ToHex(true));
             Assert.Equal(43106L, result.CumulativeGasUsed);
         }
 
@@ -109,9 +110,33 @@ namespace Nethereum.EVM.Core.Tests
             _output.WriteLine($"receipt_root: {result.ReceiptsRoot.ToHex(true)}");
             _output.WriteLine($"gas:         {result.CumulativeGasUsed}");
 
-            Assert.Equal("0x2fc84afa1e66eaef44a179f33c5a2bbacfa458bdc97b12cd7c3c29750dd8142d", result.StateRoot.ToHex(true));
-            Assert.Equal("0xade9ca96b102dc95cc86b1fd6e21b796f6fd334b909aaac3268b73578e8e543f", result.BlockHash.ToHex(true));
+            Assert.Equal("0x1461e627a8cb9074cb9a7c0ed38d1c49af19aaf31b9b485eaa74444660e7dc88", result.StateRoot.ToHex(true));
+            Assert.Equal("0x85230f180e0e64f42d0172e2dce096efd8ab58346f9e3d49ae0091514b4a1797", result.BlockHash.ToHex(true));
             Assert.Equal(43106L, result.CumulativeGasUsed);
+        }
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void Patricia_GuestOutputsMatchHost()
+        {
+            AssertGuestMatchesHost(BlockFeatureConfig.Prague);
+        }
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void BinaryBlake3_GuestOutputsMatchHost()
+        {
+            AssertGuestMatchesHost(BlockFeatureConfig.BinaryBlake3());
+        }
+
+        [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
+        public void BinaryPoseidon_GuestOutputsMatchHost()
+        {
+            AssertGuestMatchesHost(BlockFeatureConfig.BinaryPoseidon());
         }
 
         [Fact]
@@ -124,6 +149,24 @@ namespace Nethereum.EVM.Core.Tests
             var result2 = BlockExecutionHelper.ExecuteBlock(block2);
 
             Assert.Equal(result1.StateRoot, result2.StateRoot);
+        }
+
+        private void AssertGuestMatchesHost(BlockFeatureConfig features)
+        {
+            var block = CreateSstoreBlock(features);
+            block.ProduceBlockCommitments = true;
+            block.ComputePostStateRoot = true;
+
+            var host = BlockExecutionHelper.ExecuteBlock(block);
+            var guest = ZiskGuestRunner.Run(block);
+            _output.WriteLine(guest.Output);
+
+            Assert.False(guest.BadVersion,
+                "The guest ELF predates the witness format and refused the input. Rebuild it with zisk/scripts/build.sh.");
+            Assert.True(guest.Success, "The guest did not report BIN:OK.");
+            Assert.Equal(host.StateRoot.ToHex(true), guest.StateRoot);
+            Assert.Equal(host.BlockHash.ToHex(true), guest.BlockHash);
+            Assert.Equal(host.CumulativeGasUsed, guest.Gas);
         }
 
         private static BlockWitnessData CreateSstoreBlock(BlockFeatureConfig features)

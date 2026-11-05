@@ -8,12 +8,14 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Model;
 using Nethereum.Util;
+using Nethereum.Testing;
 using Xunit;
 using Xunit.Abstractions;
 using Nethereum.Merkle.Patricia.Nodes;
 
 namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
     public class TrieVerificationTest
     {
         private readonly ITestOutputHelper _output;
@@ -69,17 +71,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             }
         }
 
-        private static string FindTestFile(string relativePath)
-        {
-            var dir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return System.IO.Path.Combine(dir.FullName, "external", "ethereum-tests", "BlockchainTests", relativePath);
-                dir = dir.Parent;
-            }
-            return null;
-        }
+        private static string FindTestFile(string relativePath) =>
+            System.IO.Path.Combine(TestEnvironment.RequireExternalPath("EthereumTests"), "BlockchainTests", relativePath);
     }
 }

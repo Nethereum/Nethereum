@@ -11,6 +11,31 @@ namespace Nethereum.EVM
         public byte[] Output { get; set; }
         public bool Success { get; set; }
         public string Error { get; set; }
+#if EVM_SYNC
         public string RevertReason { get; set; }
+#else
+        private string revertReason;
+        private bool revertReasonResolved;
+
+        public bool Reverted { get; set; }
+
+        public string RevertReason
+        {
+            get
+            {
+                if (!revertReasonResolved)
+                {
+                    revertReason = Reverted ? ProgramResult.DecodeRevertMessage(Output) : null;
+                    revertReasonResolved = true;
+                }
+                return revertReason;
+            }
+            set
+            {
+                revertReason = value;
+                revertReasonResolved = true;
+            }
+        }
+#endif
     }
 }

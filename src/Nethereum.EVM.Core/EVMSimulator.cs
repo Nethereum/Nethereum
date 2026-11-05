@@ -73,24 +73,65 @@ namespace Nethereum.EVM
                     continue;
                 }
 
-                var currentInstruction = currentProgram.GetCurrentInstruction();
+#if !EVM_SYNC
+                ThrowIfCancellationRequested(currentFrame);
+#endif
+
+                var currentInstruction = currentFrame.TraceEnabled ? currentProgram.GetCurrentInstruction() : null;
 
 #if EVM_SYNC
-                ZiskTrace?.Invoke((int)currentInstruction.Value);
+                ZiskTrace?.Invoke((int)currentProgram.CurrentOpcodeByte);
 #endif
 
                 long gasCost = 0;
                 long gasBeforeOp = currentProgram.GasRemaining;
 
+#if !EVM_SYNC
                 try
                 {
-                    if (RefusedBeforePricing(currentProgram, currentInstruction.Instruction.Value)) continue;
+#endif
+#if !EVM_SYNC
+                    if (!currentFrame.TraceEnabled)
+                    {
+                        RunSynchronousSteps(currentFrame);
+                        if (currentProgram.Stopped) continue;
+                    }
+
+#endif
+                    var opcode = currentProgram.CurrentOpcode;
+
+                    if (!Config.OpcodeHandlers.IsRegistered(opcode))
+                    {
+                        currentProgram.Halt(EvmHaltReason.InvalidOpcode);
+                        RecordHaltTrace(currentFrame, currentInstruction, 0, gasBeforeOp);
+                        continue;
+                    }
 
 #if EVM_SYNC
-                    gasCost = Config.OpcodeHandlers.GetGasCost(currentInstruction.Instruction.Value, currentProgram);
-                    if (currentProgram.HasExecutionError) continue;
+                    if (RefusedBeforePricing(currentProgram, opcode))
+                    {
+                        RecordHaltTrace(currentFrame, currentInstruction, 0, gasBeforeOp, outOfGas: currentProgram.HaltReason == EvmHaltReason.OutOfGas);
+                        continue;
+                    }
+
+                    gasCost = Config.OpcodeHandlers.GetGasCost(opcode, currentProgram);
+                    if (currentProgram.HasExecutionError)
+                    {
+                        RecordHaltTrace(currentFrame, currentInstruction, 0, gasBeforeOp);
+                        continue;
+                    }
 #else
-                    gasCost = await Config.OpcodeHandlers.GetGasCostAsync(currentInstruction.Instruction.Value, currentProgram);
+                    ThrowIfRefusedBeforePricing(currentProgram, opcode);
+
+                    var runsSynchronously = Config.OpcodeHandlers.RunsSynchronously(opcode);
+                    if (runsSynchronously)
+                    {
+                        gasCost = Config.OpcodeHandlers.GetSyncGasCost(opcode, currentProgram);
+                    }
+                    else if (!Config.OpcodeHandlers.TryGetGasCost(opcode, currentProgram, out gasCost))
+                    {
+                        gasCost = await Config.OpcodeHandlers.GetGasCostAsync(opcode, currentProgram);
+                    }
 #endif
                     gasBeforeOp = currentProgram.GasRemaining;
 
@@ -102,19 +143,37 @@ namespace Nethereum.EVM
                         trace.GasRemaining = gasBeforeOp;
                     }
 
+#if EVM_SYNC
                     currentProgram.UpdateGasUsed(gasCost);
-#if EVM_SYNC
-                    if (currentProgram.HasExecutionError) continue;
-#endif
+                    if (currentProgram.HasExecutionError)
+                    {
+                        RecordHaltTrace(currentFrame, currentInstruction, gasCost, gasBeforeOp, outOfGas: true);
+                        continue;
+                    }
 
-#if EVM_SYNC
-                    var subCallSetup = StepWithCallStack(currentFrame, currentInstruction, callStack);
-                    if (currentProgram.HasExecutionError) continue;
+                    var subCallSetup = StepWithCallStack(currentFrame, opcode, callStack);
+                    if (currentProgram.HasExecutionError)
+                    {
+                        RecordHaltTrace(currentFrame, currentInstruction, gasCost, gasBeforeOp, outOfGas: currentProgram.HaltReason == EvmHaltReason.OutOfGas);
+                        continue;
+                    }
 #else
-                    var subCallSetup = await StepWithCallStackAsync(currentFrame, currentInstruction, callStack);
+                    SubCallSetup subCallSetup = null;
+                    if (runsSynchronously)
+                    {
+                        ChargeAndExecuteSynchronously(currentProgram, Config.OpcodeHandlers, opcode, gasCost);
+                    }
+                    else
+                    {
+                        currentProgram.UpdateGasUsed(gasCost);
+                        if (!TryExecuteWithoutAwait(currentProgram, opcode))
+                        {
+                            subCallSetup = await StepWithCallStackAsync(currentFrame, opcode, callStack);
+                        }
+                    }
 #endif
 
-                    AttributeForwardedGasToCallTrace(trace, subCallSetup, currentInstruction, gasCost);
+                    AttributeForwardedGasToCallTrace(trace, subCallSetup, opcode, gasCost);
 
                     if (trace != null)
                     {
@@ -134,26 +193,14 @@ namespace Nethereum.EVM
                     {
                         PushChildFrame(callStack, subCallSetup.NewFrame);
                     }
+#if !EVM_SYNC
                 }
-                catch (OutOfGasException ex)
+                catch (EvmHaltException halt)
                 {
-                    RecordHaltTrace(currentFrame, currentInstruction, ex.GasRequired, ex.GasRemaining, outOfGas: true);
-                    HaltFrameExceptionally(currentProgram);
+                    RecordHaltTrace(currentFrame, currentInstruction, halt, gasCost, gasBeforeOp);
+                    currentProgram.MarkHalted(halt.Reason);
                 }
-                catch (Exceptions.SStoreGasStipendException)
-                {
-                    RecordHaltTrace(currentFrame, currentInstruction, 0, gasBeforeOp, outOfGas: true);
-                    HaltFrameExceptionally(currentProgram);
-                }
-                catch (Exception ex) when (BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
-                {
-                    throw;
-                }
-                catch (Exception)
-                {
-                    RecordHaltTrace(currentFrame, currentInstruction, gasCost, gasBeforeOp);
-                    HaltFrameExceptionally(currentProgram);
-                }
+#endif
             }
 
             if (traceEnabled && program.StoppedImplicitly)
@@ -204,6 +251,7 @@ namespace Nethereum.EVM
             {
                 var parentFrame = callStack.Peek();
                 MergeCompletedFrameIntoParent(completedFrame, parentFrame);
+                completedFrame.Program.ReleaseStack();
             }
         }
 
@@ -231,23 +279,31 @@ namespace Nethereum.EVM
             frame.Program.Trace.Add(trace);
         }
 
-        private static void HaltFrameExceptionally(Program program)
+#if !EVM_SYNC
+        private static void RecordHaltTrace(CallFrame frame, ProgramInstruction instruction, EvmHaltException halt, long gasCost, long gasBeforeOp)
         {
-            program.GasRemaining = 0;
-            program.ProgramResult.IsRevert = true;
-            program.MarkExceptionalHalt();
-            program.Stop();
+            if (halt is OutOfGasException outOfGas)
+            {
+                RecordHaltTrace(frame, instruction, outOfGas.GasRequired, outOfGas.GasRemaining, outOfGas: true);
+                return;
+            }
+            if (halt is Exceptions.SStoreGasStipendException)
+            {
+                RecordHaltTrace(frame, instruction, 0, gasBeforeOp, outOfGas: true);
+                return;
+            }
+            RecordHaltTrace(frame, instruction, gasCost, gasBeforeOp, outOfGas: halt.Reason == EvmHaltReason.OutOfGas);
         }
+#endif
 
         private static bool IsCallFamilyOpcode(Instruction opcode)
             => opcode == Instruction.CALL || opcode == Instruction.CALLCODE ||
                opcode == Instruction.DELEGATECALL || opcode == Instruction.STATICCALL;
 
-        private static void AttributeForwardedGasToCallTrace(ProgramTrace trace, SubCallSetup subCallSetup, ProgramInstruction instruction, long gasCost)
+        private static void AttributeForwardedGasToCallTrace(ProgramTrace trace, SubCallSetup subCallSetup, Instruction opcode, long gasCost)
         {
             if (trace != null && subCallSetup != null && (subCallSetup.ShouldCreateSubCall || subCallSetup.IsPrecompileHandled) && subCallSetup.GasForwarded > 0)
             {
-                var opcode = instruction.Instruction.Value;
                 if (IsCallFamilyOpcode(opcode))
                 {
                     trace.GasCost = gasCost + subCallSetup.GasForwarded;
@@ -503,7 +559,7 @@ namespace Nethereum.EVM
 #if EVM_SYNC
                 RevertReason = null
 #else
-                RevertReason = childProgram.ProgramResult.IsRevert ? childProgram.ProgramResult.GetRevertMessage() : null
+                Reverted = childProgram.ProgramResult.IsRevert
 #endif
             });
             parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
@@ -625,7 +681,7 @@ namespace Nethereum.EVM
 #if EVM_SYNC
                 RevertReason = null
 #else
-                RevertReason = childProgram.ProgramResult.GetRevertMessage()
+                Reverted = true
 #endif
             });
             parentProgram.ProgramResult.InnerCallResults.AddRange(childProgram.ProgramResult.InnerCallResults);
@@ -655,54 +711,101 @@ namespace Nethereum.EVM
             program.ProgramContext.EnforceSstoreGasStipend
             && program.GasRemaining <= Gas.GasConstants.SSTORE_GAS_STIPEND;
 
+        private static bool SstoreBelowTheGasStipend(Program program, Instruction opcode) =>
+            opcode == Instruction.SSTORE && GasIsBelowTheSstoreStipend(program);
+
+#if EVM_SYNC
         private static bool RefusedBeforePricing(Program program, Instruction opcode)
         {
             if (Execution.StaticContextWriteProtection.Forbids(program, opcode))
             {
-#if EVM_SYNC
-                program.SetExecutionError(); return true;
-#else
-                throw new Exceptions.StaticCallViolationException(opcode.ToString());
-#endif
+                program.MarkHalted(EvmHaltReason.WriteInStaticContext);
+                return true;
             }
 
-            if (opcode == Instruction.SSTORE && GasIsBelowTheSstoreStipend(program))
+            if (SstoreBelowTheGasStipend(program, opcode))
             {
-#if EVM_SYNC
-                program.SetExecutionError(); return true;
-#else
-                throw new Exceptions.SStoreGasStipendException(program.GasRemaining, Gas.GasConstants.SSTORE_GAS_STIPEND);
-#endif
+                program.MarkHalted(EvmHaltReason.OutOfGas);
+                return true;
             }
 
             return false;
         }
+#else
+        private static void ThrowIfRefusedBeforePricing(Program program, Instruction opcode)
+        {
+            if (Execution.StaticContextWriteProtection.Forbids(program, opcode))
+            {
+                throw new Exceptions.StaticCallViolationException(opcode.ToString());
+            }
+
+            if (SstoreBelowTheGasStipend(program, opcode))
+            {
+                throw new Exceptions.SStoreGasStipendException(program.GasRemaining, Gas.GasConstants.SSTORE_GAS_STIPEND);
+            }
+        }
+#endif
+
+        private static void HaltIfUnhandled(Program program, bool handled)
+        {
+            if (!handled)
+            {
+                program.Halt(EvmHaltReason.InvalidOpcode);
+            }
+        }
+
+#if !EVM_SYNC
+        private void RunSynchronousSteps(CallFrame frame)
+        {
+            var program = frame.Program;
+            var handlers = Config.OpcodeHandlers;
+            while (!program.Stopped)
+            {
+                var opcode = program.CurrentOpcode;
+                if (!handlers.RunsSynchronously(opcode)) return;
+
+                ThrowIfRefusedBeforePricing(program, opcode);
+                ChargeAndExecuteSynchronously(program, handlers, opcode, handlers.GetSyncGasCost(opcode, program));
+
+                frame.ProgramExecutionCounter++;
+                frame.VmExecutionCounter++;
+                ThrowIfCancellationRequested(frame);
+            }
+        }
+
+        private const int CancellationCheckMask = 0x3FF;
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private static void ThrowIfCancellationRequested(CallFrame frame)
+        {
+            if ((frame.VmExecutionCounter & CancellationCheckMask) != 0) return;
+            frame.Program.ProgramContext?.ExecutionStateService?.CancellationToken.ThrowIfCancellationRequested();
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private static void ChargeAndExecuteSynchronously(Program program, Execution.Opcodes.OpcodeHandlerTable handlers, Instruction opcode, long gasCost)
+        {
+            program.UpdateGasUsed(gasCost);
+            HaltIfUnhandled(program, handlers.ExecuteSync(opcode, program));
+        }
+
+        private bool TryExecuteWithoutAwait(Program program, Instruction opcode)
+        {
+            if (program.Stopped) return true;
+            if (!Config.OpcodeHandlers.TryExecute(opcode, program, out var handled)) return false;
+            HaltIfUnhandled(program, handled);
+            return true;
+        }
+#endif
 
 #if EVM_SYNC
-        private SubCallSetup StepWithCallStack(CallFrame currentFrame, ProgramInstruction instruction, Stack<CallFrame> callStack)
+        private SubCallSetup StepWithCallStack(CallFrame currentFrame, Instruction opcode, Stack<CallFrame> callStack)
 #else
-        private async Task<SubCallSetup> StepWithCallStackAsync(CallFrame currentFrame, ProgramInstruction instruction, Stack<CallFrame> callStack)
+        private async Task<SubCallSetup> StepWithCallStackAsync(CallFrame currentFrame, Instruction opcode, Stack<CallFrame> callStack)
 #endif
         {
             var program = currentFrame.Program;
             if (program.Stopped) return null;
-            if (instruction.Instruction == null) return null;
-
-            var opcode = instruction.Instruction.Value;
-            var gasCostTable = Config.OpcodeHandlers;
-
-            if (!gasCostTable.IsRegistered(opcode))
-            {
-                if (opcode == Instruction.CREATE2 || opcode == Instruction.DELEGATECALL || opcode == Instruction.STATICCALL)
-                {
-#if EVM_SYNC
-                    program.SetExecutionError();
-#else
-                    throw new System.ArgumentOutOfRangeException($"Unknown instruction: {opcode}");
-#endif
-                    return null;
-                }
-            }
 
             switch (opcode)
             {
@@ -748,14 +851,7 @@ namespace Nethereum.EVM
 #else
                     bool handled = await Config.OpcodeHandlers.ExecuteAsync(opcode, program);
 #endif
-                    if (!handled)
-                    {
-#if EVM_SYNC
-                        program.SetExecutionError();
-#else
-                        throw new System.ArgumentOutOfRangeException($"Unknown instruction: {opcode}");
-#endif
-                    }
+                    HaltIfUnhandled(program, handled);
                     return null;
             }
         }

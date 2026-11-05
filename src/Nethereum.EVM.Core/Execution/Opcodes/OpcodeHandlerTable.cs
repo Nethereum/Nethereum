@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Nethereum.EVM.Execution.Opcodes.Executors;
 using Nethereum.EVM.Gas.Opcodes.Costs;
 #if !EVM_SYNC
 using System.Threading.Tasks;
@@ -9,11 +10,20 @@ namespace Nethereum.EVM.Execution.Opcodes
 {
     public sealed class OpcodeHandlerTable
     {
+        private const long NotFixed = -1;
         private readonly IOpcodeGasCost[] _syncGas = new IOpcodeGasCost[256];
+        private readonly long[] _fixedGas = CreateNotFixed();
         private readonly IOpcodeGasCostAsync[] _asyncGas = new IOpcodeGasCostAsync[256];
         private readonly IOpcodeExecutor[] _syncExec = new IOpcodeExecutor[256];
         private readonly IOpcodeExecutorAsync[] _asyncExec = new IOpcodeExecutorAsync[256];
         private bool _frozen;
+
+        private static long[] CreateNotFixed()
+        {
+            var fixedGas = new long[256];
+            for (int i = 0; i < fixedGas.Length; i++) fixedGas[i] = NotFixed;
+            return fixedGas;
+        }
 
         public bool IsFrozen => _frozen;
 
@@ -52,6 +62,7 @@ namespace Nethereum.EVM.Execution.Opcodes
         {
             ThrowIfFrozen();
             _syncGas[(int)opcode] = gas;
+            _fixedGas[(int)opcode] = gas is FixedGasCost fixedCost ? fixedCost.Cost : NotFixed;
             _asyncGas[(int)opcode] = null;
             return this;
         }
@@ -61,6 +72,7 @@ namespace Nethereum.EVM.Execution.Opcodes
             ThrowIfFrozen();
             _asyncGas[(int)opcode] = gas;
             _syncGas[(int)opcode] = null;
+            _fixedGas[(int)opcode] = NotFixed;
             return this;
         }
 
@@ -92,10 +104,33 @@ namespace Nethereum.EVM.Execution.Opcodes
             return 0;
         }
 #else
-        public async Task<long> GetGasCostAsync(Instruction opcode, Program program)
+        public bool TryGetGasCost(Instruction opcode, Program program, out long gasCost)
         {
             var syncCost = _syncGas[(int)opcode];
-            if (syncCost != null) return syncCost.GetGasCost(program);
+            gasCost = syncCost != null ? syncCost.GetGasCost(program) : 0;
+            return syncCost != null;
+        }
+
+        public bool RunsSynchronously(Instruction opcode)
+        {
+            var idx = (int)opcode;
+            return _syncGas[idx] != null && _syncExec[idx] != null;
+        }
+
+        public long GetSyncGasCost(Instruction opcode, Program program)
+        {
+            var fixedCost = _fixedGas[(int)opcode];
+            return fixedCost != NotFixed ? fixedCost : _syncGas[(int)opcode].GetGasCost(program);
+        }
+
+        public bool ExecuteSync(Instruction opcode, Program program)
+        {
+            return Run(_syncExec[(int)opcode], opcode, program);
+        }
+
+        public async Task<long> GetGasCostAsync(Instruction opcode, Program program)
+        {
+            if (TryGetGasCost(opcode, program, out var gasCost)) return gasCost;
             var asyncCost = _asyncGas[(int)opcode];
             if (asyncCost != null) return await asyncCost.GetGasCostAsync(program);
             return 0;
@@ -107,22 +142,36 @@ namespace Nethereum.EVM.Execution.Opcodes
         public bool Execute(Instruction opcode, Program program)
         {
             var syncExec = _syncExec[(int)opcode];
-            if (syncExec != null) return syncExec.Execute(opcode, program);
+            if (syncExec != null) return Run(syncExec, opcode, program);
             var asyncExec = _asyncExec[(int)opcode];
             if (asyncExec != null) return asyncExec.Execute(opcode, program);
             return false;
         }
 #else
-        public async Task<bool> ExecuteAsync(Instruction opcode, Program program)
+        public bool TryExecute(Instruction opcode, Program program, out bool handled)
         {
             var syncExec = _syncExec[(int)opcode];
-            if (syncExec != null) return syncExec.Execute(opcode, program);
+            handled = syncExec != null && Run(syncExec, opcode, program);
+            return syncExec != null;
+        }
+
+        public async Task<bool> ExecuteAsync(Instruction opcode, Program program)
+        {
+            if (TryExecute(opcode, program, out var handled)) return handled;
             var asyncExec = _asyncExec[(int)opcode];
             if (asyncExec != null) return await asyncExec.ExecuteAsync(opcode, program);
             return false;
         }
 #endif
 
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private static bool Run(IOpcodeExecutor executor, Instruction opcode, Program program)
+        {
+            return executor is StackFlowExecutor stackFlow
+                ? stackFlow.Execute(opcode, program)
+                : executor.Execute(opcode, program);
+        }
 
         public bool IsRegistered(Instruction opcode)
         {

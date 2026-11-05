@@ -20,5 +20,11 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
             var digest = _backend.Hash(input ?? new byte[0]);
             return digest.PadTo32Bytes();
         }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            output = Execute(input);
+            return true;
+        }
     }
 }

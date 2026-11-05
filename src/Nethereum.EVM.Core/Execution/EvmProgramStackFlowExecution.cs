@@ -9,27 +9,22 @@ namespace Nethereum.EVM.Execution
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Pop(Program program)
         {
-            program.StackPop();
-            program.Step();
+            program.StackPopU256();
+            program.Advance(1);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Jump(Program program)
         {
             var destU256 = program.StackPopU256();
             if (!destU256.FitsInInt)
             {
-#if EVM_SYNC
-                program.SetExecutionError(); return;
-#else
-                throw new Exception("Invalid jump destination");
-#endif
+                program.Halt(EvmHaltReason.InvalidJumpDestination);
+                return;
             }
             var dest = destU256.ToInt();
             program.GoToJumpDestination(dest);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Jumpi(Program program)
         {
             var destiU256 = program.StackPopU256();
@@ -38,11 +33,8 @@ namespace Nethereum.EVM.Execution
             {
                 if (!destiU256.FitsInInt)
                 {
-#if EVM_SYNC
-                    program.SetExecutionError(); return;
-#else
-                    throw new Exception("Invalid jump destination");
-#endif
+                    program.Halt(EvmHaltReason.InvalidJumpDestination);
+                    return;
                 }
                 var desti = destiU256.ToInt();
                 program.GoToJumpDestination(desti);
@@ -56,10 +48,9 @@ namespace Nethereum.EVM.Execution
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void JumpDest(Program program)
         {
-            program.Step();
+            program.Advance(1);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PC(Program program)
         {
             var pc = program.GetProgramCounter();
@@ -71,38 +62,36 @@ namespace Nethereum.EVM.Execution
         public void PushZero(Program program)
         {
             program.StackPush(0);
-            program.Step();
+            program.Advance(1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Push(Program program)
         {
-            var data = program.GetCurrentInstruction().Arguments;
-            program.StackPush(data.PadTo32Bytes());
-            program.Step();
+            program.StackPush(program.CurrentPushValue);
+            program.Advance(1 + BytecodeDecoder.PushDataLength(program.CurrentOpcodeByte));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dup(Program program)
         {
-            int dupIndex = (int)program.GetCurrentInstruction().Value - (int)Instruction.DUP1 + 1;
+            int dupIndex = program.CurrentOpcodeByte - (int)Instruction.DUP1 + 1;
             program.StackDup(dupIndex);
-            program.Step();
+            program.Advance(1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Swap(Program program)
         {
-            int swapIndex = (int)program.GetCurrentInstruction().Value - (int)Instruction.SWAP1 + 1;
+            int swapIndex = program.CurrentOpcodeByte - (int)Instruction.SWAP1 + 1;
             program.StackSwap(swapIndex);
-            program.Step();
+            program.Advance(1);
         }
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dupn(Program program)
         {
-            var immediate = program.GetCurrentInstruction().Arguments[0];
+            var immediate = program.CurrentImmediateByte;
             if (!Eip8024ImmediateCodec.TryDecodeSingle(immediate, out int n))
             {
                 program.RaiseInvalidEip8024Immediate("DUPN");
@@ -112,10 +101,9 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Swapn(Program program)
         {
-            var immediate = program.GetCurrentInstruction().Arguments[0];
+            var immediate = program.CurrentImmediateByte;
             if (!Eip8024ImmediateCodec.TryDecodeSingle(immediate, out int n))
             {
                 program.RaiseInvalidEip8024Immediate("SWAPN");
@@ -125,10 +113,9 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exchange(Program program)
         {
-            var immediate = program.GetCurrentInstruction().Arguments[0];
+            var immediate = program.CurrentImmediateByte;
             if (!Eip8024ImmediateCodec.TryDecodePair(immediate, out int n, out int m))
             {
                 program.RaiseInvalidEip8024Immediate("EXCHANGE");

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Nethereum.EVM.Execution.Opcodes.Executors
 {
-    public sealed class StorageExecutor : IOpcodeExecutorAsync
+    public sealed class StorageExecutor : IOpcodeExecutorAsync, IOpcodeExecutor
     {
         private readonly EvmStorageMemoryExecution _storageMemory;
         private readonly EvmBlockchainCurrentContractContextExecution _context;
@@ -44,6 +44,23 @@ namespace Nethereum.EVM.Execution.Opcodes.Executors
             }
         }
 #else
+        public bool Execute(Instruction opcode, Program program)
+        {
+            switch (opcode)
+            {
+                case Instruction.TLOAD:
+                    if (!_hasTransientStorage) return false;
+                    _context.TLoad(program);
+                    return true;
+                case Instruction.TSTORE:
+                    if (!_hasTransientStorage) return false;
+                    _context.TStore(program);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public async Task<bool> ExecuteAsync(Instruction opcode, Program program)
         {
             switch (opcode)

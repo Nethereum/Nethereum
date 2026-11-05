@@ -1,3 +1,4 @@
+using Nethereum.EEST.Conformance.Diagnosis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ using Nethereum.Signer;
 using Nethereum.Util;
 using Newtonsoft.Json.Linq;
 using NewtonsoftFormatting = Newtonsoft.Json.Formatting;
+using Nethereum.Testing;
 using Xunit;
 using Xunit.Abstractions;
 using Nethereum.Merkle.Patricia;
@@ -26,6 +28,7 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class MainnetBlockReplayTests
     {
         private readonly ITestOutputHelper _output;
@@ -93,6 +96,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         [Theory]
         [Trait("Category", "MainnetBlockCell-Trace")]
         [MemberData(nameof(DiscoverMainnetBlockFixtures))]
+        [Trait("Requires", "Externals")]
         public async Task Debug_BlockReplay_DiffWithGethT8n(ulong blockNumber, string fixtureFile, string fork)
         {
             var fixture = LoadFixture(fixtureFile);
@@ -470,18 +474,11 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private static string FindEvmExe()
         {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln"))) break;
-                dir = dir.Parent;
-            }
-            if (dir == null) throw new DirectoryNotFoundException("project root not found");
-            var gethToolsDir = Path.Combine(dir.FullName, "geth-tools");
-            var evms = Directory.GetFiles(gethToolsDir, "evm.exe", SearchOption.AllDirectories);
-            if (evms.Length == 0) throw new FileNotFoundException("evm.exe not found under geth-tools");
-            return evms[0];
+            var evm = TestEnvironment.Tool("Evm");
+            if (!File.Exists(evm))
+                throw new FileNotFoundException(
+                    $"Tools:Evm not found at '{evm}'; run dotnet run ci/fetch-externals.cs or set Tools:Evm in {TestEnvironment.LocalSettingsRelativePath}.");
+            return evm;
         }
 
         private static void EnsureHardforkConfigForFork(string fork, out HardforkConfig config)

@@ -24,6 +24,39 @@ namespace Nethereum.EVM
         }
     }
 
+    public sealed class BlobScheduleActivationEntry
+    {
+        public string Name { get; set; } = "";
+
+        public ulong? Timestamp { get; set; }
+
+        public int Target { get; set; }
+
+        public int Max { get; set; }
+
+        public int BaseFeeUpdateFraction { get; set; }
+
+        public bool CountsTowardForkIdentity { get; set; } = true;
+
+        public BlobScheduleEntry Resolve()
+        {
+            var parameters = new BlobParameters(Target, Max, BaseFeeUpdateFraction);
+            return Timestamp.HasValue
+                ? BlobScheduleEntry.AtTimestamp(Name, Timestamp.Value, parameters)
+                : BlobScheduleEntry.ForFork(HardforkNames.Parse(Name), parameters);
+        }
+
+        public static BlobScheduleActivationEntry From(BlobScheduleEntry entry) =>
+            new BlobScheduleActivationEntry
+            {
+                Name = entry.Name,
+                Timestamp = entry.ActivationTimestamp,
+                Target = entry.Parameters.Target,
+                Max = entry.Parameters.Max,
+                BaseFeeUpdateFraction = entry.Parameters.BaseFeeUpdateFraction
+            };
+    }
+
     /// <summary>
     /// What a chain IS: its id and the forks it runs. Business logic, and a property of the
     /// chain rather than of any node that happens to run it - two nodes on one chain that
@@ -45,6 +78,11 @@ namespace Nethereum.EVM
 
         public List<ForkActivationEntry> Schedule { get; set; } = new List<ForkActivationEntry>();
 
+        public List<BlobScheduleActivationEntry> BlobSchedule { get; set; } = new List<BlobScheduleActivationEntry>();
+
+        public BlobSchedule ResolveBlobSchedule() =>
+            new BlobSchedule((BlobSchedule ?? new List<BlobScheduleActivationEntry>()).Select(e => e.Resolve()));
+
         public static ChainForkSchedule Running(long chainId, HardforkName fork) =>
             new ChainForkSchedule { ChainId = chainId, Hardfork = fork.ToString() };
 
@@ -52,10 +90,11 @@ namespace Nethereum.EVM
         {
             if (Schedule.Any())
                 return new ScheduledChainActivations(
-                    HardforkNames.Parse(GenesisFork), Schedule.Select(a => a.Resolve()));
+                    HardforkNames.Parse(GenesisFork), Schedule.Select(a => a.Resolve()), ResolveBlobSchedule());
 
             if (!string.IsNullOrEmpty(Hardfork))
-                return ScheduledChainActivations.RunningOnly(HardforkNames.Parse(Hardfork));
+                return new ScheduledChainActivations(
+                    HardforkNames.Parse(Hardfork), new ForkActivation[0], ResolveBlobSchedule());
 
             return (knownChains ?? ChainActivationsRegistry.Instance).Get(ChainId);
         }
@@ -77,9 +116,14 @@ namespace Nethereum.EVM
             var activations = scheduled
                 .Where(a => a.IsScheduled && a.CountsTowardForkIdentity).ToList();
 
+            var blobActivations = (BlobSchedule ?? new List<BlobScheduleActivationEntry>())
+                .Where(e => e.Timestamp.HasValue && e.CountsTowardForkIdentity)
+                .Select(e => e.Timestamp.Value);
+
             return new ForkIdentityThresholds(
                 activations.Where(a => a.Block.HasValue).Select(a => (ulong)a.Block.Value).ToArray(),
-                activations.Where(a => a.Timestamp.HasValue).Select(a => a.Timestamp.Value).ToArray());
+                activations.Where(a => a.Timestamp.HasValue).Select(a => a.Timestamp.Value)
+                    .Concat(blobActivations).OrderBy(t => t).ToArray());
         }
     }
 

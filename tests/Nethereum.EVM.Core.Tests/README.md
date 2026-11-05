@@ -10,35 +10,29 @@ Validates the portable `Nethereum.EVM.Core` engine against three execution paths
 |---|---|---|
 | `DirectSync_*` | JSON → state → sync `Execute` | The portable EVM engine in isolation — no witness, no zkVM. Quick. |
 | `WitnessSync_*` | JSON → `WitnessData` → serialise → deserialise → sync `Execute` | Witness format roundtrip + sync engine. Catches encoder/decoder drift. |
-| `ZiskEmu_*` | JSON → `WitnessData` → serialise → write `.bin` → `ziskemu -e <ELF>` via WSL | Full zkVM guest path. The ELF must exist and `ziskemu` must be installed. Slow. |
+| `ZiskEmu_*` | JSON → `WitnessData` → serialise → write `.bin` → `ziskemu -e <ELF>` (through WSL on Windows) | Full zkVM guest path. The ELF must exist and `ziskemu` must be installed. Slow. |
 | `GenerateWitnesses_*` | JSON → `WitnessData` → serialise → write `.bin` | Offline witness generation for `cargo-zisk prove`. No execution. |
 
 When `Direct` is green but `WitnessSync` is red, the bug is in `BinaryBlockWitness`. When `WitnessSync` is green but `ZiskEmu` is red, the bug is in the zkVM guest ELF (or its libziskos linkage).
 
 ## ELF discovery — fixed path
 
-`ZiskStateTestRunner.FindElfPath()` looks at exactly one location:
+`ZiskSyncStateTestRunner` and `ZiskGuestRunner` read the guest ELF from exactly one location, `ExternalPaths:ZiskOutput` (`zisk/output`) plus `nethereum_evm_elf`:
 
 ```
-<repo>/scripts/zisk-output/nethereum_evm_elf
+<repo>/zisk/output/nethereum_evm_elf
 ```
 
-It does **not** look in `zisk/output/` (where `zisk/scripts/build.sh` actually writes). After every guest rebuild:
-
-```bash
-cp zisk/output/nethereum_evm_elf scripts/zisk-output/nethereum_evm_elf
-```
-
-`ZiskEmu_*` tests silently skip (and report "ELF binary not found") if the file is missing.
+That is where `zisk/scripts/build.sh` writes it. A `ZiskEmu_*` test fails with "Zisk ELF binary not found" when the file is missing, and a category that ran no case fails as well.
 
 ## Test vector discovery
 
-The runner walks up from the test working directory looking for `Nethereum.slnx` or `Nethereum.sln`, then reads:
+The runner reads the fixtures named in `tests/Nethereum.XUnitEthereumClients/appsettings.test.json`:
 
-- `tests/Nethereum.EVM.UnitTests/Tests/GeneralStateTests/` — Ethereum classic state tests
-- `external/execution-spec-tests/fixtures/state_tests/` — EEST precompile coverage (BLS12-381, KZG, P256)
+- `ExternalPaths:EthereumTests` (`external/ethereum-tests`), `GeneralStateTests/` — Ethereum state tests
+- `ExternalPaths:EestStable` (`external/eest/stable-v20.0.2/fixtures`), `state_tests/` — EEST precompile coverage (BLS12-381, KZG, P256)
 
-EEST fixtures are passed as absolute paths to `RunCategoryZiskEmu`. If `external/execution-spec-tests/` is missing, those tests will report "Category not found".
+Fetch them with `dotnet run ci/fetch-externals.cs`. A `ZiskEmu_*` test fails with "Category ... not found" when its directory is missing.
 
 ## Running tests
 
@@ -64,16 +58,19 @@ Two pitfalls:
    --filter "FullyQualifiedName=Nethereum.EVM.Core.Tests.GeneralStateTests.ZiskSyncTests.ZiskEmu_stPreCompiledContracts"
    ```
 
-### Per-test runtime baselines (Zisk v0.18.0 emulator, single ELF process)
+### Per-test runtime baselines (Zisk 1.3.1-alpha emulator, single ELF process)
 
 | Test | Runtime |
 |---|---|
-| `ZiskEmu_stPreCompiledContracts` (100 tests) | ~20s |
-| `ZiskEmu_Cancun_Eip4844_KzgPointEvaluation` (10) | ~30s |
-| `ZiskEmu_Osaka_Eip7951_P256Verify` (20) | ~1m10s |
-| `ZiskEmu_Prague_Eip2537_Bls12_381` (50) | ~2m40s |
+| `ZiskEmu_stPreCompiledContracts` (6 tests) | ~5s |
+| `ZiskEmu_stPreCompiledContracts2` (100) | ~1m20s |
+| `ZiskEmu_Prague_Eip4844_KzgPointEvaluation` (10) | ~8s |
+| `ZiskEmu_Osaka_Eip7951_P256Verify` (20) | ~15s |
+| `ZiskEmu_Prague_Eip2537_Bls12_381` (50) | ~35s |
 
-Running the four tests in one `dotnet test` invocation (single ELF startup amortised across all tests) takes ~5 min total. Running them one at a time can be 4-5× slower because each invocation pays full WSL + ziskemu startup overhead.
+The whole `Category=Zisk` set of this project takes about 2m30s in the `nethereum-zisk` image on 8 CPUs.
+
+`ZiskEmu_Prague_Eip2537_Bls12_381` runs 50 cases: 26 pass and the 24 `invalid` cases stop the guest, because a precompile rejects bad input by throwing and the guest cannot catch.
 
 ## Prerequisites
 
@@ -81,11 +78,11 @@ For `DirectSync_*` and `WitnessSync_*`: just `dotnet build`. Pure C#.
 
 For `ZiskEmu_*`:
 - WSL2 with Ubuntu (Windows host) or native Linux
-- `~/.zisk/bin/ziskemu` installed (see `zisk/scripts/setup-host.sh`)
-- A current guest ELF at `scripts/zisk-output/nethereum_evm_elf` — see `zisk/README.md` for build steps
-- `HWLOC_COMPONENTS=-gl` set in WSL for headless / SSH hosts
+- `ziskemu` on the `PATH` or in `~/.zisk/bin` — the `nethereum-zisk` image (`ci/Dockerfile.zisk`) has it
+- A current guest ELF at `zisk/output/nethereum_evm_elf` — see `zisk/README.md` for build steps
+- `HWLOC_COMPONENTS=-gl` set for headless / SSH hosts
 
-For `GenerateWitnesses_*`: same as `DirectSync_*`. Outputs land in `scripts/zisk-output/witnesses/`.
+For `GenerateWitnesses_*`: same as `DirectSync_*`. Outputs land in `zisk/output/witnesses/`.
 
 ## Related
 

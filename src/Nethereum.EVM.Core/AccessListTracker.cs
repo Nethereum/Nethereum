@@ -9,8 +9,8 @@ namespace Nethereum.EVM
 {
     public class AccessListTracker
     {
-        private readonly Dictionary<string, HashSet<EvmUInt256>> _accessedStorage = new();
-        private readonly HashSet<string> _accessedAddresses = new();
+        private Dictionary<string, HashSet<EvmUInt256>> _accessedStorage;
+        private HashSet<string> _accessedAddresses;
         private readonly string _fromAddress;
         private readonly string _toAddress;
 
@@ -18,9 +18,12 @@ namespace Nethereum.EVM
 
         public AccessListTracker(string fromAddress, string toAddress, bool enabled = false)
         {
+            IsEnabled = enabled;
+            if (!enabled) return;
             _fromAddress = fromAddress?.ToLowerInvariant();
             _toAddress = toAddress?.ToLowerInvariant();
-            IsEnabled = enabled;
+            _accessedStorage = new Dictionary<string, HashSet<EvmUInt256>>();
+            _accessedAddresses = new HashSet<string>();
         }
 
         public void RecordAddressAccess(string address)
@@ -53,6 +56,7 @@ namespace Nethereum.EVM
         public List<AccessListItem> GetAccessList()
         {
             var result = new List<AccessListItem>();
+            if (_accessedAddresses == null) return result;
 
             var sortedAddresses = new List<string>(_accessedAddresses);
             sortedAddresses.Sort(System.StringComparer.Ordinal);
@@ -81,8 +85,8 @@ namespace Nethereum.EVM
 
         public void Clear()
         {
-            _accessedStorage.Clear();
-            _accessedAddresses.Clear();
+            _accessedStorage?.Clear();
+            _accessedAddresses?.Clear();
         }
     }
 }

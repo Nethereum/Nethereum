@@ -23,6 +23,17 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
 
         public override byte[] Execute(byte[] input)
         {
+            return Recover(input);
+        }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            output = Recover(input);
+            return true;
+        }
+
+        private byte[] Recover(byte[] input)
+        {
             byte[] data;
             if (input == null || input.Length == 0)
             {
@@ -56,15 +67,7 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
             if (rU256.IsZero || rU256 >= Secp256K1N) return new byte[0];
             if (sU256.IsZero || sU256 >= Secp256K1N) return new byte[0];
 
-            byte[] recoveredAddress;
-            try
-            {
-                recoveredAddress = _backend.Recover(hash, v, r, s);
-            }
-            catch
-            {
-                return new byte[0];
-            }
+            var recoveredAddress = _backend.Recover(hash, v, r, s);
 
             if (recoveredAddress == null || recoveredAddress.Length == 0)
                 return new byte[0];

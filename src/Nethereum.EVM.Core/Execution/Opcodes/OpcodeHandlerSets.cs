@@ -419,8 +419,8 @@ namespace Nethereum.EVM.Execution.Opcodes
             t.RegisterExec(Instruction.BLOBBASEFEE, ctx);
             var storage = new StorageExecutor(_pe.StorageMemory, _pe.BlockchainCurrentContractContext, hasTransientStorage: true);
             RegisterStorage(t, storage);
-            t.RegisterExecAsync(Instruction.TLOAD, storage);
-            t.RegisterExecAsync(Instruction.TSTORE, storage);
+            t.RegisterExec(Instruction.TLOAD, storage);
+            t.RegisterExec(Instruction.TSTORE, storage);
             var selfDestruct = new SelfDestructExecutor(_pe, SelfDestructRuleSets.Cancun);
             t.RegisterExecAsync(Instruction.SELFDESTRUCT, selfDestruct);
             return t;

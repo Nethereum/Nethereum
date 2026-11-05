@@ -10,10 +10,16 @@ namespace Nethereum.EVM.BlockchainState
 {
     public class ExecutionStateService
     {
-        private readonly Stack<IStateSnapshot> _snapshots = new Stack<IStateSnapshot>();
-        private int _nextSnapshotId = 0;
-        private readonly HashSet<EvmAddress> _warmAddresses = new HashSet<EvmAddress>();
+        private readonly StateJournal _journal;
+        private const int WarmAddressCapacity = 8;
+        private readonly HashSet<EvmAddress> _warmAddresses = NewWarmAddressSet();
+        private Execution.Precompiles.PrecompileRegistry _warmPrecompiles;
         private readonly HashSet<EvmAddress> _selfDestructedAddresses = new HashSet<EvmAddress>();
+        private readonly Dictionary<EvmAddress, byte[]> _chainCodeReadWithoutResolving = new Dictionary<EvmAddress, byte[]>();
+
+#if !EVM_SYNC
+        public System.Threading.CancellationToken CancellationToken { get; set; }
+#endif
 
         public bool HasSelfDestructed(string address)
         {
@@ -34,7 +40,7 @@ namespace Nethereum.EVM.BlockchainState
 
         public void MarkSelfDestructed(EvmAddress address)
         {
-            _selfDestructedAddresses.Add(address);
+            if (_selfDestructedAddresses.Add(address)) _journal.SelfDestructAdded(address);
         }
 
         private readonly HashSet<EvmAddress> _txGloballyTouched = new HashSet<EvmAddress>();
@@ -55,6 +61,7 @@ namespace Nethereum.EVM.BlockchainState
         public ExecutionStateService(IStateReader stateReader)
         {
             StateReader = stateReader;
+            _journal = new StateJournal(AccountsState, _warmAddresses, _selfDestructedAddresses, TransientStorage);
         }
 
         public Dictionary<EvmAddress, AccountExecutionState> AccountsState { get; private set; } = new Dictionary<EvmAddress, AccountExecutionState>();
@@ -68,13 +75,26 @@ namespace Nethereum.EVM.BlockchainState
 
         public IStateAccessRecorder AccessRecorder { get; set; }
 
+        internal void NotifyAccountRead(EvmAddress address)
+        {
+            var recorder = AccessRecorder;
+            if (recorder == null) return;
+            if (recorder is IAddressAccessRecorder byAddress) byAddress.RecordAccountRead(address);
+            else recorder.RecordAccountRead(address.ToHexLower());
+        }
+
+        internal void NotifyStorageRead(EvmAddress address, EvmUInt256 key)
+        {
+            var recorder = AccessRecorder;
+            if (recorder == null) return;
+            if (recorder is IAddressAccessRecorder byAddress) byAddress.RecordStorageRead(address, key);
+            else recorder.RecordStorageRead(address.ToHexLower(), key);
+        }
+
 
         public int TakeSnapshot()
         {
-            var snapshot = new StateSnapshot(_nextSnapshotId, AccountsState, _warmAddresses, _selfDestructedAddresses, TransientStorage);
-            _snapshots.Push(snapshot);
-
-            return _nextSnapshotId++;
+            return _journal.Take();
         }
 
         private static void RequireTakenSnapshot(int snapshotId, string operation)
@@ -89,19 +109,8 @@ namespace Nethereum.EVM.BlockchainState
         public void RevertToSnapshot(int snapshotId)
         {
             RequireTakenSnapshot(snapshotId, nameof(RevertToSnapshot));
-            while (_snapshots.Count > 0)
-            {
-                var snapshot = _snapshots.Peek();
-                if (snapshot.SnapshotId == snapshotId)
-                {
-                    RestoreFromSnapshot(snapshot);
-                    return;
-                }
-                _snapshots.Pop();
-            }
-#if EVM_SYNC
-            return;
-#else
+            if (_journal.Revert(snapshotId)) return;
+#if !EVM_SYNC
             throw new System.InvalidOperationException($"Snapshot {snapshotId} not found");
 #endif
         }
@@ -109,24 +118,7 @@ namespace Nethereum.EVM.BlockchainState
         public void CommitSnapshot(int snapshotId)
         {
             RequireTakenSnapshot(snapshotId, nameof(CommitSnapshot));
-            var tempStack = new Stack<IStateSnapshot>();
-            while (_snapshots.Count > 0)
-            {
-                var snapshot = _snapshots.Pop();
-                if (snapshot.SnapshotId == snapshotId)
-                {
-                    while (tempStack.Count > 0)
-                    {
-                        _snapshots.Push(tempStack.Pop());
-                    }
-                    return;
-                }
-                tempStack.Push(snapshot);
-            }
-            while (tempStack.Count > 0)
-            {
-                _snapshots.Push(tempStack.Pop());
-            }
+            _journal.Commit(snapshotId);
         }
 
         public void DiscardSnapshot(int snapshotId)
@@ -134,92 +126,12 @@ namespace Nethereum.EVM.BlockchainState
             CommitSnapshot(snapshotId);
         }
 
-        private void RestoreFromSnapshot(IStateSnapshot snapshot)
-        {
-            _warmAddresses.Clear();
-            foreach (var addr in snapshot.WarmAddresses)
-            {
-                _warmAddresses.Add(addr);
-            }
-
-            _selfDestructedAddresses.Clear();
-            foreach (var addr in snapshot.SelfDestructedAddresses)
-            {
-                _selfDestructedAddresses.Add(addr);
-            }
-
-            var addressesToRemove = new List<EvmAddress>();
-            foreach (var addr in AccountsState.Keys)
-            {
-                if (!snapshot.AccountSnapshots.ContainsKey(addr))
-                    addressesToRemove.Add(addr);
-            }
-
-            foreach (var addr in addressesToRemove)
-            {
-                AccountsState.Remove(addr);
-            }
-
-            foreach (var kvp in snapshot.AccountSnapshots)
-            {
-                RestoreAccountState(kvp.Key, kvp.Value);
-            }
-
-            TransientStorage.Clear();
-            if (snapshot.TransientStorage != null)
-            {
-                foreach (var kvp in snapshot.TransientStorage)
-                {
-                    var copy = new Dictionary<EvmUInt256, byte[]>();
-                    foreach (var inner in kvp.Value)
-                    {
-                        copy[inner.Key] = (byte[])inner.Value?.Clone();
-                    }
-                    TransientStorage[kvp.Key] = copy;
-                }
-            }
-        }
-
-        private void RestoreAccountState(EvmAddress address, AccountStateSnapshot snapshot)
-        {
-            if (!AccountsState.ContainsKey(address))
-            {
-                AccountsState[address] = new AccountExecutionState { Address = snapshot.Address };
-            }
-
-            var accountState = AccountsState[address];
-            accountState.Storage.Clear();
-            foreach (var kvp in snapshot.Storage)
-            {
-                accountState.Storage[kvp.Key] = (byte[])kvp.Value?.Clone();
-            }
-            accountState.Balance.SetExecutionBalance(snapshot.ExecutionBalance);
-            if (snapshot.InitialChainBalance.HasValue)
-                accountState.Balance.SetInitialChainBalance(snapshot.InitialChainBalance.Value);
-            else
-                accountState.Balance.ClearInitialChainBalance();
-            accountState.Nonce = snapshot.Nonce;
-            accountState.Code = (byte[])snapshot.Code?.Clone();
-            accountState.IsNewContract = snapshot.IsNewContract;
-            accountState.IsTouched = snapshot.IsTouched;
-            accountState.IsRemoved = snapshot.IsRemoved;
-
-            accountState.WarmStorageKeys.Clear();
-            if (snapshot.WarmStorageKeys != null)
-            {
-                foreach (var key in snapshot.WarmStorageKeys)
-                {
-                    accountState.WarmStorageKeys.Add(key);
-                }
-            }
-        }
-
 #if EVM_SYNC
         public byte[] GetFromStorage(string address, EvmUInt256 key) => GetFromStorage(EvmAddress.FromHex(address), key);
 
         public byte[] GetFromStorage(EvmAddress address, EvmUInt256 key)
         {
-            AccessRecorder?.RecordStorageRead(address.ToHexLower(), key);
+            NotifyStorageRead(address, key);
             return GetFromStorageWithoutRecordingAccess(address, key);
         }
 
@@ -272,13 +184,13 @@ namespace Nethereum.EVM.BlockchainState
 
         public byte[] GetCode(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
 
             var accountState = CreateOrGetAccountExecutionState(address);
 
-            if (accountState.Code == null)
+            if (!accountState.IsCodeResolved)
             {
-                accountState.Code = StateReader.GetCode(address.ToByteArray());
+                accountState.RecordChainCode(StateReader.GetCode(address.ToByteArray()));
             }
             return accountState.Code;
         }
@@ -287,17 +199,21 @@ namespace Nethereum.EVM.BlockchainState
 
         public byte[] GetCodeReadOnly(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
-            if (AccountsState.TryGetValue(address, out var existing) && existing.Code != null)
+            NotifyAccountRead(address);
+            if (AccountsState.TryGetValue(address, out var existing) && existing.IsCodeResolved)
                 return existing.Code;
-            return StateReader.GetCode(address.ToByteArray());
+            if (_chainCodeReadWithoutResolving.TryGetValue(address, out var read))
+                return read;
+            var chainCode = StateReader.GetCode(address.ToByteArray());
+            _chainCodeReadWithoutResolving[address] = chainCode;
+            return chainCode;
         }
 
         public EvmUInt256 GetNonce(string address) => GetNonce(EvmAddress.FromHex(address));
 
         public EvmUInt256 GetNonce(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var accountState = CreateOrGetAccountExecutionState(address);
             if (accountState.Nonce == null)
             {
@@ -320,7 +236,7 @@ namespace Nethereum.EVM.BlockchainState
 
         public EvmUInt256 GetTotalBalance(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var accountState = CreateOrGetAccountExecutionState(address);
             if (accountState.Balance.InitialChainBalance == null)
             {
@@ -335,7 +251,7 @@ namespace Nethereum.EVM.BlockchainState
 
         public bool AccountExists(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var balance = GetTotalBalance(address);
             if (!balance.IsZero) return true;
 
@@ -352,7 +268,7 @@ namespace Nethereum.EVM.BlockchainState
 
         public Task<byte[]> GetFromStorageAsync(EvmAddress address, EvmUInt256 key)
         {
-            AccessRecorder?.RecordStorageRead(address.ToHexLower(), key);
+            NotifyStorageRead(address, key);
             return GetFromStorageWithoutRecordingAccessAsync(address, key);
         }
 
@@ -376,13 +292,13 @@ namespace Nethereum.EVM.BlockchainState
 
         public async Task<byte[]> GetCodeAsync(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
 
             var accountState = CreateOrGetAccountExecutionState(address);
 
-            if (accountState.Code == null)
+            if (!accountState.IsCodeResolved)
             {
-                accountState.Code = await StateReader.GetCodeAsync(address.ToByteArray());
+                accountState.RecordChainCode(await StateReader.GetCodeAsync(address.ToByteArray()));
             }
             return accountState.Code;
         }
@@ -391,19 +307,24 @@ namespace Nethereum.EVM.BlockchainState
 
         public async Task<byte[]> GetCodeReadOnlyAsync(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
 
-            if (AccountsState.TryGetValue(address, out var existing) && existing.Code != null)
+            if (AccountsState.TryGetValue(address, out var existing) && existing.IsCodeResolved)
                 return existing.Code;
 
-            return await StateReader.GetCodeAsync(address.ToByteArray());
+            if (_chainCodeReadWithoutResolving.TryGetValue(address, out var read))
+                return read;
+
+            var chainCode = await StateReader.GetCodeAsync(address.ToByteArray());
+            _chainCodeReadWithoutResolving[address] = chainCode;
+            return chainCode;
         }
 
         public Task<EvmUInt256> GetNonceAsync(string address) => GetNonceAsync(EvmAddress.FromHex(address));
 
         public async Task<EvmUInt256> GetNonceAsync(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var accountState = CreateOrGetAccountExecutionState(address);
             if (accountState.Nonce == null)
             {
@@ -414,7 +335,13 @@ namespace Nethereum.EVM.BlockchainState
 
         public Task<AccountExecutionState> LoadBalanceNonceAndCodeFromStorageAsync(string address) => LoadBalanceNonceAndCodeFromStorageAsync(EvmAddress.FromHex(address));
 
-        public async Task<AccountExecutionState> LoadBalanceNonceAndCodeFromStorageAsync(EvmAddress address)
+        public Task<AccountExecutionState> LoadBalanceNonceAndCodeFromStorageAsync(EvmAddress address)
+        {
+            var loaded = FindLoadedAccount(address);
+            return loaded != null ? Task.FromResult(loaded) : ReadBalanceNonceAndCodeFromStorageAsync(address);
+        }
+
+        private async Task<AccountExecutionState> ReadBalanceNonceAndCodeFromStorageAsync(EvmAddress address)
         {
             await GetCodeAsync(address);
             await GetNonceAsync(address);
@@ -422,11 +349,19 @@ namespace Nethereum.EVM.BlockchainState
             return CreateOrGetAccountExecutionState(address);
         }
 
+        private AccountExecutionState FindLoadedAccount(EvmAddress address)
+        {
+            if (!AccountsState.TryGetValue(address, out var account)) return null;
+            if (!account.IsCodeResolved || !account.Nonce.HasValue || !account.Balance.InitialChainBalance.HasValue) return null;
+            NotifyAccountRead(address);
+            return account;
+        }
+
         public Task<EvmUInt256> GetTotalBalanceAsync(string address) => GetTotalBalanceAsync(EvmAddress.FromHex(address));
 
         public async Task<EvmUInt256> GetTotalBalanceAsync(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var accountState = CreateOrGetAccountExecutionState(address);
             if (accountState.Balance.InitialChainBalance == null)
             {
@@ -441,7 +376,7 @@ namespace Nethereum.EVM.BlockchainState
 
         public async Task<bool> AccountExistsAsync(EvmAddress address)
         {
-            AccessRecorder?.RecordAccountRead(address.ToHexLower());
+            NotifyAccountRead(address);
             var balance = await GetTotalBalanceAsync(address);
             if (!balance.IsZero) return true;
 
@@ -488,21 +423,28 @@ namespace Nethereum.EVM.BlockchainState
 
         public bool AddressIsWarm(EvmAddress address)
         {
-            return _warmAddresses.Contains(address);
+            return _warmAddresses.Contains(address) || (_warmPrecompiles != null && _warmPrecompiles.Handles(address));
         }
 
         public void MarkAddressAsWarm(string address) => MarkAddressAsWarm(EvmAddress.FromHex(address));
 
         public void MarkAddressAsWarm(EvmAddress address)
         {
-            _warmAddresses.Add(address);
+            if (_warmAddresses.Add(address)) _journal.WarmAddressAdded(address);
         }
 
         public void MarkPrecompilesAsWarm(Execution.Precompiles.PrecompileRegistry registry)
         {
-            if (registry == null) return;
-            foreach (var addressInt in registry.GetAddresses())
-                MarkAddressAsWarm(AddressUtil.Current.ConvertToValid20ByteAddress(addressInt.ToString("x")));
+            if (registry != null) _warmPrecompiles = registry;
+        }
+
+        private static HashSet<EvmAddress> NewWarmAddressSet()
+        {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            return new HashSet<EvmAddress>(WarmAddressCapacity);
+#else
+            return new HashSet<EvmAddress>();
+#endif
         }
 
 #if EVM_SYNC
@@ -527,7 +469,7 @@ namespace Nethereum.EVM.BlockchainState
                 var nonce = StateReader.GetTransactionCount(address.ToByteArray());
                 if (nonce > 0) return false;
             }
-            if (acct == null || acct.Code == null)
+            if (acct == null || !acct.IsCodeResolved)
             {
                 var code = StateReader.GetCode(address.ToByteArray());
                 if (code != null && code.Length > 0) return false;
@@ -556,7 +498,7 @@ namespace Nethereum.EVM.BlockchainState
                 var nonce = await StateReader.GetTransactionCountAsync(address.ToByteArray());
                 if (nonce > 0) return false;
             }
-            if (acct == null || acct.Code == null)
+            if (acct == null || !acct.IsCodeResolved)
             {
                 var code = await StateReader.GetCodeAsync(address.ToByteArray());
                 if (code != null && code.Length > 0) return false;
@@ -571,8 +513,9 @@ namespace Nethereum.EVM.BlockchainState
         {
             if (!AccountsState.TryGetValue(address, out var accountState))
             {
-                accountState = new AccountExecutionState() { Address = address.ToHexLower() };
+                accountState = new AccountExecutionState() { Address = address.ToHexLower(), Journal = _journal };
                 AccountsState.Add(address, accountState);
+                _journal.AccountAdded(address);
             }
             return accountState;
         }
@@ -583,6 +526,22 @@ namespace Nethereum.EVM.BlockchainState
         {
             var accountState = CreateOrGetAccountExecutionState(address);
             accountState.UpsertStorageValue(key, storageValue);
+        }
+
+        public void SetTransientStorage(EvmAddress address, EvmUInt256 key, byte[] value)
+        {
+            if (!TransientStorage.TryGetValue(address, out var addressStorage))
+            {
+                addressStorage = new Dictionary<EvmUInt256, byte[]>();
+                TransientStorage[address] = addressStorage;
+                _journal.TransientOuterAdded(address);
+            }
+            if (_journal.Recording)
+            {
+                var hadPrior = addressStorage.TryGetValue(key, out var prior);
+                _journal.TransientSet(address, key, hadPrior, prior);
+            }
+            addressStorage[key] = value;
         }
 
         public void SetPreStateStorage(string address, EvmUInt256 key, byte[] storageValue) => SetPreStateStorage(EvmAddress.FromHex(address), key, storageValue);
@@ -600,6 +559,7 @@ namespace Nethereum.EVM.BlockchainState
         {
             if (OverlayHoldsANonZeroSlot(address)) return true;
             if (OverlayShadowsChainStorage(address)) return false;
+            if (StateReader is IAccountStorageAddressReader byAddress) return byAddress.AccountHasStorage(address);
             return StateReader is IAccountStorageReader storageReader
                 && storageReader.AccountHasStorage(address.ToHexLower());
         }
@@ -610,6 +570,7 @@ namespace Nethereum.EVM.BlockchainState
         {
             if (OverlayHoldsANonZeroSlot(address)) return true;
             if (OverlayShadowsChainStorage(address)) return false;
+            if (StateReader is IAccountStorageAddressReader byAddress) return await byAddress.AccountHasStorageAsync(address);
             return StateReader is IAccountStorageReader storageReader
                 && await storageReader.AccountHasStorageAsync(address.ToHexLower());
         }
@@ -673,9 +634,7 @@ namespace Nethereum.EVM.BlockchainState
 
             account.Nonce = EvmUInt256.Zero;
             account.Code = new byte[0];
-            account.Storage.Clear();
-            account.OriginalStorageValues.Clear();
-            account.IsStorageReset = true;
+            account.ResetStorageForOverride();
         }
 
         public void DeleteAccount(string address) => DeleteAccount(EvmAddress.FromHex(address));

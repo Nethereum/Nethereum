@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.EVM.Hardforks;
@@ -42,6 +43,9 @@ namespace Nethereum.EVM.Witness
 
         public bool ProduceBlockCommitments { get; set; }
 
+        [NethereumDocExample(DocSection.EvmSimulator, "witness", "Anchor words carried by a witness")]
+        public byte[] AnchorInputs { get; set; }
+
         /// <summary>
         /// EIP-7002 §Specification: <i>"If there is no code at
         /// <c>WITHDRAWAL_REQUEST_PREDEPLOY_ADDRESS</c>, the corresponding block MUST be marked
@@ -55,6 +59,9 @@ namespace Nethereum.EVM.Witness
     public class BlockFeatureConfig
     {
         public HardforkName Fork { get; set; } = HardforkName.Unspecified;
+
+        [NethereumDocExample(DocSection.EvmSimulator, "witness", "Blob parameters resolved for the witnessed block")]
+        public BlobParameters? Blob { get; set; }
         public WitnessStateTreeType StateTree { get; set; } = WitnessStateTreeType.Patricia;
         public WitnessHashFunction HashFunction { get; set; } = WitnessHashFunction.Keccak;
 

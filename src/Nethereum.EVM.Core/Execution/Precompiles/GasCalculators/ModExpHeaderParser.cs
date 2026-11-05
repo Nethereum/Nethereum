@@ -5,53 +5,28 @@ namespace Nethereum.EVM.Execution.Precompiles.GasCalculators
 {
     public static class ModExpHeaderParser
     {
+        private const int HeaderWordLength = 32;
+
         public static ModExpHeader Parse(byte[] input)
         {
             var data = input ?? new byte[0];
 
-            int offset = 0;
-            var baseLen = ReadHeaderWord(data, offset); offset += 32;
-            var expLen  = ReadHeaderWord(data, offset); offset += 32;
-            var modLen  = ReadHeaderWord(data, offset); offset += 32;
+            var baseLen = EvmUInt256.FromBigEndian(data, 0, HeaderWordLength);
+            var expLen = EvmUInt256.FromBigEndian(data, HeaderWordLength, HeaderWordLength);
+            var modLen = EvmUInt256.FromBigEndian(data, 2 * HeaderWordLength, HeaderWordLength);
+            var expHead = ReadExponentHead(data, baseLen, expLen);
 
-            EvmUInt256 expHead = EvmUInt256.Zero;
-
-            if (!expLen.IsZero && expLen.FitsInInt)
-            {
-                int headLen = Math.Min(32, expLen.ToInt());
-
-                long expStartOffsetLong = (long)offset +
-                    (baseLen.FitsInInt ? (long)baseLen.ToInt() : (long)int.MaxValue);
-
-                int expStartOffset = expStartOffsetLong < data.Length
-                    ? (int)expStartOffsetLong
-                    : data.Length;
-                for (int i = 0; i < headLen; i++)
-                {
-                    int idx = expStartOffset + i;
-                    byte b = idx < data.Length ? data[idx] : (byte)0;
-                    expHead = (expHead << 8) | new EvmUInt256(b);
-                }
-            }
-
-            int expBitLen = 0;
-            if (!expHead.IsZero)
-            {
-                var temp = expHead;
-                while (!temp.IsZero) { expBitLen++; temp = temp >> 1; }
-            }
-
-            return new ModExpHeader(baseLen, expLen, modLen, expHead, expBitLen);
+            return new ModExpHeader(baseLen, expLen, modLen, expHead, expHead.BitLength());
         }
 
-        private static EvmUInt256 ReadHeaderWord(byte[] data, int offset)
+        private static EvmUInt256 ReadExponentHead(byte[] data, EvmUInt256 baseLen, EvmUInt256 expLen)
         {
-            if (offset >= data.Length) return EvmUInt256.Zero;
-            int available = Math.Min(32, data.Length - offset);
+            if (expLen.IsZero || !expLen.FitsInInt) return EvmUInt256.Zero;
 
-            var buf = new byte[32];
-            Array.Copy(data, offset, buf, 0, available);
-            return EvmUInt256.FromBigEndian(buf);
+            int headLen = Math.Min(HeaderWordLength, expLen.ToInt());
+            long expStart = 3L * HeaderWordLength + (baseLen.FitsInInt ? baseLen.ToInt() : int.MaxValue);
+            int start = expStart < data.Length ? (int)expStart : data.Length;
+            return EvmUInt256.FromBigEndian(data, start, headLen);
         }
     }
 }

@@ -23,31 +23,53 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
         public override byte[] Execute(byte[] input)
         {
             var data = OrEmpty(input);
-
             var header = GasCalculators.ModExpHeaderParser.Parse(data);
-            var baseLenU256 = header.BaseLen;
-            var expLenU256 = header.ExpLen;
-            var modLenU256 = header.ModLen;
+            var rejection = Rejection(header);
+            if (rejection != null)
+                throw new ArgumentException(rejection);
+            return Compute(data, header);
+        }
 
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            var data = OrEmpty(input);
+            var header = GasCalculators.ModExpHeaderParser.Parse(data);
+            if (Rejection(header) != null)
+            {
+                output = null;
+                return false;
+            }
+            output = Compute(data, header);
+            return true;
+        }
+
+        private string Rejection(GasCalculators.ModExpHeader header)
+        {
             if (EnforceEip7823Bounds &&
-                (baseLenU256 > MaxEip7823Length ||
-                 expLenU256 > MaxEip7823Length ||
-                 modLenU256 > MaxEip7823Length))
+                (header.BaseLen > MaxEip7823Length ||
+                 header.ExpLen > MaxEip7823Length ||
+                 header.ModLen > MaxEip7823Length))
             {
-                throw new ArgumentException("MODEXP length exceeded 1024 bytes");
+                return "MODEXP length exceeded 1024 bytes";
             }
 
-            if (modLenU256.IsZero) return new byte[0];
+            if (header.ModLen.IsZero) return null;
 
-            if (!baseLenU256.FitsInInt || !expLenU256.FitsInInt || !modLenU256.FitsInInt)
+            if (!header.BaseLen.FitsInInt || !header.ExpLen.FitsInInt || !header.ModLen.FitsInInt)
             {
-                throw new ArgumentException(
-                    $"MODEXP length too large: baseLen={baseLenU256}, expLen={expLenU256}, modLen={modLenU256}");
+                return $"MODEXP length too large: baseLen={header.BaseLen}, expLen={header.ExpLen}, modLen={header.ModLen}";
             }
 
-            var baseLen = baseLenU256.ToInt();
-            var expLen = expLenU256.ToInt();
-            var modLen = modLenU256.ToInt();
+            return null;
+        }
+
+        private byte[] Compute(byte[] data, GasCalculators.ModExpHeader header)
+        {
+            if (header.ModLen.IsZero) return new byte[0];
+
+            var baseLen = header.BaseLen.ToInt();
+            var expLen = header.ExpLen.ToInt();
+            var modLen = header.ModLen.ToInt();
 
             int offset = 96;
             var baseBytes = ReadBigEndianOperand(data, offset, baseLen); offset += baseLen;

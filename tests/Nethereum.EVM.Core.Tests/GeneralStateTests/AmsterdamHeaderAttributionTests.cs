@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
     public class AmsterdamHeaderAttributionTests
     {
         private readonly ITestOutputHelper _output;
@@ -94,7 +95,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var asEngineBuildsIt = Clone(sample.Header);
             asEngineBuildsIt.BlockAccessListHash = null;
 
-            var encoded = BlockHeaderEncoder.Current.Encode(asEngineBuildsIt);
+            var encoded = PragueBlockHeaderCodec.Instance.Encode(asEngineBuildsIt);
             var hash = new Sha3Keccack().CalculateHash(encoded);
             var fieldCount = Nethereum.RLP.RLP.Decode(encoded) is RLPCollection c ? c.Count : -1;
 

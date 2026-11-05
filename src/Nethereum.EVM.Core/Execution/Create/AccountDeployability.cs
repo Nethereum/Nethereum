@@ -1,4 +1,5 @@
 using Nethereum.EVM.BlockchainState;
+using Nethereum.Util;
 #if !EVM_SYNC
 using System.Threading.Tasks;
 #endif
@@ -43,24 +44,34 @@ namespace Nethereum.EVM.Execution.Create
 #if EVM_SYNC
         public static bool IsDeployable(ExecutionStateService executionState, string address)
         {
+            return IsDeployable(executionState, EvmAddress.FromHex(address));
+        }
+
+        public static bool IsDeployable(ExecutionStateService executionState, EvmAddress address)
+        {
             if (HasNonceOrCode(executionState, address)) return false;
             return !executionState.AccountHasStorage(address);
         }
 
-        private static bool HasNonceOrCode(ExecutionStateService executionState, string address)
+        private static bool HasNonceOrCode(ExecutionStateService executionState, EvmAddress address)
         {
             if (executionState.GetNonce(address) > 0) return true;
             var code = executionState.GetCode(address);
             return code != null && code.Length > 0;
         }
 #else
-        public static async Task<bool> IsDeployableAsync(ExecutionStateService executionState, string address)
+        public static Task<bool> IsDeployableAsync(ExecutionStateService executionState, string address)
+        {
+            return IsDeployableAsync(executionState, EvmAddress.FromHex(address));
+        }
+
+        public static async Task<bool> IsDeployableAsync(ExecutionStateService executionState, EvmAddress address)
         {
             if (await HasNonceOrCodeAsync(executionState, address)) return false;
             return !await executionState.AccountHasStorageAsync(address);
         }
 
-        private static async Task<bool> HasNonceOrCodeAsync(ExecutionStateService executionState, string address)
+        private static async Task<bool> HasNonceOrCodeAsync(ExecutionStateService executionState, EvmAddress address)
         {
             if (await executionState.GetNonceAsync(address) > 0) return true;
             var code = await executionState.GetCodeAsync(address);

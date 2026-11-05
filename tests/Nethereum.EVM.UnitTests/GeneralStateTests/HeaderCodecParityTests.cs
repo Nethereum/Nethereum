@@ -8,10 +8,12 @@ using Nethereum.Model;
 using Nethereum.Model.Codecs;
 using Nethereum.RLP;
 using Nethereum.Util;
+using Nethereum.Testing;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class HeaderCodecParityTests
     {
         [Theory]
@@ -81,6 +83,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         }
 
         [Fact]
+        [Trait("Requires", "Externals")]
         public void AmsterdamHeaderCodec_DecodeRoundTrip_MatchesFixtureGenesisBlock()
         {
             var path = AmsterdamFixturePath("slotnum_genesis.json");
@@ -136,6 +139,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         }
 
         [Fact]
+        [Trait("Requires", "Externals")]
         public void PragueHeaderCodec_Decode_RejectsAmsterdamHeader()
         {
             var header = LoadHeader("block-20000000.json");
@@ -170,19 +174,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             });
         }
 
-        private static string AmsterdamFixturePath(string fileName)
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                var candidate = Path.Combine(dir.FullName, "external", "execution-spec-tests", "fixtures",
-                    "blockchain_tests", "amsterdam", "eip7843_slotnum", "slotnum", fileName);
-                if (File.Exists(candidate)) return candidate;
-                dir = dir.Parent;
-            }
-            return Path.Combine(Directory.GetCurrentDirectory(), "external", "execution-spec-tests", "fixtures",
+        private static string AmsterdamFixturePath(string fileName) =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EestAmsterdam"),
                 "blockchain_tests", "amsterdam", "eip7843_slotnum", "slotnum", fileName);
-        }
 
         private static string FixturePath(string fileName)
         {

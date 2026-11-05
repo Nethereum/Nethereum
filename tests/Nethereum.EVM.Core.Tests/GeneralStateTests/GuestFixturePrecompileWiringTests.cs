@@ -11,6 +11,11 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 {
     public class GuestFixturePrecompileWiringTests
     {
+        private static readonly HardforkRegistry FixtureRegistry =
+            Nethereum.EVM.Precompiles.Bls.Bls12381AwareMainnetHardforkRegistry.Build(
+                Nethereum.EVM.Precompiles.Kzg.KzgAwareMainnetHardforkRegistry.Instance,
+                new Nethereum.Signer.Bls.Herumi.Bls12381Operations());
+
         private static readonly int[] PluginBackedPrecompiles =
             { 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11 };
 
@@ -18,7 +23,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         [Trait("Category", "AmsterdamGuestBlockchainTests")]
         public void Given_the_guest_fixture_registry_When_its_Amsterdam_precompiles_are_resolved_Then_none_is_an_unwired_placeholder()
         {
-            var precompiles = BlockchainSyncTestRunner.FixtureRegistry
+            var precompiles = FixtureRegistry
                 .Get(HardforkName.Amsterdam).Precompiles;
 
             var unwired = precompiles.GetAddresses()
@@ -43,7 +48,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         [Trait("Category", "AmsterdamGuestBlockchainTests")]
         public void Given_the_guest_fixture_registry_When_a_BLS12_381_and_a_KZG_precompile_are_executed_Then_both_return_a_real_result()
         {
-            var precompiles = BlockchainSyncTestRunner.FixtureRegistry
+            var precompiles = FixtureRegistry
                 .Get(HardforkName.Amsterdam).Precompiles;
 
             var fpElement = new byte[64];

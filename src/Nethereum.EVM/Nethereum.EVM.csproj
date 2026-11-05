@@ -7,7 +7,7 @@
 	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
 	<AssemblyName>Nethereum.EVM</AssemblyName>
 	<PackageId>Nethereum.EVM</PackageId>
-	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+	<PackageTags>Nethereum;Ethereum;Blockchain;EVM</PackageTags>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 	<LangVersion>11</LangVersion>
 </PropertyGroup>
@@ -23,6 +23,7 @@
     <Compile Include="..\Nethereum.EVM.Precompiles\DefaultChainForkResolver.cs" Link="Precompiles\DefaultChainForkResolver.cs" />
     <Compile Include="..\Nethereum.EVM.Precompiles\PrecompileNames.cs" Link="Precompiles\PrecompileNames.cs" />
     <Compile Include="..\Nethereum.EVM.Precompiles\Backends\*.cs" Link="Precompiles\Backends\%(Filename)%(Extension)" />
+    <Compile Include="..\Nethereum.EVM.Precompiles\Backends\ModExp\*.cs" Link="Precompiles\Backends\ModExp\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +36,14 @@
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

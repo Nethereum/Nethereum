@@ -26,10 +26,12 @@ namespace Nethereum.EVM.Precompiles.Bls.Handlers
         private const int PairSize = G1PointSize + G2PointSize;
 
         private readonly IBls12381Operations _ops;
+        private readonly IBls12381OutcomeOperations _outcomes;
 
         public BlsPairingPrecompile(IBls12381Operations ops)
         {
             _ops = ops ?? throw new ArgumentNullException(nameof(ops));
+            _outcomes = ops as IBls12381OutcomeOperations;
         }
 
         public override int AddressNumeric => 0x0f;
@@ -40,8 +42,20 @@ namespace Nethereum.EVM.Precompiles.Bls.Handlers
             if (data.Length == 0 || (data.Length % PairSize) != 0)
                 throw new ArgumentException(
                     $"BLS12-381 PAIRING: expected non-empty multiple of {PairSize} bytes, got {data.Length}");
+            return TryExecute(data, out var output)
+                ? output
+                : throw new ArgumentException("BLS12-381 PAIRING: invalid point encoding");
+        }
 
-            int k = data.Length / PairSize;
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            if (!HasInputMultiple(input, PairSize))
+            {
+                output = null;
+                return false;
+            }
+
+            int k = input.Length / PairSize;
             var g1Points = new byte[k][];
             var g2Points = new byte[k][];
 
@@ -49,14 +63,33 @@ namespace Nethereum.EVM.Precompiles.Bls.Handlers
             {
                 int pairStart = i * PairSize;
                 int g2Start = pairStart + G1PointSize;
-                g1Points[i] = data.Slice(pairStart, g2Start);
-                g2Points[i] = data.Slice(g2Start, g2Start + G2PointSize);
+                g1Points[i] = input.Slice(pairStart, g2Start);
+                g2Points[i] = input.Slice(g2Start, g2Start + G2PointSize);
             }
 
-            var passed = _ops.Pairing(g1Points, g2Points);
-            var output = new byte[32];
-            if (passed) output[31] = 1;
-            return output;
+            bool pairs;
+            if (_outcomes != null)
+            {
+                if (!_outcomes.TryPairing(g1Points, g2Points, out pairs))
+                {
+                    output = null;
+                    return false;
+                }
+            }
+            else
+            {
+                bool verified = false;
+                if (!TryThroughThrowingOperation(() => { verified = _ops.Pairing(g1Points, g2Points); return null; }, out _))
+                {
+                    output = null;
+                    return false;
+                }
+                pairs = verified;
+            }
+
+            output = new byte[32];
+            if (pairs) output[31] = 1;
+            return true;
         }
     }
 }

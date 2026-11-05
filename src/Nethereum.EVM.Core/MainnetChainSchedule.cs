@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Nethereum.EVM
 {
@@ -8,7 +9,8 @@ namespace Nethereum.EVM
         {
             ChainId = MainnetGenesisConstants.ChainId,
             GenesisFork = HardforkName.Frontier.ToString(),
-            Schedule = Activations()
+            Schedule = Activations(),
+            BlobSchedule = MainnetBlobSchedule.Instance.Entries.Select(BlobScheduleActivationEntry.From).ToList()
         };
 
         public static readonly ForkIdentityThresholds ForkIdentity = Instance.ForkThresholds();
@@ -40,8 +42,6 @@ namespace Nethereum.EVM
             };
 
             AddIfScheduled(schedule, HardforkName.Osaka, MainnetChainActivations.OsakaTimestamp);
-            AddIfScheduled(schedule, HardforkName.OsakaBpo1, MainnetChainActivations.OsakaBpo1Timestamp);
-            AddIfScheduled(schedule, HardforkName.OsakaBpo2, MainnetChainActivations.OsakaBpo2Timestamp);
             AddIfScheduled(schedule, HardforkName.Amsterdam, null);
 
             return schedule;

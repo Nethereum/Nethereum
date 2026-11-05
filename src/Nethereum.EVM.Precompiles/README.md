@@ -71,8 +71,9 @@ var cancun = registry.Get(HardforkName.Cancun);
 | `DefaultEcRecoverBackend` | `0x01` | `Nethereum.Signer` secp256k1 recovery |
 | `DefaultSha256Backend` | `0x02` | `System.Security.Cryptography.SHA256` |
 | `DefaultRipemd160Backend` | `0x03` | BouncyCastle `RipeMD160Digest` (in this package) |
-| `DefaultModExpBackend` | `0x05` | EIP-2565 modular exponentiation |
-| `DefaultBn128Backend` | `0x06`, `0x07`, `0x08` | BN128 add / mul / pairing (`Nethereum.Signer.Crypto.BN128Curve`) |
+| `DefaultModExpBackend` | `0x05` | EIP-2565 modular exponentiation (64-bit-limb Montgomery for odd moduli, `BigInteger.ModPow` for small exponents and on the portable targets) |
+| `ManagedBn254Backend` | `0x06`, `0x07`, `0x08` | the bn128 backend of `DefaultPrecompileBackends.Instance` and every `DefaultPrecompileRegistries` base: add and mul through `BN128Curve.TryAdd` / `TryMul`, pairing through `DefaultBn128Backend`; implements `IBn128Backend` and `IBn128OutcomeBackend` |
+| `DefaultBn128Backend` | `0x06`, `0x07`, `0x08` | BN128 add / mul / pairing (`Nethereum.Signer.Crypto.BN128Curve`); still available to pass to `PrecompileBackends` yourself |
 | `DefaultBlake2fBackend` | `0x09` | EIP-152 Blake2 F compression |
 | `DefaultP256VerifyBackend` | `0x0100` | EIP-7951 secp256r1 verification via BouncyCastle `ECDsaSigner` over NIST P-256 |
 

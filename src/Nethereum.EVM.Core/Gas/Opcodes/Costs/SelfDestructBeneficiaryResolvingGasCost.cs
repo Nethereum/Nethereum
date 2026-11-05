@@ -73,15 +73,11 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             var state = program.ProgramContext.ExecutionStateService;
             var beneficiaryAddress = EvmAddress.From(beneficiaryBytes);
 #if EVM_SYNC
-            var balance = state.GetTotalBalance(beneficiaryAddress);
-            var code = state.GetCode(beneficiaryAddress);
-            var nonce = state.GetNonce(beneficiaryAddress);
+            var beneficiary = PreEip161AccountExistence.ReadFacts(state, beneficiaryAddress);
 #else
-            var balance = await state.GetTotalBalanceAsync(beneficiaryAddress);
-            var code = await state.GetCodeAsync(beneficiaryAddress);
-            var nonce = await state.GetNonceAsync(beneficiaryAddress);
+            var beneficiary = await PreEip161AccountExistence.ReadFactsAsync(state, beneficiaryAddress);
 #endif
-            var sweep = SweepTowards(state, beneficiaryAddress, balance, code, nonce);
+            var sweep = SelfDestructSweep.OfTheBeneficiaryAlone(beneficiary);
 
             var verdict = _rule.JudgeTheSweep(sweep);
             if (verdict == SelfDestructSweepVerdict.NotUntilTheContractBalanceIsKnown)
@@ -115,15 +111,6 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             program.MarkAddressAsWarm(beneficiaryBytes);
             return true;
         }
-
-        private static SelfDestructSweep SweepTowards(
-            ExecutionStateService state, EvmAddress beneficiary, EvmUInt256 balance, byte[] code, EvmUInt256 nonce) =>
-            SelfDestructSweep.OfTheBeneficiaryAlone(
-                AccountExistenceFacts.Resolved(balance, code, nonce, HasAnAccountRecord(state, beneficiary)));
-
-        private static bool HasAnAccountRecord(ExecutionStateService state, EvmAddress beneficiary) =>
-            state.AccountsState.TryGetValue(beneficiary, out var account)
-                && (account.WasInPreState || account.IsNewContract);
 
         private long ChargeNewAccount(Program program)
         {

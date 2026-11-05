@@ -40,6 +40,7 @@ namespace Nethereum.EVM.UnitTests.Gas
             byte[] beneficiaryCode = null,
             long beneficiaryNonce = 0,
             bool beneficiaryHasAPreStateRecord = false,
+            bool beneficiaryHasAnEmptyChainRecord = false,
             bool beneficiaryIsWarm = false,
             long gas = 1_000_000,
             bool stateGasActive = false,
@@ -48,7 +49,7 @@ namespace Nethereum.EVM.UnitTests.Gas
             var accounts = new Dictionary<string, AccountState>();
             if (contractBalance != 0)
                 accounts[ContractAddress.ToLower()] = new AccountState { Balance = new EvmUInt256(contractBalance) };
-            if (beneficiaryBalance != 0 || beneficiaryCode != null || beneficiaryNonce != 0)
+            if (beneficiaryBalance != 0 || beneficiaryCode != null || beneficiaryNonce != 0 || beneficiaryHasAnEmptyChainRecord)
                 accounts[BeneficiaryAddress.ToLower()] = new AccountState
                 {
                     Balance = new EvmUInt256(beneficiaryBalance),
@@ -171,6 +172,22 @@ namespace Nethereum.EVM.UnitTests.Gas
         public async Task Given_APreEip161ForkAndABeneficiaryWithAnAccountRecord_When_Swept_Then_NoNewAccountIsCharged()
         {
             var fixture = CreateProgram(contractBalance: 7, beneficiaryHasAPreStateRecord: true);
+
+            var cost = await OpcodeHandlerSets.TangerineWhistle.GetGasCostAsync(Instruction.SELFDESTRUCT, fixture.Program);
+
+            Assert.Equal(GasConstants.SELFDESTRUCT_COST, cost);
+        }
+
+        [Theory]
+        [InlineData(0L)]
+        [InlineData(5L)]
+        public async Task Given_TangerineWhistleAndABeneficiaryThatExistsOnlyInChainState_When_Swept_Then_NoNewAccountIsCharged(
+            long beneficiaryBalance)
+        {
+            var fixture = CreateProgram(
+                contractBalance: 7,
+                beneficiaryBalance: beneficiaryBalance,
+                beneficiaryHasAnEmptyChainRecord: true);
 
             var cost = await OpcodeHandlerSets.TangerineWhistle.GetGasCostAsync(Instruction.SELFDESTRUCT, fixture.Program);
 

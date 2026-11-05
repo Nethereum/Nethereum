@@ -37,6 +37,7 @@ namespace Nethereum.EVM.Execution
                 case Instruction.LOG3:
                 case Instruction.LOG4:
                 case Instruction.SSTORE:
+                case Instruction.TSTORE:
                 case Instruction.SELFDESTRUCT:
                     return true;
                 case Instruction.CALL:

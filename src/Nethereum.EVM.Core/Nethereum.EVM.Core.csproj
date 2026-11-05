@@ -11,6 +11,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsTrimmable>true</IsTrimmable>
     <TrimMode>link</TrimMode>
+    <AssemblyName>Nethereum.EVM.Core</AssemblyName>
     <PackageId>Nethereum.EVM.Core</PackageId>
     <PackageTags>Nethereum;Ethereum;Blockchain;EVM;AOT;RISC-V;ZK</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -30,4 +31,13 @@
 <ItemGroup>
     <PackageReference Remove="Newtonsoft.Json" />
 </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
 </Project>

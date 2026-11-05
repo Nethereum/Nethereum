@@ -1,4 +1,3 @@
-using Nethereum.EVM.Execution;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Xunit;
@@ -38,9 +37,9 @@ namespace Nethereum.EVM.UnitTests
             System.Array.Copy(r, 0, input, 64, 32);
             System.Array.Copy(s, 0, input, 96, 32);
             
-            var precompile = new EvmPreCompiledContractsExecution();
+            var registry = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.CancunBase();
 
-            var result = precompile.EcRecover(input);
+            var result = registry.Execute(1, input);
             
             var expectedAddress = "a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
             var resultAddress = result.ToHex().ToLower();

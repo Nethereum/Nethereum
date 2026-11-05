@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
 {
     public class EvmCallInputDataExecution
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataCopy(Program program)
         {
             var indexInMemoryU256 = program.StackPopU256();
@@ -37,9 +35,7 @@ namespace Nethereum.EVM.Execution
                     size = lengthDataToCopy;
                 }
 
-                var dataToCopy = new byte[size];
-                Array.Copy(dataInput, indexOfData, dataToCopy, 0, size);
-                program.WriteToMemory(indexInMemory, lengthDataToCopy, dataToCopy);
+                program.CopyToMemory(indexInMemory, lengthDataToCopy, dataInput, indexOfData, size);
             }
 
             program.Step();
@@ -47,7 +43,6 @@ namespace Nethereum.EVM.Execution
 
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataLoad(Program program)
         {
             var indexU256 = program.StackPopU256();
@@ -58,18 +53,13 @@ namespace Nethereum.EVM.Execution
             }
             else
             {
-                var index = indexU256.ToInt();
-                int size = Math.Min(dataInput.Length - index, 32);
-                byte[] dataLoaded = new byte[32];
-                Array.Copy(dataInput, index, dataLoaded, 0, size);
-                program.StackPush(dataLoaded);
+                program.StackPush(EvmUInt256.FromBigEndian(dataInput, indexU256.ToInt(), 32));
             }
             program.Step();
         }
 
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CallDataSize(Program program)
         {
             program.StackPush(program.ProgramContext.DataInput.Length);

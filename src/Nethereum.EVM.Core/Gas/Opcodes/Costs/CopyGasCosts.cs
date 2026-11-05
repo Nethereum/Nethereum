@@ -15,8 +15,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             var memoryCost = program.CalculateMemoryExpansionGas(indexInMemory, lengthDataToCopy);
             if (memoryCost >= GasConstants.OVERFLOW_GAS_COST) return GasConstants.OVERFLOW_GAS_COST;
 
-            var wordsU = (lengthDataToCopy + new EvmUInt256(31)) / new EvmUInt256(32);
-            var words = wordsU.FitsInULong ? (long)wordsU.U0 : long.MaxValue / 4;
+            var words = WordCount.Of(lengthDataToCopy);
 
             return GasConstants.COPY_BASE + (GasConstants.COPY_PER_WORD * words) + memoryCost;
         }
@@ -38,7 +37,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             long memoryCost = length.IsZero ? 0 : program.CalculateMemoryExpansionGas(EvmUInt256.Zero, maxMemoryEnd);
             if (memoryCost >= GasConstants.OVERFLOW_GAS_COST) return GasConstants.OVERFLOW_GAS_COST;
 
-            var words = ((length + new EvmUInt256(31)) / new EvmUInt256(32)).ToLongSafe();
+            var words = WordCount.Of(length);
 
             return GasConstants.COPY_BASE + (GasConstants.COPY_PER_WORD * words) + memoryCost;
         }
@@ -75,7 +74,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
 
             if (memoryCost >= GasConstants.OVERFLOW_GAS_COST) return GasConstants.OVERFLOW_GAS_COST;
 
-            var words = ((length + new EvmUInt256(31)) / new EvmUInt256(32)).ToLongSafe();
+            var words = WordCount.Of(length);
 
             return accessCost + (GasConstants.COPY_PER_WORD * words) + memoryCost;
         }

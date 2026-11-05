@@ -169,8 +169,7 @@ namespace Nethereum.EVM.UnitTests
             Array.Copy(r, 0, ecrecoverInput, 64, 32);
             Array.Copy(s, 0, ecrecoverInput, 96, 32);
 
-            var precompiles = new Nethereum.EVM.Execution.EvmPreCompiledContractsExecution();
-            var precompileResult = precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000001", ecrecoverInput);
+            var precompileResult = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.CancunBase().Execute(1, ecrecoverInput);
             var recoveredFromPrecompile = precompileResult.ToHex();
             Assert.EndsWith(expectedOwner.ToLower().Substring(2), recoveredFromPrecompile.ToLower(),
                 StringComparison.OrdinalIgnoreCase);

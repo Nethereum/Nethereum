@@ -46,7 +46,8 @@ namespace Nethereum.EVM.Execution
                 GasPrice = signedTx.GetMaxFeePerGas(),
                 Nonce = signedTx.GetNonce(),
                 IsContractCreation = isContractCreation,
-                TransactionType = signedTx.TransactionType
+                TransactionType = signedTx.TransactionType,
+                Signature = signedTx.Signature
             };
 
             SetFeeMarket(ctx, signedTx);

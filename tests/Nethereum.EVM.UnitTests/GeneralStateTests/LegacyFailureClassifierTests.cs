@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.Testing;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "GeneralStateTests")]
     public class LegacyFailureClassifierTests
     {
         private readonly ITestOutputHelper _output;
@@ -15,28 +18,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private static string LegacyRoot(string branch)
         {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return Path.Combine(dir.FullName, "external", "legacytests", branch, "GeneralStateTests");
-                dir = dir.Parent;
-            }
-            return null;
-        }
-
-        private static string ProjectRoot()
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-            return Directory.GetCurrentDirectory();
+            return Path.Combine(TestEnvironment.RequireExternalPath("LegacyTests"), branch, "GeneralStateTests");
         }
 
         [Theory]
@@ -48,9 +30,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task ClassifyCategory(string branch, string category, string fork)
         {
             var root = LegacyRoot(branch);
-            if (root == null) { _output.WriteLine("legacytests not cloned; skipping."); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var categoryDir = Path.Combine(root, category);
-            if (!Directory.Exists(categoryDir)) { _output.WriteLine($"category not present: {categoryDir}"); return; }
+            Assert.True(Directory.Exists(categoryDir), $"category not present: {categoryDir}");
 
             var classifier = new LegacyFailureClassifier(_output);
             var classifications = await classifier.ClassifyCategoryAsync(categoryDir, fork);
@@ -85,7 +67,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 }
             }
 
-            var outDir = Path.Combine(ProjectRoot(), "tmp", "test_results", "classifier");
+            var outDir = Path.Combine(TestEnvironment.RepoRoot, "tmp", "test_results", "classifier");
             Directory.CreateDirectory(outDir);
             var csvPath = Path.Combine(outDir, $"classify_{branch}_{category}_{fork}.csv");
             using (var w = new StreamWriter(csvPath))

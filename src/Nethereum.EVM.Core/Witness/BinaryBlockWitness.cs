@@ -7,7 +7,7 @@ namespace Nethereum.EVM.Witness
 {
     public static class BinaryBlockWitness
     {
-        public const byte VERSION = 3;
+        public const byte VERSION = 4;
 
         public static byte[] Serialize(BlockWitnessData data)
         {
@@ -23,13 +23,24 @@ namespace Nethereum.EVM.Witness
             var features = data.Features ?? new BlockFeatureConfig();
             if (features.StateTree == WitnessStateTreeType.Binary) flags |= 8;
             flags |= (byte)(((byte)features.HashFunction & 0x03) << 4);
+            if (features.Blob.HasValue) flags |= 0x80;
             w.Write(flags);
+            byte trailerFlags = 0;
+            if (data.AnchorInputs != null) trailerFlags |= 1;
+            w.Write(trailerFlags);
 
             var fork = data.Features?.Fork ?? HardforkName.Unspecified;
             if (fork == HardforkName.Unspecified)
                 throw new InvalidOperationException(
                     "BlockWitnessData.Features.Fork must be set before serialising — Unspecified is not a valid wire value.");
             w.Write((byte)fork);
+
+            if (features.Blob is BlobParameters blob)
+            {
+                w.Write((ulong)blob.Target);
+                w.Write((ulong)blob.Max);
+                w.Write((ulong)blob.BaseFeeUpdateFraction);
+            }
 
             w.Write((ulong)data.BlockNumber);
             w.Write((ulong)data.Timestamp);
@@ -66,6 +77,9 @@ namespace Nethereum.EVM.Witness
                 }
             }
 
+            if (data.AnchorInputs != null)
+                BinaryWitness.WriteBytes(w, data.AnchorInputs);
+
             var pos = (int)ms.Position;
             var padding = (8 - (pos % 8)) % 8;
             for (int i = 0; i < padding; i++)
@@ -88,6 +102,7 @@ namespace Nethereum.EVM.Witness
                 throw new InvalidOperationException("Expected witness version " + VERSION + ", got: " + version);
 
             byte flags = data[offset++];
+            byte trailerFlags = data[offset++];
             result.VerifyWitnessProofs = (flags & 1) != 0;
             result.ComputePostStateRoot = (flags & 2) != 0;
             result.ProduceBlockCommitments = (flags & 4) != 0;
@@ -99,11 +114,19 @@ namespace Nethereum.EVM.Witness
             var fork = (HardforkName)data[offset++];
             if (fork == HardforkName.Unspecified)
                 throw new InvalidOperationException("Witness has Fork=Unspecified — producer did not stamp a fork.");
+            BlobParameters? blobParameters = null;
+            if ((flags & 0x80) != 0)
+                blobParameters = new BlobParameters(
+                    (int)BinaryWitness.ReadU64(data, ref offset),
+                    (int)BinaryWitness.ReadU64(data, ref offset),
+                    (int)BinaryWitness.ReadU64(data, ref offset));
+
             result.Features = new BlockFeatureConfig
             {
                 Fork = fork,
                 StateTree = stateTree,
-                HashFunction = hashFunction
+                HashFunction = hashFunction,
+                Blob = blobParameters
             };
 
             result.BlockNumber = (long)BinaryWitness.ReadU64(data, ref offset);
@@ -145,6 +168,9 @@ namespace Nethereum.EVM.Witness
                 }
                 result.Accounts.Add(account);
             }
+
+            if ((trailerFlags & 1) != 0)
+                result.AnchorInputs = BinaryWitness.ReadBytesArray(data, ref offset);
 
             return result;
         }

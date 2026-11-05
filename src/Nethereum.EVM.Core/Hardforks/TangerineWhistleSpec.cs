@@ -31,7 +31,7 @@ namespace Nethereum.EVM.Hardforks
                 new PrecompileSpec { Address = 0x04, Kind = PrecompileKind.Identity },
             },
 
-            Validation = TransactionValidationRuleSets.Frontier,
+            Validation = TransactionValidationRuleSets.Homestead,
             TouchedEmptyCleanup = NoOpTouchedEmptyCleanupRule.Instance,
             SstoreRefund = LegacySstoreRefundRule.Instance,
             GasForwarding = Eip150GasForwarding.Instance,

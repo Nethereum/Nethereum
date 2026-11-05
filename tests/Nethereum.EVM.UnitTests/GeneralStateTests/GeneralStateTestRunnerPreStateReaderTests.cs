@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class GeneralStateTestRunnerPreStateReaderTests
     {
         private const string PreAccountAddress = "0x1000000000000000000000000000000000000001";

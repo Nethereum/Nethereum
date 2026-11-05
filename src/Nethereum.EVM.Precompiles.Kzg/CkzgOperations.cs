@@ -102,9 +102,9 @@ namespace Nethereum.EVM.Precompiles.Kzg
             {
                 return Ckzg.Ckzg.VerifyKzgProof(commitment, z, y, proof, _trustedSetup);
             }
-            catch (Exception ex)
+            catch (ArgumentException)
             {
-                throw new ArgumentException($"KZG proof verification failed: {ex.Message}", ex);
+                return false;
             }
         }
 

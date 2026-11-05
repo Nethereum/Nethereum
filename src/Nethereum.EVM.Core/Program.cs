@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using Nethereum.Util;
 using Nethereum.EVM.Exceptions;
 using Nethereum.EVM.Gas;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Nethereum.EVM
 {
@@ -13,11 +15,20 @@ namespace Nethereum.EVM
     public class Program
     {
         public const int MAX_STACKSIZE = 1024;
-        private readonly EvmUInt256[] stack = new EvmUInt256[MAX_STACKSIZE];
+        private const int InitialStackCapacity = 16;
+        private static EvmUInt256[] spareFullStack;
+        private EvmUInt256[] stack = new EvmUInt256[InitialStackCapacity];
         private int stackPointer = 0;
         public List<byte> Memory { get; set; }
-        public List<ProgramInstruction> Instructions { get; private set; }
-        private Dictionary<int, int> jumpDestinationIndexesByStep;
+        private List<ProgramInstruction> instructions;
+        private List<ProgramInstruction> analysedInstructions;
+        private int pc;
+        private bool eip8024Enabled;
+        private byte[] pushDataBitmap;
+#if !EVM_ZISK
+        private byte[] codeHash;
+        private bool jumpAnalysisIsPrivate;
+#endif
         public List<ProgramTrace> Trace { get; private set; }
         public ProgramResult ProgramResult { get; private set; }
 
@@ -39,15 +50,20 @@ namespace Nethereum.EVM
 
         
 
-        private int currentInstructionIndex = 0;
-
         public Program(byte[] bytecode, ProgramContext programContext = null)
+            : this(bytecode, null, programContext)
         {
-            var analysis = GetOrBuildAnalysis(bytecode, eip8024Enabled: false);
-            this.Instructions = analysis.Instructions;
-            this.jumpDestinationIndexesByStep = analysis.JumpDestinationIndexesByStep;
-            this.Memory = new List<byte>();
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Build a Program for known code, sharing its analysis by code hash")]
+        public Program(byte[] bytecode, byte[] codeHash, ProgramContext programContext = null)
+        {
             ByteCode = bytecode;
+#if !EVM_ZISK
+            ProgramCodeAnalysisCache.RequireValidCodeHash(codeHash);
+            this.codeHash = codeHash;
+#endif
+            this.Memory = new List<byte>();
             ProgramContext = programContext;
             Trace = new List<ProgramTrace>();
             ProgramResult = new ProgramResult();
@@ -61,93 +77,167 @@ namespace Nethereum.EVM
                 GasRemaining = 10000000000000L;
             }
 
-            if (this.Instructions.Count == 0)
+            if (bytecode.Length == 0)
             {
                 StoppedImplicitly = true;
                 Stop();
             }
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Build a Program for init code without publishing its analysis")]
+        public static Program ForInitCode(byte[] initCode, ProgramContext programContext = null)
+        {
+            var program = new Program(initCode, programContext);
+#if !EVM_ZISK
+            program.jumpAnalysisIsPrivate = true;
+#endif
+            return program;
+        }
+
+        public List<ProgramInstruction> Instructions
+        {
+            get { return instructions ?? (instructions = OwnedCopyOf(AnalysedInstructions)); }
+        }
+
+        private List<ProgramInstruction> AnalysedInstructions
+        {
+            get { return analysedInstructions ?? (analysedInstructions = AnalyseByteCode()); }
+        }
+
+        private static List<ProgramInstruction> OwnedCopyOf(List<ProgramInstruction> analysed)
+        {
+#if EVM_ZISK
+            return analysed;
+#else
+            var copy = new List<ProgramInstruction>(analysed.Count);
+            foreach (var instruction in analysed)
+            {
+                copy.Add(new ProgramInstruction
+                {
+                    Step = instruction.Step,
+                    Instruction = instruction.Instruction,
+                    Value = instruction.Value,
+                    Arguments = (byte[])instruction.Arguments?.Clone(),
+                    SourceMap = instruction.SourceMap
+                });
+            }
+            return copy;
+#endif
         }
 
         public ProgramInstruction GetCurrentInstruction()
         {
-            return Instructions[currentInstructionIndex];
+            return Instructions[GetCurrentInstructionIndex()];
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Read the current opcode and immediate from the code")]
+        public byte CurrentOpcodeByte
+        {
+            get { return pc < ByteCode.Length ? ByteCode[pc] : (byte)Instruction.STOP; }
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Read the current opcode and immediate from the code")]
+        public Instruction CurrentOpcode
+        {
+            get { return (Instruction)CurrentOpcodeByte; }
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Read the current opcode and immediate from the code")]
+        public byte[] CurrentImmediate
+        {
+            get { return BytecodeDecoder.ImmediateBytes(ByteCode, pc, eip8024Enabled); }
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Read the current opcode and immediate from the code")]
+        public EvmUInt256 CurrentPushValue
+        {
+            get { return EvmUInt256.FromBigEndian(ByteCode, pc + 1, BytecodeDecoder.PushDataLength(CurrentOpcodeByte)); }
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "program-code-hash", "Read the current opcode and immediate from the code")]
+        public byte CurrentImmediateByte
+        {
+            get { return BytecodeDecoder.ImmediateByteAt(ByteCode, pc); }
         }
 
         public void ApplyEip8024Decoding()
         {
-            var analysis = GetOrBuildAnalysis(ByteCode, eip8024Enabled: true);
-            Instructions = analysis.Instructions;
-            jumpDestinationIndexesByStep = analysis.JumpDestinationIndexesByStep;
+            eip8024Enabled = true;
+            instructions = null;
+            analysedInstructions = null;
         }
 
-        private static readonly ConditionalWeakTable<byte[], ProgramCodeAnalysis> AnalysisCache =
-            new ConditionalWeakTable<byte[], ProgramCodeAnalysis>();
-        private static readonly ConditionalWeakTable<byte[], ProgramCodeAnalysis> AnalysisCacheEip8024 =
-            new ConditionalWeakTable<byte[], ProgramCodeAnalysis>();
-
-        private static ProgramCodeAnalysis GetOrBuildAnalysis(byte[] byteCode, bool eip8024Enabled)
+        private List<ProgramInstruction> AnalyseByteCode()
         {
-            var cache = eip8024Enabled ? AnalysisCacheEip8024 : AnalysisCache;
-            if (cache.TryGetValue(byteCode, out var cached)) return cached;
-            var instructions = ProgramInstructionsUtils.GetProgramInstructions(byteCode, eip8024Enabled);
-            var analysis = new ProgramCodeAnalysis(instructions, BuildJumpDestinationMap(instructions));
-            return cache.GetValue(byteCode, _ => analysis);
+#if EVM_ZISK
+            return ProgramInstructionsUtils.GetProgramInstructions(ByteCode, eip8024Enabled);
+#else
+            codeHash = codeHash ?? ProgramCodeAnalysisCache.HashOf(ByteCode);
+            return ProgramCodeAnalysisCache.GetOrBuild(ByteCode, codeHash, eip8024Enabled).Instructions;
+#endif
         }
 
-        private static Dictionary<int, int> BuildJumpDestinationMap(List<ProgramInstruction> instructions)
+        private byte[] PushDataBitmap
         {
-            var map = new Dictionary<int, int>();
-            for (int i = 0; i < instructions.Count; i++)
-            {
-                if (instructions[i].Instruction == Instruction.JUMPDEST)
-                {
-                    map[instructions[i].Step] = i;
-                }
-            }
-            return map;
+            get { return pushDataBitmap ?? (pushDataBitmap = ResolvePushDataBitmap()); }
         }
 
-        private sealed class ProgramCodeAnalysis
+        private byte[] ResolvePushDataBitmap()
         {
-            public ProgramCodeAnalysis(List<ProgramInstruction> instructions, Dictionary<int, int> jumpDestinationIndexesByStep)
-            {
-                Instructions = instructions;
-                JumpDestinationIndexesByStep = jumpDestinationIndexesByStep;
-            }
-
-            public List<ProgramInstruction> Instructions { get; }
-            public Dictionary<int, int> JumpDestinationIndexesByStep { get; }
+#if EVM_ZISK
+            return BytecodeDecoder.BuildPushDataBitmap(ByteCode);
+#else
+            if (jumpAnalysisIsPrivate) return BytecodeDecoder.BuildPushDataBitmap(ByteCode);
+            codeHash = codeHash ?? ProgramCodeAnalysisCache.HashOf(ByteCode);
+            return ProgramCodeAnalysisCache.GetOrBuildPushDataBitmap(ByteCode, codeHash);
+#endif
         }
 
         public void GoToJumpDestination(int step)
         {
-            if (jumpDestinationIndexesByStep.TryGetValue(step, out var index))
+            if (!BytecodeDecoder.IsJumpDestination(ByteCode, PushDataBitmap, step))
             {
-                SetInstrunctionIndex(index);
+                Halt(EvmHaltReason.InvalidJumpDestination);
                 return;
             }
-#if EVM_SYNC
-            SetExecutionError();
-#else
-            throw new Exception("Invalid jump destination");
-#endif
-
+            MoveTo(step);
         }
 
         public int GetProgramCounter()
         {
-            return GetCurrentInstruction().Step;
+            return pc;
         }
 
         public virtual void SetInstrunctionIndex(int index)
         {
-            currentInstructionIndex = index;
+            var analysed = AnalysedInstructions;
+            MoveTo(index < analysed.Count ? analysed[index].Step : ByteCode.Length);
+        }
 
-            if (currentInstructionIndex >= Instructions.Count)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void MoveTo(int newPc)
+        {
+            pc = newPc;
+            if (pc >= ByteCode.Length)
             {
-                StoppedImplicitly = true;
+                StoppedImplicitly = !IsExceptionalHalt;
                 Stop();
             }
+        }
+
+        private int IndexOfInstructionAt(int step)
+        {
+            var list = AnalysedInstructions;
+            var low = 0;
+            var high = list.Count - 1;
+            while (low <= high)
+            {
+                var middle = (low + high) >> 1;
+                var middleStep = list[middle].Step;
+                if (middleStep == step) return middle;
+                if (middleStep < step) low = middle + 1; else high = middle - 1;
+            }
+            throw new InvalidOperationException("The program counter is not at the start of an instruction.");
         }
 
         public bool Stopped { get; private set; } = false;
@@ -155,9 +245,33 @@ namespace Nethereum.EVM
 
         public bool IsExceptionalHalt { get; private set; } = false;
 
+        [NethereumDocExample(DocSection.EvmSimulator, "exceptional-halt", "The reason a frame halted, on both engines")]
+        public EvmHaltReason HaltReason { get; private set; } = EvmHaltReason.None;
+
         public void MarkExceptionalHalt()
         {
             IsExceptionalHalt = true;
+        }
+
+        public void MarkHalted(EvmHaltReason reason)
+        {
+            HaltReason = reason;
+#if EVM_SYNC
+            HasExecutionError = true;
+#endif
+            IsExceptionalHalt = true;
+            GasRemaining = 0;
+            ProgramResult.IsRevert = true;
+            Stop();
+        }
+
+        public void Halt(EvmHaltReason reason)
+        {
+#if EVM_SYNC
+            MarkHalted(reason);
+#else
+            throw new EvmHaltException(reason);
+#endif
         }
 
 #if EVM_SYNC
@@ -165,11 +279,7 @@ namespace Nethereum.EVM
 
         public void SetExecutionError()
         {
-            HasExecutionError = true;
-            IsExceptionalHalt = true;
-            GasRemaining = 0;
-            ProgramResult.IsRevert = true;
-            Stop();
+            MarkHalted(EvmHaltReason.ExceptionalHalt);
         }
 #endif
         public byte[] ByteCode { get; }
@@ -177,7 +287,7 @@ namespace Nethereum.EVM
 
         public int GetCurrentInstructionIndex()
         {
-            return currentInstructionIndex;
+            return IndexOfInstructionAt(pc);
         }
 
         public void Stop()
@@ -185,20 +295,36 @@ namespace Nethereum.EVM
             Stopped = true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Step()
         {
-            Step(1);
+            MoveTo(BytecodeDecoder.NextPc(ByteCode, pc, eip8024Enabled));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Advance(int bytes)
+        {
+            MoveTo(pc + bytes);
         }
 
         public void Step(int steps)
         {
-            SetInstrunctionIndex(currentInstructionIndex + steps);
+            if (steps == 1)
+            {
+                Step();
+                return;
+            }
+            SetInstrunctionIndex(GetCurrentInstructionIndex() + steps);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPush(byte[] stackWord)
         {
-            ThrowWhenPushStackOverflows();
+            if (PushWouldOverflow())
+            {
+                Halt(EvmHaltReason.StackOverflow);
+                return;
+            }
             stack[stackPointer++] = EvmUInt256.FromBigEndian(stackWord);
         }
 
@@ -214,12 +340,8 @@ namespace Nethereum.EVM
             int actualIndex = stackPointer - 1 - index;
             if (actualIndex < 0 || index < 0)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return new byte[32];
-#else
-                throw new Exception("Invalid stack index");
-#endif
             }
             return stack[actualIndex].ToBigEndian();
         }
@@ -230,12 +352,8 @@ namespace Nethereum.EVM
             int actualIndex = stackPointer - 1 - index;
             if (actualIndex < 0 || index < 0)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return EvmUInt256.Zero;
-#else
-                throw new Exception("Invalid stack index");
-#endif
             }
             return stack[actualIndex];
         }
@@ -252,12 +370,8 @@ namespace Nethereum.EVM
         {
             if (stackPointer < index + 1)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return;
-#else
-                throw new Exception($"Stack underflow: SWAP{index} requires {index + 1} items, have {stackPointer}");
-#endif
             }
             int topIndex = stackPointer - 1;
             int swapIndex = stackPointer - 1 - index;
@@ -271,15 +385,15 @@ namespace Nethereum.EVM
         {
             if (stackPointer < index)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return;
-#else
-                throw new Exception($"Stack underflow: DUP{index} requires {index} items, have {stackPointer}");
-#endif
             }
             var src = stack[stackPointer - index];
-            ThrowWhenPushStackOverflows();
+            if (PushWouldOverflow())
+            {
+                Halt(EvmHaltReason.StackOverflow);
+                return;
+            }
             stack[stackPointer++] = src;
         }
 
@@ -296,12 +410,8 @@ namespace Nethereum.EVM
             int maxDepth = depthFromTopA > depthFromTopB ? depthFromTopA : depthFromTopB;
             if (stackPointer < maxDepth + 1)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return;
-#else
-                throw new Exception($"Stack underflow: EXCHANGE requires {maxDepth + 1} items, have {stackPointer}");
-#endif
             }
             int indexA = stackPointer - 1 - depthFromTopA;
             int indexB = stackPointer - 1 - depthFromTopB;
@@ -312,11 +422,7 @@ namespace Nethereum.EVM
 
         public void RaiseInvalidEip8024Immediate(string opcodeName)
         {
-#if EVM_SYNC
-            SetExecutionError();
-#else
-            throw new Exception($"{opcodeName}: immediate byte outside EIP-8024 valid range");
-#endif
+            Halt(EvmHaltReason.InvalidParameter);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -324,19 +430,31 @@ namespace Nethereum.EVM
         {
             if (stackPointer == 0)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return new byte[32];
-#else
-                throw new Exception("Stack underflow");
-#endif
             }
             return stack[--stackPointer].ToBigEndian();
         }
 
-        private void ThrowWhenPushStackOverflows()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool PushWouldOverflow()
         {
-            VerifyStackOverflow(0,1);
+            return stackPointer == stack.Length && !TryGrowStack();
+        }
+
+        private bool TryGrowStack()
+        {
+            if (stack.Length >= MAX_STACKSIZE) return false;
+            var full = Interlocked.Exchange(ref spareFullStack, null) ?? new EvmUInt256[MAX_STACKSIZE];
+            Array.Copy(stack, full, stackPointer);
+            stack = full;
+            return true;
+        }
+
+        internal void ReleaseStack()
+        {
+            if (stack.Length == MAX_STACKSIZE) Interlocked.CompareExchange(ref spareFullStack, stack, null);
+            stack = null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -344,12 +462,7 @@ namespace Nethereum.EVM
         {
             if (stackPointer - args + returns > MAX_STACKSIZE)
             {
-#if EVM_SYNC
-                SetExecutionError();
-                return;
-#else
-                throw new Exception("Stack overflow, maximum size is " + MAX_STACKSIZE);
-#endif
+                Halt(EvmHaltReason.StackOverflow);
             }
         }
 
@@ -359,7 +472,7 @@ namespace Nethereum.EVM
             {
                 var gap = newSize - Memory.Count;
                 var extraSize = ((gap + 31) / 32) * 32;
-                Memory.AddRange(new byte[extraSize]);
+                MemoryBuffer.GrowTo(Memory, Memory.Count + extraSize);
             }
         }
 
@@ -368,39 +481,53 @@ namespace Nethereum.EVM
             WriteToMemory(index, data.Length, data);
         }
 
-
         public void WriteToMemory(int index, int totalSize, byte[] data, bool extend = true)
+        {
+            if (data == null) data = new byte[0];
+            CopyToMemory(index, totalSize, data, 0, data.Length, extend);
+        }
+
+        internal void CopyToMemory(int index, int totalSize, byte[] source, int sourceOffset, int sourceCount, bool extend = true)
         {
             if (totalSize == 0) return;
 
-            if (data == null) data = new byte[0];
-
-
             int newSize = index + totalSize;
+            if (extend && newSize > Memory.Count) ExpandMemory(newSize);
 
+            MemoryBuffer.Write(Memory, index, totalSize, source, sourceOffset, sourceCount);
+        }
 
-            if (newSize > Memory.Count)
-            {
-                if (extend)
-                {
-                    var gap = newSize - Memory.Count;
-                    var extraSize = ((gap + 31) / 32) * 32;
-                    Memory.AddRange(new byte[extraSize]);
-                }
-            }
+        internal void StoreByteInMemory(int index, byte value)
+        {
+            if (index >= Memory.Count) ExpandMemory(index + 1);
+            MemoryBuffer.WriteByte(Memory, index, value);
+        }
 
-            for (int i = 0; i < totalSize; i++)
-            {
-                if (i < data.Length)
-                {
-                    Memory[index + i] = data[i];
-                }
-                else
-                {
-                    Memory[index + i] = 0;
-                }
+        internal void StoreWordInMemory(int index, EvmUInt256 value)
+        {
+            if (index + 32 > Memory.Count) ExpandMemory(index + 32);
+            MemoryBuffer.WriteWord(Memory, index, value);
+        }
 
-            }
+        internal EvmUInt256 LoadWordFromMemory(int index)
+        {
+            if (index + 32 > Memory.Count) ExpandMemory(index + 32);
+            return MemoryBuffer.ReadWord(Memory, index);
+        }
+
+        internal void MoveWithinMemory(int destination, int source, int length)
+        {
+            MemoryBuffer.Move(Memory, destination, source, length);
+        }
+
+        internal byte[] ReadMemory(int index, int length)
+        {
+            return MemoryBuffer.Read(Memory, index, length);
+        }
+
+        internal string ReadMemoryHex(int index, int length)
+        {
+            return HexText.FromMemory(Memory, index, length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -408,12 +535,8 @@ namespace Nethereum.EVM
         {
             if (stackPointer == 0)
             {
-#if EVM_SYNC
-                SetExecutionError();
+                Halt(EvmHaltReason.StackUnderflow);
                 return EvmUInt256.Zero;
-#else
-                throw new Exception("Stack underflow");
-#endif
             }
             return stack[--stackPointer];
         }
@@ -421,7 +544,11 @@ namespace Nethereum.EVM
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPush(EvmUInt256 value)
         {
-            ThrowWhenPushStackOverflows();
+            if (PushWouldOverflow())
+            {
+                Halt(EvmHaltReason.StackOverflow);
+                return;
+            }
             stack[stackPointer++] = value;
         }
 
@@ -440,36 +567,22 @@ namespace Nethereum.EVM
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void StackPushSigned(EvmUInt256 value)
         {
-            ThrowWhenPushStackOverflows();
+            if (PushWouldOverflow())
+            {
+                Halt(EvmHaltReason.StackOverflow);
+                return;
+            }
             stack[stackPointer++] = value;
         }
 
         public bool IsAddressWarm(byte[] addressBytes)
         {
-            var address = ExtractAddressFromBytes(addressBytes);
-            return ProgramContext.ExecutionStateService.AddressIsWarm(address);
+            return ProgramContext.ExecutionStateService.AddressIsWarm(EvmAddress.From(addressBytes));
         }
 
         public void MarkAddressAsWarm(byte[] addressBytes)
         {
-            var address = ExtractAddressFromBytes(addressBytes);
-            ProgramContext.ExecutionStateService.MarkAddressAsWarm(address);
-        }
-
-        private static string ExtractAddressFromBytes(byte[] addressBytes)
-        {
-            string hex;
-            if (addressBytes.Length <= 20)
-            {
-                hex = addressBytes.ToHex();
-            }
-            else
-            {
-                var last20Bytes = new byte[20];
-                Array.Copy(addressBytes, addressBytes.Length - 20, last20Bytes, 0, 20);
-                hex = last20Bytes.ToHex();
-            }
-            return AddressUtil.Current.ConvertToValid20ByteAddress(hex);
+            ProgramContext.ExecutionStateService.MarkAddressAsWarm(EvmAddress.From(addressBytes));
         }
 
         public bool IsStorageSlotWarm(EvmUInt256 key)
@@ -487,6 +600,9 @@ namespace Nethereum.EVM
         public long CalculateMemoryExpansionGas(EvmUInt256 offset, EvmUInt256 length)
         {
             if (length.IsZero) return 0;
+
+            if (offset.FitsInInt && length.FitsInInt)
+                return CalculateMemoryExpansionGas((long)offset.ToInt(), (long)length.ToInt());
 
             var highestAccessedByte = offset + length;
 
@@ -535,7 +651,7 @@ namespace Nethereum.EVM
         {
             if (GasRemaining >= gasCost) return;
 #if EVM_SYNC
-            SetExecutionError();
+            MarkHalted(EvmHaltReason.OutOfGas);
 #else
             throw new OutOfGasException(gasCost, GasRemaining);
 #endif

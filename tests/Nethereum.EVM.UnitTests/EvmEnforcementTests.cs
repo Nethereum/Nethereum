@@ -143,7 +143,7 @@ namespace Nethereum.EVM.UnitTests
 
     public class EvmPrecompileTests
     {
-        private readonly EvmPreCompiledContractsExecution _precompiles = new EvmPreCompiledContractsExecution();
+        private readonly Nethereum.EVM.Execution.Precompiles.PrecompileRegistry _precompiles = Nethereum.EVM.Precompiles.DefaultPrecompileRegistries.OsakaBase();
 
         [Fact]
         public void IsPrecompiledAddress_Cancun_ShouldReturnTrueForAddresses1Through9()
@@ -180,7 +180,7 @@ namespace Nethereum.EVM.UnitTests
         public void Sha256_ShouldHashCorrectly()
         {
             var input = "68656c6c6f".HexToByteArray();
-            var result = _precompiles.Sha256Hash(input);
+            var result = _precompiles.Execute(2, input);
 
             Assert.Equal(32, result.Length);
             Assert.Equal("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", result.ToHex().ToLower());
@@ -189,7 +189,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public void Sha256_EmptyInput_ShouldHashCorrectly()
         {
-            var result = _precompiles.Sha256Hash(new byte[0]);
+            var result = _precompiles.Execute(2, new byte[0]);
             Assert.Equal(32, result.Length);
             Assert.Equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", result.ToHex().ToLower());
         }
@@ -198,7 +198,7 @@ namespace Nethereum.EVM.UnitTests
         public void Ripemd160_ShouldHashCorrectly()
         {
             var input = "68656c6c6f".HexToByteArray();
-            var result = _precompiles.Ripemd160Hash(input);
+            var result = _precompiles.Execute(3, input);
 
             Assert.Equal(32, result.Length);
             var resultHex = result.ToHex().ToLower();
@@ -209,7 +209,7 @@ namespace Nethereum.EVM.UnitTests
         public void DataCopy_ShouldReturnSameData()
         {
             var input = "0102030405".HexToByteArray();
-            var result = _precompiles.DataCopy(input);
+            var result = _precompiles.Execute(4, input);
 
             Assert.Equal(input, result);
         }
@@ -225,7 +225,7 @@ namespace Nethereum.EVM.UnitTests
             input[97] = 3;
             input[98] = 5;
 
-            var result = _precompiles.ModExp(input);
+            var result = _precompiles.Execute(5, input);
 
             Assert.Single(result);
             Assert.Equal(3, result[0]);
@@ -253,7 +253,7 @@ namespace Nethereum.EVM.UnitTests
 
             input[212] = 1;
 
-            var result = _precompiles.Blake2f(input);
+            var result = _precompiles.Execute(9, input);
             Assert.Equal(64, result.Length);
         }
 
@@ -261,7 +261,7 @@ namespace Nethereum.EVM.UnitTests
         public void Blake2f_InvalidLength_ShouldThrow()
         {
             var input = new byte[100];
-            Assert.Throws<ArgumentException>(() => _precompiles.Blake2f(input));
+            Assert.Throws<ArgumentException>(() => _precompiles.Execute(9, input));
         }
 
         [Fact]
@@ -270,13 +270,13 @@ namespace Nethereum.EVM.UnitTests
             var input = new byte[213];
             input[212] = 2;
 
-            Assert.Throws<ArgumentException>(() => _precompiles.Blake2f(input));
+            Assert.Throws<ArgumentException>(() => _precompiles.Execute(9, input));
         }
 
         [Fact]
         public void BN128Add_ZeroPoints_ShouldReturnZero()
         {
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", new byte[0]);
+            var result = _precompiles.Execute(6, new byte[0]);
             Assert.Equal(64, result.Length);
             Assert.All(result, b => Assert.Equal(0, b));
         }
@@ -287,7 +287,7 @@ namespace Nethereum.EVM.UnitTests
             var x = "0000000000000000000000000000000000000000000000000000000000000001";
             var y = "0000000000000000000000000000000000000000000000000000000000000002";
             var input = (x + y + new string('0', 128)).HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", input);
+            var result = _precompiles.Execute(6, input);
             Assert.Equal(64, result.Length);
             Assert.Equal(x, result.Take(32).ToArray().ToHex());
             Assert.Equal(y, result.Skip(32).ToArray().ToHex());
@@ -300,7 +300,7 @@ namespace Nethereum.EVM.UnitTests
             var y = "0000000000000000000000000000000000000000000000000000000000000002";
             var scalar = new string('0', 64);
             var input = (x + y + scalar).HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", input);
+            var result = _precompiles.Execute(7, input);
             Assert.Equal(64, result.Length);
             Assert.All(result, b => Assert.Equal(0, b));
         }
@@ -312,7 +312,7 @@ namespace Nethereum.EVM.UnitTests
             var y = "0000000000000000000000000000000000000000000000000000000000000002";
             var scalar = "0000000000000000000000000000000000000000000000000000000000000001";
             var input = (x + y + scalar).HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", input);
+            var result = _precompiles.Execute(7, input);
             Assert.Equal(64, result.Length);
             Assert.Equal(x, result.Take(32).ToArray().ToHex());
             Assert.Equal(y, result.Skip(32).ToArray().ToHex());
@@ -321,7 +321,7 @@ namespace Nethereum.EVM.UnitTests
         [Fact]
         public void BN128Pairing_EmptyInput_ShouldReturnTrue()
         {
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", new byte[0]);
+            var result = _precompiles.Execute(8, new byte[0]);
             Assert.Equal(32, result.Length);
             Assert.Equal(1, result[31]);
         }
@@ -331,7 +331,7 @@ namespace Nethereum.EVM.UnitTests
         {
             var input = new byte[100];
             Assert.Throws<ArgumentException>(() =>
-                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", input));
+                _precompiles.Execute(8, input));
         }
 
         [Theory]
@@ -339,7 +339,7 @@ namespace Nethereum.EVM.UnitTests
         public void BN128Add_GethTestVectors(string name, string input, string expectedOutput)
         {
             var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000006", inputBytes);
+            var result = _precompiles.Execute(6, inputBytes);
             Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
         }
 
@@ -348,7 +348,7 @@ namespace Nethereum.EVM.UnitTests
         public void BN128Mul_GethTestVectors(string name, string input, string expectedOutput)
         {
             var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000007", inputBytes);
+            var result = _precompiles.Execute(7, inputBytes);
             Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
         }
 
@@ -357,7 +357,7 @@ namespace Nethereum.EVM.UnitTests
         public void BN128Pairing_GethTestVectors(string name, string input, string expectedOutput)
         {
             var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes);
+            var result = _precompiles.Execute(8, inputBytes);
             Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
         }
 
@@ -367,7 +367,7 @@ namespace Nethereum.EVM.UnitTests
         {
             var inputBytes = input.HexToByteArray();
             Assert.Throws<ArgumentException>(() =>
-                _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes));
+                _precompiles.Execute(8, inputBytes));
         }
 
         [Theory]
@@ -375,7 +375,7 @@ namespace Nethereum.EVM.UnitTests
         public void BN128Pairing_FullComputation_GethTestVectors(string name, string input, string expectedOutput)
         {
             var inputBytes = string.IsNullOrEmpty(input) ? new byte[0] : input.HexToByteArray();
-            var result = _precompiles.ExecutePreCompile("0x0000000000000000000000000000000000000008", inputBytes);
+            var result = _precompiles.Execute(8, inputBytes);
             Assert.Equal(expectedOutput.ToLower(), result.ToHex().ToLower());
         }
     }

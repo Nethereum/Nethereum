@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Nethereum.Testing;
 using System.Numerics;
 using Nethereum.CoreChain.IntegrationTests.BlockchainTests;
 using Nethereum.Hex.HexConvertors.Extensions;
@@ -23,11 +24,6 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         {
             var result = new List<Entry>();
             var root = FindFixturesRoot();
-            if (root == null)
-            {
-                output?.WriteLine("Amsterdam fixtures not found on disk — see external/execution-spec-tests.");
-                return result;
-            }
 
             var files = 0;
             foreach (var file in Directory.EnumerateFiles(root, "*.json", SearchOption.AllDirectories))
@@ -101,21 +97,7 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             };
         }
 
-        private static string FindFixturesRoot()
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                {
-                    var path = Path.Combine(dir.FullName, "external", "execution-spec-tests",
-                        "fixtures", "blockchain_tests", "amsterdam");
-                    if (Directory.Exists(path)) return path;
-                }
-                dir = dir.Parent;
-            }
-            return null;
-        }
+        private static string FindFixturesRoot() =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EestAmsterdam"), "blockchain_tests", "amsterdam");
     }
 }

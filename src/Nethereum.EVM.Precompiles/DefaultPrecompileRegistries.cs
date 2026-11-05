@@ -20,7 +20,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance);
 
         public static PrecompileRegistry IstanbulBase() =>
@@ -30,7 +30,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance);
 
         public static PrecompileRegistry BerlinBase() =>
@@ -40,7 +40,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance);
 
         public static PrecompileRegistry CancunBase() =>
@@ -49,7 +49,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance);
 
         public static PrecompileRegistry PragueBase() =>
@@ -58,7 +58,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance);
 
         public static PrecompileRegistry OsakaBase() =>
@@ -67,7 +67,7 @@ namespace Nethereum.EVM.Precompiles
                 DefaultSha256Backend.Instance,
                 DefaultRipemd160Backend.Instance,
                 DefaultModExpBackend.Instance,
-                DefaultBn128Backend.Instance,
+                ManagedBn254Backend.Instance,
                 DefaultBlake2fBackend.Instance,
                 DefaultP256VerifyBackend.Instance);
     }

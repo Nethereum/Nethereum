@@ -113,13 +113,8 @@ namespace Nethereum.EVM.Execution
         public void MLoad(Program program)
         {
             var indexU256 = program.StackPopU256();
-            var index = indexU256.ToInt();
-
-            program.ExpandMemory(index + 32);
-            var data = program.Memory.GetRange(index, 32).ToArray();
-
-            program.StackPush(data);
-            program.Step();
+            program.StackPush(program.LoadWordFromMemory(indexU256.ToInt()));
+            program.Advance(1);
         }
 
         public void MCopy(Program program)
@@ -136,11 +131,8 @@ namespace Nethereum.EVM.Execution
 
             if (!destOffsetU256.FitsInInt || !srcOffsetU256.FitsInInt || !lengthU256.FitsInInt)
             {
-#if EVM_SYNC
-                program.SetExecutionError(); return;
-#else
-                throw new Exceptions.OutOfGasException("Memory offset or length exceeds maximum");
-#endif
+                program.Halt(EvmHaltReason.OutOfGas);
+                return;
             }
 
             var destOffset = destOffsetU256.ToInt();
@@ -150,27 +142,24 @@ namespace Nethereum.EVM.Execution
             var maxMemoryEnd = Math.Max(srcOffset + length, destOffset + length);
             program.ExpandMemory(maxMemoryEnd);
 
-            var srcData = new byte[length];
-            program.Memory.CopyTo(srcOffset, srcData, 0, length);
-
-            program.WriteToMemory(destOffset, length, srcData);
+            program.MoveWithinMemory(destOffset, srcOffset, length);
             program.Step();
         }
 
         public void MStore8(Program program)
         {
             var indexU256 = program.StackPopU256();
-            var value = program.StackPop();
-            program.WriteToMemory(indexU256.ToInt(), new byte[] { value[31] });
-            program.Step();
+            var value = program.StackPopU256();
+            program.StoreByteInMemory(indexU256.ToInt(), (byte)value.U0);
+            program.Advance(1);
         }
 
         public void MStore(Program program)
         {
             var indexU256 = program.StackPopU256();
-            var value = program.StackPop();
-            program.WriteToMemory(indexU256.ToInt(), value);
-            program.Step();
+            var value = program.StackPopU256();
+            program.StoreWordInMemory(indexU256.ToInt(), value);
+            program.Advance(1);
         }
 
         public void MSize(Program program)

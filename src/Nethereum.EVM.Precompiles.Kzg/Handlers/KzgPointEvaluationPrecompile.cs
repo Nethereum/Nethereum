@@ -39,11 +39,18 @@ namespace Nethereum.EVM.Precompiles.Kzg.Handlers
         public override byte[] Execute(byte[] input)
         {
             RequireInputLength(input, InputSize, "KZG point evaluation");
+            return TryExecute(input, out var output)
+                ? output
+                : throw new ArgumentException("KZG point evaluation: proof verification failed");
+        }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            output = null;
+            if (!HasInputLength(input, InputSize)) return false;
 
             var versionedHash = input.Slice(0, VersionedHashSize);
-            if (versionedHash[0] != VersionedHashVersionKzg)
-                throw new ArgumentException(
-                    $"Invalid KZG versioned hash version: expected 0x{VersionedHashVersionKzg:x2}, got 0x{versionedHash[0]:x2}");
+            if (versionedHash[0] != VersionedHashVersionKzg) return false;
 
             var z = input.Slice(32, 64);
             var y = input.Slice(64, 96);
@@ -51,16 +58,15 @@ namespace Nethereum.EVM.Precompiles.Kzg.Handlers
             var proof = input.Slice(144, 192);
 
             var computedVersionedHash = _ops.ComputeVersionedHash(commitment);
-            if (!ByteUtil.AreEqual(versionedHash, computedVersionedHash))
-                throw new ArgumentException("KZG versioned hash mismatch");
+            if (!ByteUtil.AreEqual(versionedHash, computedVersionedHash)) return false;
 
-            if (!_ops.VerifyKzgProof(commitment, z, y, proof))
-                throw new ArgumentException("KZG proof verification failed");
+            if (!_ops.VerifyKzgProof(commitment, z, y, proof)) return false;
 
             var result = new byte[64];
             Array.Copy(FieldElementsPerBlob, 0, result, 0, 32);
             Array.Copy(BlsModulus, 0, result, 32, 32);
-            return result;
+            output = result;
+            return true;
         }
     }
 }

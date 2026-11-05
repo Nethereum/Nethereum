@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Nethereum.Util;
 using Nethereum.EVM;
 
@@ -10,7 +9,6 @@ namespace Nethereum.EVM.Execution
         private static readonly EvmUInt256 INT256_MIN = new EvmUInt256(0x8000000000000000, 0, 0, 0);
         private static readonly EvmUInt256 UINT256_NEG_ONE = EvmUInt256.MaxValue;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SDiv(Program program)
         {
             var first = program.StackPopU256();
@@ -37,7 +35,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SMod(Program program)
         {
             var first = program.StackPopU256();
@@ -60,7 +57,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddMod(Program program)
         {
             var first = program.StackPopU256();
@@ -77,7 +73,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MulMod(Program program)
         {
             var first = program.StackPopU256();
@@ -94,7 +89,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Program program)
         {
             var first = program.StackPopU256();
@@ -103,7 +97,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Exp(Program program)
         {
             var value = program.StackPopU256();
@@ -122,7 +115,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Mul(Program program)
         {
             var first = program.StackPopU256();
@@ -131,7 +123,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Sub(Program program)
         {
             var first = program.StackPopU256();
@@ -140,7 +131,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Div(Program program)
         {
             var first = program.StackPopU256();
@@ -149,7 +139,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Mod(Program program)
         {
             var first = program.StackPopU256();

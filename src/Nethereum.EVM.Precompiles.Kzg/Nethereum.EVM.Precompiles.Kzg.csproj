@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>KZG point evaluation precompile implementation for Nethereum EVM using c-kzg-4844 native library.</Description>
     <AssemblyTitle>Nethereum.EVM.Precompiles.Kzg</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>net6.0;net8.0;net9.0</TargetFrameworks>
     <AssemblyName>Nethereum.EVM.Precompiles.Kzg</AssemblyName>
     <PackageId>Nethereum.EVM.Precompiles.Kzg</PackageId>
@@ -26,4 +27,8 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true' And '$(TargetUnityNet472AOT)' != 'true'">
     <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

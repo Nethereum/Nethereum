@@ -1,5 +1,4 @@
 using System;
-using Nethereum.EVM.Execution;
 using Nethereum.EVM.Execution.Precompiles;
 using Xunit;
 
@@ -7,65 +6,47 @@ namespace Nethereum.EVM.UnitTests.Execution.Precompiles
 {
     public class PrecompileGasCalculatorsTests
     {
-        private static string HexAddress(int addressNumeric) =>
-            "0x" + addressNumeric.ToString("x").PadLeft(40, '0');
-
         [Theory]
-        [InlineData(0x01, 0)]
-        [InlineData(0x02, 0)]
-        [InlineData(0x02, 64)]
-        [InlineData(0x03, 0)]
-        [InlineData(0x03, 128)]
-        [InlineData(0x04, 0)]
-        [InlineData(0x04, 256)]
-        public void Cancun_bundle_matches_legacy_for_base_precompiles(int addressNumeric, int dataLen)
+        [InlineData(0x01, 0, 3000)]
+        [InlineData(0x02, 0, 60)]
+        [InlineData(0x02, 64, 84)]
+        [InlineData(0x03, 0, 600)]
+        [InlineData(0x03, 128, 1080)]
+        [InlineData(0x04, 0, 15)]
+        [InlineData(0x04, 256, 39)]
+        public void Cancun_bundle_prices_the_base_precompiles_by_their_base_and_per_word_gas(int addressNumeric, int dataLen, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution();
             var bundle = PrecompileGasCalculatorSets.Cancun;
 
-            var data = new byte[dataLen];
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(addressNumeric), data);
-            var newGas = bundle.GetGasCost(addressNumeric, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(addressNumeric, new byte[dataLen]));
         }
 
         [Theory]
-        [InlineData(0x06)]
-        [InlineData(0x07)]
-        public void Cancun_bundle_returns_fixed_bn128_gas(int addressNumeric)
+        [InlineData(0x06, 150)]
+        [InlineData(0x07, 6000)]
+        public void Cancun_bundle_returns_fixed_bn128_gas(int addressNumeric, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution();
             var bundle = PrecompileGasCalculatorSets.Cancun;
 
-            var data = new byte[256];
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(addressNumeric), data);
-            var newGas = bundle.GetGasCost(addressNumeric, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(addressNumeric, new byte[256]));
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(192)]
-        [InlineData(384)]
-        [InlineData(1536)]
-        public void Cancun_bundle_matches_legacy_for_bn128_pairing(int dataLen)
+        [InlineData(0, 45000)]
+        [InlineData(192, 79000)]
+        [InlineData(384, 113000)]
+        [InlineData(1536, 317000)]
+        public void Cancun_bundle_prices_bn128_pairing_per_pair(int dataLen, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution();
             var bundle = PrecompileGasCalculatorSets.Cancun;
 
-            var data = new byte[dataLen];
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(0x08), data);
-            var newGas = bundle.GetGasCost(0x08, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(0x08, new byte[dataLen]));
         }
 
         [Theory]
         [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x0c }, 12)]
         [InlineData(new byte[] { 0x00, 0x00, 0x00, 0xff }, 255)]
-        public void Cancun_bundle_matches_legacy_for_blake2f(byte[] header, uint expectedRounds)
+        public void Cancun_bundle_charges_one_gas_per_blake2f_round(byte[] header, uint expectedRounds)
         {
             var bundle = PrecompileGasCalculatorSets.Cancun;
             var data = new byte[213];
@@ -85,45 +66,36 @@ namespace Nethereum.EVM.UnitTests.Execution.Precompiles
         }
 
         [Theory]
-        [InlineData(1, 1, 1)]
-        [InlineData(32, 32, 32)]
-        [InlineData(64, 64, 64)]
-        [InlineData(128, 32, 128)]
-        public void Cancun_bundle_matches_legacy_for_modexp(int baseLen, int expLen, int modLen)
+        [InlineData(1, 1, 1, 200)]
+        [InlineData(32, 32, 32, 1328)]
+        [InlineData(64, 64, 64, 10773)]
+        [InlineData(128, 32, 128, 21248)]
+        public void Cancun_bundle_prices_modexp_by_eip2565(int baseLen, int expLen, int modLen, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution();
             var bundle = PrecompileGasCalculatorSets.Cancun;
             var data = BuildModExpInput(baseLen, expLen, modLen);
 
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(0x05), data);
-            var newGas = bundle.GetGasCost(0x05, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(0x05, data));
         }
 
         [Theory]
-        [InlineData(0x0b, 256)]
-        [InlineData(0x0c, 160)]
-        [InlineData(0x0c, 320)]
-        [InlineData(0x0c, 1600)]
-        [InlineData(0x0d, 512)]
-        [InlineData(0x0e, 288)]
-        [InlineData(0x0e, 576)]
-        [InlineData(0x0f, 0)]
-        [InlineData(0x0f, 384)]
-        [InlineData(0x0f, 768)]
-        [InlineData(0x10, 64)]
-        [InlineData(0x11, 128)]
-        public void Prague_bundle_matches_legacy_for_bls12_precompiles(int addressNumeric, int dataLen)
+        [InlineData(0x0b, 256, 375)]
+        [InlineData(0x0c, 160, 12000)]
+        [InlineData(0x0c, 320, 22776)]
+        [InlineData(0x0c, 1600, 85440)]
+        [InlineData(0x0d, 512, 600)]
+        [InlineData(0x0e, 288, 22500)]
+        [InlineData(0x0e, 576, 45000)]
+        [InlineData(0x0f, 0, 37700)]
+        [InlineData(0x0f, 384, 70300)]
+        [InlineData(0x0f, 768, 102900)]
+        [InlineData(0x10, 64, 5500)]
+        [InlineData(0x11, 128, 23800)]
+        public void Prague_bundle_prices_bls12_precompiles_by_eip2537(int addressNumeric, int dataLen, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution();
             var bundle = PrecompileGasCalculatorSets.Prague;
-            var data = new byte[dataLen];
 
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(addressNumeric), data);
-            var newGas = bundle.GetGasCost(addressNumeric, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(addressNumeric, new byte[dataLen]));
         }
 
         [Fact]
@@ -156,19 +128,15 @@ namespace Nethereum.EVM.UnitTests.Execution.Precompiles
         }
 
         [Theory]
-        [InlineData(1, 1, 1)]
-        [InlineData(32, 32, 32)]
-        [InlineData(128, 32, 128)]
-        public void Osaka_bundle_matches_legacy_modexp_with_eip7883(int baseLen, int expLen, int modLen)
+        [InlineData(1, 1, 1, 500)]
+        [InlineData(32, 32, 32, 3984)]
+        [InlineData(128, 32, 128, 127488)]
+        public void Osaka_bundle_prices_modexp_by_eip7883(int baseLen, int expLen, int modLen, long expectedGas)
         {
-            var legacy = new EvmPreCompiledContractsExecution { EnableEIP7883 = true };
             var bundle = PrecompileGasCalculatorSets.Osaka;
             var data = BuildModExpInput(baseLen, expLen, modLen);
 
-            var legacyGas = legacy.GetPrecompileGasCost(HexAddress(0x05), data);
-            var newGas = bundle.GetGasCost(0x05, data);
-
-            Assert.Equal(legacyGas, newGas);
+            Assert.Equal(expectedGas, bundle.GetGasCost(0x05, data));
         }
 
         [Fact]

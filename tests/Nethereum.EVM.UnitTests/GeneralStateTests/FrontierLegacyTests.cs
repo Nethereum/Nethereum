@@ -1,8 +1,10 @@
+using Nethereum.EEST.Conformance.Diagnosis;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Nethereum.Testing;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,6 +26,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
     /// halves of the EIP-158 transition.
     /// </para>
     /// </summary>
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "GeneralStateTests")]
     public class FrontierLegacyTests
     {
         private readonly ITestOutputHelper _output;
@@ -34,16 +38,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private static string LegacyTestsRoot(string branch)
         {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return Path.Combine(dir.FullName, "external", "legacytests",
-                        branch, "GeneralStateTests");
-                dir = dir.Parent;
-            }
-            return null;
+            return Path.Combine(TestEnvironment.RequireExternalPath("LegacyTests"), branch, "GeneralStateTests");
         }
 
         [Fact]
@@ -51,11 +46,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task StTransitionTest_createNameRegistratorPerTxsBefore_AtFrontier()
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root))
-            {
-                _output.WriteLine("legacytests not cloned. Run: git -C external clone --depth=1 https://github.com/ethereum/legacytests");
-                return;
-            }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
 
             var filePath = Path.Combine(root, "stTransitionTest", "createNameRegistratorPerTxsBefore.json");
             Assert.True(File.Exists(filePath), $"Expected fixture at {filePath}");
@@ -88,11 +79,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task StTransitionTest_AcrossFiles_AtFrontier(string category, string fileName)
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root))
-            {
-                _output.WriteLine("legacytests not cloned; skipping.");
-                return;
-            }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
 
             var filePath = Path.Combine(root, category, fileName);
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
@@ -117,7 +104,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_DumpFullPostState(string category, string fileName, string fork)
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root)) return;
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests.");
             var filePath = Path.Combine(root, category, fileName);
             Assert.True(File.Exists(filePath));
 
@@ -157,11 +144,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_SingleFile_DumpDiffs(string category, string fileName, string fork)
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root))
-            {
-                _output.WriteLine("legacytests not cloned; skipping.");
-                return;
-            }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
 
             var filePath = Path.Combine(root, category, fileName);
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
@@ -193,7 +176,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_TransactionCollisionToEmpty_London()
         {
             var root = LegacyTestsCancunPath;
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("skip"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var filePath = Path.Combine(root, "stCreateTest", "TransactionCollisionToEmpty.json");
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
             var runner = new GeneralStateTestRunner(_output, targetHardfork: "London");
@@ -221,7 +204,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_TouchRevert_Constantinople(string fileName)
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("skip"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var filePath = Path.Combine(root, "stRevertTest", fileName);
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
             var runner = new GeneralStateTestRunner(_output, targetHardfork: "Constantinople");
@@ -244,7 +227,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_TouchRevert_Cancun(string fileName, string fork)
         {
             var root = LegacyTestsCancunPath;
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("skip"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var filePath = Path.Combine(root, "stRevertTest", fileName);
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
             var runner = new GeneralStateTestRunner(_output, targetHardfork: fork);
@@ -263,7 +246,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_Buffer_Cancun()
         {
             var root = LegacyTestsCancunPath;
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("skip"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var filePath = Path.Combine(root, "stMemoryTest", "buffer.json");
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
             var runner = new GeneralStateTestRunner(_output, targetHardfork: "Cancun");
@@ -277,11 +260,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_RevertPrecompiledTouch_Constantinople()
         {
             var root = LegacyTestsPath;
-            if (root == null || !Directory.Exists(root))
-            {
-                _output.WriteLine("legacytests not cloned; skipping.");
-                return;
-            }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
 
             var filePath = Path.Combine(root, "stRevertTest", "RevertPrecompiledTouch.json");
             Assert.True(File.Exists(filePath), $"Fixture missing: {filePath}");
@@ -327,23 +306,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public Task Sweep_Category_AtFork(string category, string fork)
             => SweepCategoryAtForkAsync(LegacyTestsPath, category, fork);
 
-        public static readonly string[] ConstantinopleForks =
-        {
-            "Frontier", "Homestead", "EIP150", "EIP158",
-            "Byzantium", "Constantinople", "ConstantinopleFix"
-        };
-
-        public static readonly string[] CancunForks =
-        {
-            "Istanbul", "Berlin", "London", "Paris", "Shanghai", "Cancun"
-        };
-
-        public static System.Collections.Generic.IEnumerable<object[]> ConstantinopleFullMatrix()
-            => EnumerateMatrix(LegacyTestsRoot("Constantinople"), ConstantinopleForks);
-
-        public static System.Collections.Generic.IEnumerable<object[]> CancunFullMatrix()
-            => EnumerateMatrix(LegacyTestsRoot("Cancun"), CancunForks);
-
         public static System.Collections.Generic.IEnumerable<object[]> Constantinople_Frontier()         => EnumerateMatrix(LegacyTestsRoot("Constantinople"), new[] { "Frontier" });
         public static System.Collections.Generic.IEnumerable<object[]> Constantinople_Homestead()        => EnumerateMatrix(LegacyTestsRoot("Constantinople"), new[] { "Homestead" });
         public static System.Collections.Generic.IEnumerable<object[]> Constantinople_EIP150()           => EnumerateMatrix(LegacyTestsRoot("Constantinople"), new[] { "EIP150" });
@@ -380,19 +342,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
         }
 
-        [Theory]
-        [Trait("Category", "LegacyFork-Sweep-Full")]
-        [MemberData(nameof(ConstantinopleFullMatrix))]
-        public Task Sweep_Constantinople_FullMatrix(string category, string fork)
-            => SweepCategoryAtForkAsync(LegacyTestsPath, category, fork);
-
-        [Theory]
-        [Trait("Category", "LegacyFork-Sweep-Full")]
-        [MemberData(nameof(CancunFullMatrix))]
-        public Task Sweep_Cancun_FullMatrix(string category, string fork)
-            => SweepCategoryAtForkAsync(LegacyTestsCancunPath, category, fork);
-
-
         [Theory][Trait("Category","LegacyFork-Sweep-PerFork")][MemberData(nameof(Constantinople_Frontier))]         public Task SweepFork_Frontier(string category, string fork)         => SweepCategoryAtForkAsync(LegacyTestsPath, category, fork);
         [Theory][Trait("Category","LegacyFork-Sweep-PerFork")][MemberData(nameof(Constantinople_Homestead))]        public Task SweepFork_Homestead(string category, string fork)        => SweepCategoryAtForkAsync(LegacyTestsPath, category, fork);
         [Theory][Trait("Category","LegacyFork-Sweep-PerFork")][MemberData(nameof(Constantinople_EIP150))]           public Task SweepFork_EIP150(string category, string fork)           => SweepCategoryAtForkAsync(LegacyTestsPath, category, fork);
@@ -424,25 +373,17 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private async Task SweepCategoryAtForkAsyncImpl(string root, string category, string fork)
         {
-            if (root == null || !Directory.Exists(root))
-            {
-                _output.WriteLine("legacytests not cloned; skipping.");
-                return;
-            }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
 
             var dir = Path.Combine(root, category);
-            if (!Directory.Exists(dir))
-            {
-                _output.WriteLine($"Category {category} missing in legacytests; skipping.");
-                return;
-            }
+            Assert.True(Directory.Exists(dir), $"Category {category} missing in legacytests at {dir}");
 
             var runner = new GeneralStateTestRunner(_output, targetHardfork: fork);
             int fileCount = 0, passed = 0, failed = 0, skipped = 0;
             var fileFails = new System.Collections.Generic.List<(string file, int n, string firstMsg)>();
             int deepDumpsEmitted = 0;
 
-            var csvDir = Path.Combine(ProjectRoot(), "tmp", "test_results", "sweep");
+            var csvDir = Path.Combine(TestEnvironment.RepoRoot, "tmp", "test_results", "sweep");
             Directory.CreateDirectory(csvDir);
             var csvPath = Path.Combine(csvDir, $"sweep_{fork}_{category}.csv");
             using var csv = new StreamWriter(csvPath, append: false);
@@ -521,19 +462,6 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             return s.Substring(0, max) + "…";
         }
 
-        private static string ProjectRoot()
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-            return Directory.GetCurrentDirectory();
-        }
-
         private static void WriteCsvRow(StreamWriter w, string fork, string category, string file,
             int dataIndex, int gasIndex, int valueIndex, string status, string message)
         {
@@ -543,7 +471,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         public static IEnumerable<object[]> FailingSubTestsFromSweep()
         {
-            var sweepDir = Path.Combine(ProjectRoot(), "tmp", "test_results", "sweep");
+            var sweepDir = Path.Combine(TestEnvironment.RepoRoot, "tmp", "test_results", "sweep");
             int yielded = 0;
             if (Directory.Exists(sweepDir))
             {
@@ -593,7 +521,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         {
             if (branch == "__no_sweep_data__") { _output.WriteLine("No sweep CSVs."); return; }
             var root = LegacyTestsRoot(branch);
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("legacytests not cloned"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var path = Path.Combine(root, category, file);
             Assert.True(File.Exists(path), $"Fixture missing: {path}");
 
@@ -647,7 +575,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task CallNewAccountFix_Verification(string branch, string category, string file, string fork)
         {
             var root = LegacyTestsRoot(branch);
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("legacytests not cloned; skipping."); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var path = Path.Combine(root, category, file);
             Assert.True(File.Exists(path), $"Fixture missing: {path}");
 
@@ -678,7 +606,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             int dataIndex, int gasIndex, int valueIndex)
         {
             var root = LegacyTestsRoot(branch);
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("legacytests not cloned"); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var path = Path.Combine(root, category, file);
             Assert.True(File.Exists(path), $"Fixture missing: {path}");
 
@@ -698,7 +626,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             try
             {
                 var (ourState, coinbase, sender) = await runner.RunAndCaptureExecutionStateAsync(path, dataIndex, gasIndex, valueIndex);
-                var t8n = new GethT8nRunner();
+                var t8n = GethTools.T8nRunner();
                 var t8nResult = await t8n.RunT8nAsync(path, dataIndex, gasIndex, valueIndex, fork);
                 if (!t8nResult.Success || t8nResult.PostState == null)
                 {
@@ -736,7 +664,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public async Task Debug_DumpTrace(string branch, string category, string file, string fork)
         {
             var root = LegacyTestsRoot(branch);
-            if (root == null || !Directory.Exists(root)) { _output.WriteLine("legacytests not cloned; skipping."); return; }
+            Assert.True(Directory.Exists(root), $"legacytests directory missing at '{root}'; check ExternalPaths:LegacyTests and the branch name.");
             var path = Path.Combine(root, category, file);
             Assert.True(File.Exists(path), $"Fixture missing: {path}");
 
@@ -760,7 +688,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             try
             {
-                var gethRunner = new GethEvmRunner();
+                var gethRunner = GethTools.EvmRunner();
                 var gethResult = await gethRunner.RunStateTestAsync(path, single.DataIndex, single.GasIndex, single.ValueIndex, fork);
                 _output.WriteLine($"=== Geth trace ({gethResult.Steps?.Count ?? 0} steps) ===");
                 if (gethResult.Steps != null)

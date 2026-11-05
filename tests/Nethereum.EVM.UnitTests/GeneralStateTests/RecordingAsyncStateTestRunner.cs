@@ -14,6 +14,7 @@ using Nethereum.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Nethereum.Testing;
 using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
@@ -390,30 +391,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         internal static string GetTestVectorsPath()
         {
-            var currentDir = Directory.GetCurrentDirectory();
-            var testDir = Path.Combine(currentDir, "Tests", "GeneralStateTests");
-            if (Directory.Exists(testDir)) return testDir;
-
-            var projectRoot = FindProjectRoot(currentDir);
-            if (projectRoot != null)
-            {
-                testDir = Path.Combine(projectRoot, "tests", "Nethereum.EVM.UnitTests", "Tests", "GeneralStateTests");
-                if (Directory.Exists(testDir)) return testDir;
-            }
-            return null;
-        }
-
-        private static string FindProjectRoot(string startDir)
-        {
-            var dir = new DirectoryInfo(startDir);
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-            return null;
+            var testDir = Path.Combine(TestEnvironment.ExternalPath("EthereumTests"), "GeneralStateTests");
+            return Directory.Exists(testDir) ? testDir : null;
         }
 
         private class RecordingResult

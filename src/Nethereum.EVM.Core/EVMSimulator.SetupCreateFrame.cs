@@ -47,27 +47,29 @@ namespace Nethereum.EVM
             }
 
             var contractAddress = program.ProgramContext.AddressContract;
+            var contractAddressValue = program.ProgramContext.AddressContractValue;
 #if EVM_SYNC
-            var nonce = program.ProgramContext.ExecutionStateService.GetNonce(contractAddress);
+            var nonce = program.ProgramContext.ExecutionStateService.GetNonce(contractAddressValue);
 #else
-            var nonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(contractAddress);
+            var nonce = await program.ProgramContext.ExecutionStateService.GetNonceAsync(contractAddressValue);
 #endif
 
             var byteCode = ReadInitCodeFromMemory(program, memoryIndex, memoryLength);
 
             var newContractAddress = ResolveNewContractAddress(createType, contractAddress, salt, byteCode, nonce);
+            var newContractAddressValue = EvmAddress.FromHex(newContractAddress);
 
 
 #if EVM_SYNC
-            var senderBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(contractAddress);
+            var senderBalance = program.ProgramContext.ExecutionStateService.GetTotalBalance(contractAddressValue);
 #else
-            var senderBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(contractAddress);
+            var senderBalance = await program.ProgramContext.ExecutionStateService.GetTotalBalanceAsync(contractAddressValue);
 #endif
             if (senderBalance < value) return ReportCreateFailedToCaller(program);
 
             if (NonceWouldOverflow(nonce)) return ReportCreateFailedToCaller(program);
 
-            program.ProgramContext.ExecutionStateService.MarkAddressAsWarm(newContractAddress);
+            program.ProgramContext.ExecutionStateService.MarkAddressAsWarm(newContractAddressValue);
 
             var callInput = new EvmCallContext
             {
@@ -77,24 +79,24 @@ namespace Nethereum.EVM
                 ChainId = program.ProgramContext.ChainId
             };
 
-            program.ProgramContext.ExecutionStateService.SetNonce(contractAddress, nonce + 1);
+            program.ProgramContext.ExecutionStateService.SetNonce(contractAddressValue, nonce + 1);
 
             var snapshotId = program.ProgramContext.ExecutionStateService.TakeSnapshot();
 
 #if EVM_SYNC
-            program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorage(newContractAddress);
+            program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorage(newContractAddressValue);
             var targetIsDeployable = AccountDeployability.IsDeployable(
-                program.ProgramContext.ExecutionStateService, newContractAddress);
+                program.ProgramContext.ExecutionStateService, newContractAddressValue);
 #else
-            await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(newContractAddress);
+            await program.ProgramContext.ExecutionStateService.LoadBalanceNonceAndCodeFromStorageAsync(newContractAddressValue);
             var targetIsDeployable = await AccountDeployability.IsDeployableAsync(
-                program.ProgramContext.ExecutionStateService, newContractAddress);
+                program.ProgramContext.ExecutionStateService, newContractAddressValue);
 #endif
 
 #if EVM_SYNC
-            var targetIsAlive = program.ProgramContext.ExecutionStateService.AccountExists(newContractAddress);
+            var targetIsAlive = program.ProgramContext.ExecutionStateService.AccountExists(newContractAddressValue);
 #else
-            var targetIsAlive = await program.ProgramContext.ExecutionStateService.AccountExistsAsync(newContractAddress);
+            var targetIsAlive = await program.ProgramContext.ExecutionStateService.AccountExistsAsync(newContractAddressValue);
 #endif
             var newAccountCharged = ChargesNewAccountStateGas(program, targetIsAlive);
 
@@ -108,23 +110,23 @@ namespace Nethereum.EVM
 
             if (!targetIsDeployable) return AbortCreateOnCollision(program, snapshotId, newAccountCharged);
 
-            program.ProgramContext.ExecutionStateService.DebitBalance(program.ProgramContext.AddressContract, value);
+            program.ProgramContext.ExecutionStateService.DebitBalance(contractAddressValue, value);
 
             var programContext = BuildInitCodeProgramContext(program, parentFrame, callInput);
 
-            var callProgram = new Program(byteCode, programContext);
+            var callProgram = Program.ForInitCode(byteCode, programContext);
 
             var gasToAllocate = GrantExecutionGasToChild(program, callProgram);
 
             DrainStateGasReservoirIntoChild(program, callProgram);
 
-            program.ProgramContext.ExecutionStateService.CreditBalance(newContractAddress, value);
+            program.ProgramContext.ExecutionStateService.CreditBalance(newContractAddressValue, value);
 
             EmitEndowmentTransferLog(program, callProgram, newContractAddress, value);
 
-            program.ProgramContext.ExecutionStateService.SetNonce(newContractAddress, Config.ContractInitialNonce);
+            program.ProgramContext.ExecutionStateService.SetNonce(newContractAddressValue, Config.ContractInitialNonce);
 
-            MarkCreatedInThisTransaction(program, newContractAddress);
+            MarkCreatedInThisTransaction(program, newContractAddressValue);
 
             var newFrame = new CallFrame
             {
@@ -170,7 +172,7 @@ namespace Nethereum.EVM
         /// </summary>
         private static SubCallSetup ForfeitFrameOnOversizedInitcode(Program program)
         {
-            HaltFrameExceptionally(program);
+            program.MarkHalted(EvmHaltReason.OutOfGas);
             return new SubCallSetup { ShouldCreateSubCall = false };
         }
 
@@ -183,13 +185,12 @@ namespace Nethereum.EVM
                 var available = Math.Max(0, program.Memory.Count - memoryIndex);
                 if (available > 0)
                 {
-                    var src = program.Memory.GetRange(memoryIndex, available).ToArray();
-                    Array.Copy(src, byteCode, available);
+                    program.Memory.CopyTo(memoryIndex, byteCode, 0, available);
                 }
             }
             else
             {
-                byteCode = program.Memory.GetRange(memoryIndex, memoryLength).ToArray();
+                byteCode = program.ReadMemory(memoryIndex, memoryLength);
             }
             return byteCode;
         }
@@ -200,7 +201,7 @@ namespace Nethereum.EVM
             string newContractAddress;
             if (createType == CallFrameType.Create2)
             {
-                newContractAddress = ContractUtils.CalculateCreate2Address(contractAddress, salt.ToHex(), byteCode.ToHex());
+                newContractAddress = ContractUtils.CalculateCreate2Address(contractAddress, salt, byteCode);
             }
             else
             {
@@ -256,6 +257,9 @@ namespace Nethereum.EVM
             programContext.EthTransferLogRule = program.ProgramContext.EthTransferLogRule;
             programContext.StateGasActive = program.ProgramContext.StateGasActive;
             programContext.TransientStorage = program.ProgramContext.TransientStorage;
+#if !EVM_SYNC
+            programContext.LogIndexCounter = program.ProgramContext.LogIndexCounter;
+#endif
             programContext.SetAccessListTracker(program.ProgramContext.AccessListTracker);
             programContext.BlobHashes = program.ProgramContext.BlobHashes;
             programContext.BlobBaseFee = program.ProgramContext.BlobBaseFee;
@@ -302,7 +306,7 @@ namespace Nethereum.EVM
                 value);
         }
 
-        private static void MarkCreatedInThisTransaction(Program program, string newContractAddress)
+        private static void MarkCreatedInThisTransaction(Program program, EvmAddress newContractAddress)
         {
             var newAcct = program.ProgramContext.ExecutionStateService.CreateOrGetAccountExecutionState(newContractAddress);
             newAcct.IsNewContract = true;

@@ -49,13 +49,13 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             if (program.HasExecutionError) return 0;
 #endif
 
-            CallTargetRecorder.Record(program, toAddress.ToHexLower());
+            CallTargetRecorder.Record(program, toAddress);
 
             var state = program.ProgramContext.ExecutionStateService;
 #if EVM_SYNC
-            if (ExistsForFrontierNewAccountCheck(state, toAddress)) return stateIndependentGas;
+            if (PreEip161AccountExistence.Exists(state, toAddress)) return stateIndependentGas;
 #else
-            if (await ExistsForFrontierNewAccountCheckAsync(state, toAddress)) return stateIndependentGas;
+            if (await PreEip161AccountExistence.ExistsAsync(state, toAddress)) return stateIndependentGas;
 #endif
 
             return stateIndependentGas + GasConstants.CALL_NEW_ACCOUNT;
@@ -74,88 +74,6 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
 
             return _fixedAccessCost + memCost + (value.IsZero ? 0 : GasConstants.CALL_VALUE_TRANSFER);
         }
-
-
-#if EVM_SYNC
-        private static bool ExistsForFrontierNewAccountCheck(ExecutionStateService state, EvmAddress address)
-        {
-            if (state.AccountsState.TryGetValue(address, out var acct))
-            {
-                if (acct.WasInPreState) return true;
-                if (acct.IsNewContract) return true;
-                if (acct.Balance.GetTotalBalance() > 0) return true;
-                if (acct.Nonce.HasValue && acct.Nonce.Value > 0) return true;
-                if (acct.WasMaterialisedByCallFrame) return true;
-                if (acct.Balance.InitialChainBalance.HasValue && acct.Balance.InitialChainBalance.Value > 0) return true;
-                if (acct.IsTouched) return true;
-            }
-
-            if (acct == null || !acct.Balance.InitialChainBalance.HasValue)
-            {
-                var chainBalance = state.StateReader.GetBalance(address.ToByteArray());
-                if (chainBalance > 0) return true;
-            }
-            if (acct == null || !acct.Nonce.HasValue)
-            {
-                var chainNonce = state.StateReader.GetTransactionCount(address.ToByteArray());
-                if (chainNonce > 0) return true;
-            }
-            if (acct == null || acct.Code == null)
-            {
-                var chainCode = state.StateReader.GetCode(address.ToByteArray());
-                if (chainCode != null && chainCode.Length > 0) return true;
-            }
-
-            return state.StateReader.AccountExists(address.ToHexLower());
-        }
-#else
-        /// <summary>
-        /// Pre-EIP-158 "does this account exist" check used to gate the
-        /// G_NEWACCOUNT (25,000 gas) CALL surcharge. Matches the canonical
-        /// account-exists check: returns true if the account has any
-        /// in-tx state (IsNewContract or non-zero fields) or any persisted
-        /// chain state.
-        ///
-        /// Crucially this is local to <see cref="CallGasCost"/> and does NOT
-        /// route through <see cref="ExecutionStateService.AccountExistsAsync"/>
-        /// — the shared method materialises addresses via
-        /// <c>CreateOrGetAccountExecutionState</c>, which would inject an
-        /// empty zero-account entry for things like uncalled precompile
-        /// addresses. At Frontier-Tangerine empty touched accounts are NOT
-        /// pruned, so that injection would corrupt the post-state trie.
-        /// </summary>
-        private static async Task<bool> ExistsForFrontierNewAccountCheckAsync(ExecutionStateService state, EvmAddress address)
-        {
-            if (state.AccountsState.TryGetValue(address, out var acct))
-            {
-                if (acct.WasInPreState) return true;
-                if (acct.IsNewContract) return true;
-                if (acct.Balance.GetTotalBalance() > 0) return true;
-                if (acct.Nonce.HasValue && acct.Nonce.Value > 0) return true;
-                if (acct.WasMaterialisedByCallFrame) return true;
-                if (acct.Balance.InitialChainBalance.HasValue && acct.Balance.InitialChainBalance.Value > 0) return true;
-                if (acct.IsTouched) return true;
-            }
-
-            if (acct == null || !acct.Balance.InitialChainBalance.HasValue)
-            {
-                var chainBalance = await state.StateReader.GetBalanceAsync(address.ToByteArray());
-                if (chainBalance > 0) return true;
-            }
-            if (acct == null || !acct.Nonce.HasValue)
-            {
-                var chainNonce = await state.StateReader.GetTransactionCountAsync(address.ToByteArray());
-                if (chainNonce > 0) return true;
-            }
-            if (acct == null || acct.Code == null)
-            {
-                var chainCode = await state.StateReader.GetCodeAsync(address.ToByteArray());
-                if (chainCode != null && chainCode.Length > 0) return true;
-            }
-
-            return await state.StateReader.AccountExistsAsync(address.ToHexLower());
-        }
-#endif
     }
 
     public sealed class CallCodeGasCost : IOpcodeGasCost
@@ -266,9 +184,9 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
     /// </summary>
     internal static class CallTargetRecorder
     {
-        public static void Record(Program program, string to)
+        public static void Record(Program program, EvmAddress to)
         {
-            program.ProgramContext.ExecutionStateService.AccessRecorder?.RecordAccountRead(to);
+            program.ProgramContext.ExecutionStateService.NotifyAccountRead(to);
         }
     }
 

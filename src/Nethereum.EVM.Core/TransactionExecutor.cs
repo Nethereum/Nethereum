@@ -157,9 +157,8 @@ namespace Nethereum.EVM
         private EvmUInt256 BlockBlobBaseFee(TransactionExecutionContext ctx)
         {
             var blobRule = _config.IntrinsicGasRules.Blob;
-            return blobRule == null
-                ? EvmUInt256.Zero
-                : blobRule.CalculateBlobBaseFee(ctx.ExcessBlobGas);
+            if (blobRule == null) return EvmUInt256.Zero;
+            return ctx.BlobBaseFeeOverride ?? blobRule.CalculateBlobBaseFee(ctx.ExcessBlobGas);
         }
 
         private EvmUInt256 BlobGasCostOfCarriedBlobs(TransactionExecutionContext ctx, EvmUInt256 blobBaseFee)
@@ -342,6 +341,16 @@ namespace Nethereum.EVM
             result.DeletedAccounts = removed;
         }
 
+        private Nethereum.EVM.Execution.TransferLogs.IEthTransferLogRule ResolveTransferRule(TransactionExecutionContext ctx)
+        {
+            var rule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
+#if !EVM_SYNC
+            if (ctx.LogIndexCounter != null)
+                return new Nethereum.EVM.Execution.TransferLogs.Rules.IndexingEthTransferLogRule(rule, ctx.LogIndexCounter);
+#endif
+            return rule;
+        }
+
         private void ExecuteSimpleTransfer(TransactionExecutionContext ctx, TransactionExecutionResult result)
         {
             ctx.SenderAccount.Balance.DebitExecutionBalance(ctx.Value);
@@ -351,7 +360,7 @@ namespace Nethereum.EVM
                 var newContractAccount = ctx.ExecutionState.CreateOrGetAccountExecutionState(ctx.ContractAddress);
                 newContractAccount.Balance.CreditExecutionBalance(ctx.Value);
 
-                var transferRule = ctx.EthTransferLogRuleOverride ?? _config.EthTransferLogRule;
+                var transferRule = ResolveTransferRule(ctx);
                 transferRule.Emit(result.Logs, ctx.Sender, ctx.ContractAddress, ctx.Value);
             }
 
@@ -451,9 +460,9 @@ namespace Nethereum.EVM
             var minerReward = new EvmUInt256(result.GasUsed) * perGasReward;
 
 #if EVM_SYNC
-            var coinbaseAccount = ctx.ExecutionState.LoadBalanceNonceAndCodeFromStorage(ctx.Coinbase);
+            var coinbaseAccount = ctx.ExecutionState.LoadBalanceNonceAndCodeFromStorage(ctx.CoinbaseAddress);
 #else
-            var coinbaseAccount = await ctx.ExecutionState.LoadBalanceNonceAndCodeFromStorageAsync(ctx.Coinbase);
+            var coinbaseAccount = await ctx.ExecutionState.LoadBalanceNonceAndCodeFromStorageAsync(ctx.CoinbaseAddress);
 #endif
             if (!minerReward.IsZero)
                 coinbaseAccount.Balance.CreditExecutionBalance(minerReward);

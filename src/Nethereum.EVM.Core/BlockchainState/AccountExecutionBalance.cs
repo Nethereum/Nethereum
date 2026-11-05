@@ -5,8 +5,27 @@ namespace Nethereum.EVM.BlockchainState
     public class AccountExecutionBalance
     {
         public string Address { get; set; }
-        public EvmUInt256? InitialChainBalance { get; protected set; }
-        public EvmUInt256? ExecutionBalance { get; protected set; }
+        private EvmUInt256? _initialChainBalance;
+        public EvmUInt256? InitialChainBalance
+        {
+            get => _initialChainBalance;
+            protected set
+            {
+                Owner?.Journal?.InitialBalanceChanged(Owner, _initialChainBalance);
+                _initialChainBalance = value;
+            }
+        }
+
+        private EvmUInt256? _executionBalance;
+        public EvmUInt256? ExecutionBalance
+        {
+            get => _executionBalance;
+            protected set
+            {
+                Owner?.Journal?.ExecutionBalanceChanged(Owner, _executionBalance);
+                _executionBalance = value;
+            }
+        }
 
         public AccountExecutionState Owner { get; set; }
 
@@ -48,6 +67,10 @@ namespace Nethereum.EVM.BlockchainState
         {
             ExecutionBalance = value;
         }
+
+        internal void RestoreInitialChainBalance(EvmUInt256? value) => _initialChainBalance = value;
+
+        internal void RestoreExecutionBalance(EvmUInt256? value) => _executionBalance = value;
 
         public string ToTraceString()
         {

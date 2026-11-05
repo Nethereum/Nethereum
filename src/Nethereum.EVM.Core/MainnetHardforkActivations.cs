@@ -1,6 +1,6 @@
 namespace Nethereum.EVM
 {
-    public class MainnetChainActivations : IChainActivations
+    public class MainnetChainActivations : IChainActivations, IChainBlobSchedule
     {
         public static readonly MainnetChainActivations Instance = new MainnetChainActivations();
 
@@ -26,14 +26,12 @@ namespace Nethereum.EVM
 
         public static readonly ulong? OsakaTimestamp = 1_764_798_551UL;
 
-        public static readonly ulong? OsakaBpo1Timestamp = 1_765_290_071UL;
+        public static readonly ulong? OsakaBpo1Timestamp = MainnetBlobSchedule.Bpo1Timestamp;
 
-        public static readonly ulong? OsakaBpo2Timestamp = 1_767_747_671UL;
+        public static readonly ulong? OsakaBpo2Timestamp = MainnetBlobSchedule.Bpo2Timestamp;
 
         public HardforkName ResolveAt(long blockNumber, ulong timestamp)
         {
-            if (OsakaBpo2Timestamp is ulong bpo2Ts && timestamp >= bpo2Ts) return HardforkName.OsakaBpo2;
-            if (OsakaBpo1Timestamp is ulong bpo1Ts && timestamp >= bpo1Ts) return HardforkName.OsakaBpo1;
             if (OsakaTimestamp is ulong osakaTs && timestamp >= osakaTs) return HardforkName.Osaka;
             if (timestamp >= PragueTimestamp)   return HardforkName.Prague;
             if (timestamp >= CancunTimestamp)   return HardforkName.Cancun;
@@ -55,6 +53,20 @@ namespace Nethereum.EVM
             if (blockNumber >= FrontierThawingBlock)    return HardforkName.FrontierThawing;
             return HardforkName.Frontier;
         }
+
+        public BlobParameters? BlobParametersAt(long blockNumber, ulong timestamp)
+        {
+            var fork = ResolveAt(blockNumber, timestamp);
+            return MainnetBlobSchedule.Instance.At(fork, TimestampForkActivatedAt(fork), timestamp);
+        }
+
+        private static ulong TimestampForkActivatedAt(HardforkName fork) => fork switch
+        {
+            HardforkName.Osaka => OsakaTimestamp ?? 0,
+            HardforkName.Prague => PragueTimestamp,
+            HardforkName.Cancun => CancunTimestamp,
+            _ => 0,
+        };
     }
 
     public static class MainnetHardforkActivations

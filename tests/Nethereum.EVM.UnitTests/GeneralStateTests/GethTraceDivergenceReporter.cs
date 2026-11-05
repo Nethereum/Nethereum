@@ -1,3 +1,4 @@
+using Nethereum.EEST.Conformance.Diagnosis;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,10 +19,10 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             {
                 output.WriteLine("  Running trace comparison with Geth...");
 
-                var gethRunner = new GethEvmRunner();
+                var gethRunner = GethTools.EvmRunner();
                 if (!gethRunner.IsAvailable)
                 {
-                    output.WriteLine($"    Trace comparison unavailable: {Trim(gethRunner.UnavailableReason, 300)}");
+                    output.WriteLine($"    Trace comparison unavailable: {TraceDivergenceReport.Trim(gethRunner.UnavailableReason, 300)}");
                     return;
                 }
 
@@ -30,7 +31,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 if (!gethResult.Success || gethResult.Steps == null || gethResult.Steps.Count == 0)
                 {
-                    output.WriteLine($"    Geth trace unavailable: {Trim(gethResult.Error, 300) ?? "no steps"}");
+                    output.WriteLine($"    Geth trace unavailable: {TraceDivergenceReport.Trim(gethResult.Error, 300) ?? "no steps"}");
                     return;
                 }
 
@@ -51,35 +52,13 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                 var comparer = new TraceComparer();
                 var comparison = comparer.Compare(gethResult.Steps, comparer.NormalizeNethTrace(nethSingle.Traces));
-
-                if (!comparison.HasDivergence)
-                {
-                    output.WriteLine($"    Traces MATCH ({gethResult.Steps.Count} steps) - divergence is in final state calculation");
-                    return;
-                }
-
-                var diverge = comparison.Steps[comparison.FirstDivergenceStep - 1];
-                output.WriteLine($"  TRACE DIVERGENCE at step {comparison.FirstDivergenceStep}: {Trim(comparison.DivergenceReason, 120)}");
-                output.WriteLine($"    Geth: PC={diverge.GethPC} Op={Trim(diverge.GethOp, 32)} Gas={diverge.GethGas} Cost={diverge.GethCost} Depth={diverge.GethDepth}");
-                output.WriteLine($"    Neth: PC={diverge.NethPC} Op={Trim(diverge.NethOp, 32)} Gas={diverge.NethGas} Cost={diverge.NethCost} Depth={diverge.NethDepth}");
-
-                var start = Math.Max(0, comparison.FirstDivergenceStep - 6);
-                var end = Math.Min(comparison.Steps.Count, comparison.FirstDivergenceStep + 5);
-                output.WriteLine($"  Context (steps {start + 1}..{end}):");
-                for (var i = start; i < end; i++)
-                {
-                    var s = comparison.Steps[i];
-                    var marker = s.Step == comparison.FirstDivergenceStep ? ">>>" : "   ";
-                    output.WriteLine($"    {marker} Step {s.Step}: PC={s.GethPC}/{s.NethPC} Op={Trim(s.GethOp, 32)} Gas={s.GethGas}/{s.NethGas} Cost={s.GethCost}/{s.NethCost} {Trim(s.DivergenceType, 80)}");
-                }
+                foreach (var line in TraceDivergenceReport.Lines(comparison, gethResult.Steps.Count))
+                    output.WriteLine(line);
             }
             catch (Exception ex)
             {
-                output.WriteLine($"    Trace comparison error: {Trim(ex.Message, 300)}");
+                output.WriteLine($"    Trace comparison error: {TraceDivergenceReport.Trim(ex.Message, 300)}");
             }
         }
-
-        private static string Trim(string value, int max)
-            => value == null || value.Length <= max ? value : value.Substring(0, max) + "…";
     }
 }

@@ -10,5 +10,11 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
         {
             return input ?? new byte[0];
         }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            output = Execute(input);
+            return true;
+        }
     }
 }

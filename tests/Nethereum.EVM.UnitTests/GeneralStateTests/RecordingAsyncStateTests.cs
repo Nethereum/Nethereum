@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class RecordingAsyncStateTests
     {
         private readonly RecordingAsyncStateTestRunner _runner;

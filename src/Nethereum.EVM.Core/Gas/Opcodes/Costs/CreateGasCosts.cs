@@ -24,7 +24,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             if (!_hasInitCodeWordGas)
                 return _baseCost + memoryCost;
 
-            var words = ((memoryLength + new EvmUInt256(31)) / new EvmUInt256(32)).ToLongSafe();
+            var words = WordCount.Of(memoryLength);
             return _baseCost + (GasConstants.INIT_CODE_WORD_GAS * words) + memoryCost;
         }
     }
@@ -48,7 +48,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             var memoryCost = program.CalculateMemoryExpansionGas(memoryIndex, memoryLength);
             if (memoryCost >= GasConstants.OVERFLOW_GAS_COST) return GasConstants.OVERFLOW_GAS_COST;
 
-            var words = ((memoryLength + new EvmUInt256(31)) / new EvmUInt256(32)).ToLongSafe();
+            var words = WordCount.Of(memoryLength);
             var hashCost = GasConstants.KECCAK256_PER_WORD * words;
 
             if (!_hasInitCodeWordGas)

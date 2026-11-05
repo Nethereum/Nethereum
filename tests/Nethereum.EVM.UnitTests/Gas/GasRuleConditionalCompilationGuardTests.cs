@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Nethereum.Testing;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests.Gas
@@ -252,19 +253,6 @@ namespace Nethereum.EVM.UnitTests.Gas
                 .Select(path => (Path.GetFileName(path), path));
         }
 
-        private static string RepositoryRoot()
-        {
-            var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-            while (directory != null)
-            {
-                if (File.Exists(Path.Combine(directory.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(directory.FullName, "Nethereum.sln")))
-                    return directory.FullName;
-                directory = directory.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                "Repository root not found above " + AppDomain.CurrentDomain.BaseDirectory);
-        }
+        private static string RepositoryRoot() => TestEnvironment.RepoRoot;
     }
 }

@@ -23,12 +23,31 @@ namespace Nethereum.EVM
     {
         private readonly EvmCallContext callInput;
 
-        public byte[] AddressContractEncoded { get; }
-        public byte[] AddressCallerEncoded { get; }
-        public byte[] AddressOriginEncoded { get; }
-        public byte[] AddressCoinbaseEncoded { get; }
+        private byte[] addressContractEncoded;
+        private byte[] addressCallerEncoded;
+        private byte[] addressOriginEncoded;
+        private byte[] addressCoinbaseEncoded;
+
+        public byte[] AddressContractEncoded => addressContractEncoded ?? (addressContractEncoded = AddressUtil.EncodeAddressTo32Bytes(callInput.To));
+        public byte[] AddressCallerEncoded => addressCallerEncoded ?? (addressCallerEncoded = AddressUtil.EncodeAddressTo32Bytes(callInput.From));
+        public byte[] AddressOriginEncoded => addressOriginEncoded ?? (addressOriginEncoded = AddressUtil.EncodeAddressTo32Bytes(AddressOrigin));
+        public byte[] AddressCoinbaseEncoded => addressCoinbaseEncoded ?? (addressCoinbaseEncoded = AddressUtil.EncodeAddressTo32Bytes(Coinbase));
         public byte[] DataInput { get; }
         public string AddressContract => callInput.To;
+        private EvmAddress addressContractValue;
+        private bool addressContractValueParsed;
+        public EvmAddress AddressContractValue
+        {
+            get
+            {
+                if (!addressContractValueParsed)
+                {
+                    addressContractValue = EvmAddress.FromHex(callInput.To);
+                    addressContractValueParsed = true;
+                }
+                return addressContractValue;
+            }
+        }
         public string AddressCaller => callInput.From;
         public EvmUInt256 ChainId { get; }
         public long Gas { get; }
@@ -40,16 +59,27 @@ namespace Nethereum.EVM
         public string Coinbase { get; }
         public EvmUInt256 BaseFee { get; }
         public EvmUInt256 BlobBaseFee { get; set; } = EvmUInt256.Zero;
-        public byte[][] BlobHashes { get; set; } = new byte[0][];
+        private static readonly byte[][] NoBlobHashes = new byte[0][];
+        public byte[][] BlobHashes { get; set; } = NoBlobHashes;
         public EvmUInt256 GasPrice { get; internal set; } = EvmUInt256.Zero;
         public EvmUInt256 GasLimit { get; set; } = new EvmUInt256(10000000);
         public EvmUInt256 Difficulty { get; set; } = EvmUInt256.One;
         public EvmUInt256 SlotNumber { get; set; } = EvmUInt256.Zero;
         public EvmUInt256 Fee { get; set; }
-        public Dictionary<string, Dictionary<EvmUInt256, byte[]>> TransientStorage { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, Dictionary<EvmUInt256, byte[]>> _transientStorage;
+        public Dictionary<string, Dictionary<EvmUInt256, byte[]>> TransientStorage
+        {
+            get => _transientStorage ??= new(StringComparer.OrdinalIgnoreCase);
+            set => _transientStorage = value;
+        }
         public bool IsStatic { get; set; } = false;
         public int Depth { get; set; } = 0;
-        public string ExecutionId { get; set; } = Guid.NewGuid().ToString().Substring(0, 8);
+        private string _executionId;
+        public string ExecutionId
+        {
+            get => _executionId ??= Guid.NewGuid().ToString().Substring(0, 8);
+            set => _executionId = value;
+        }
         public bool EnforceSstoreGasStipend { get; set; } = false;
 
         public long SstoreClearsSchedule { get; set; } = GasConstants.SSTORE_CLEARS_SCHEDULE;
@@ -60,6 +90,10 @@ namespace Nethereum.EVM
 
         public Execution.TransferLogs.IEthTransferLogRule EthTransferLogRule { get; set; }
             = Execution.TransferLogs.Rules.NoEthTransferLogRule.Instance;
+
+#if !EVM_SYNC
+        public LogIndexCounter LogIndexCounter { get; set; }
+#endif
 
         public Execution.Opcodes.Executors.IBlockHashRule BlockHashRule { get; set; }
             = Execution.Opcodes.Executors.Rules.LegacyBlockHashRule.Instance;
@@ -80,10 +114,6 @@ namespace Nethereum.EVM
         {
             if (addressOrigin == null) addressOrigin = callInput.From;
             AccessListTracker = new AccessListTracker(callInput.From, callInput.To, trackAccessList);
-            AddressContractEncoded = AddressUtil.EncodeAddressTo32Bytes(callInput.To);
-            AddressCallerEncoded = AddressUtil.EncodeAddressTo32Bytes(callInput.From);
-            AddressOriginEncoded = AddressUtil.EncodeAddressTo32Bytes(addressOrigin);
-            AddressCoinbaseEncoded = AddressUtil.EncodeAddressTo32Bytes(coinbase);
             DataInput = callInput.Data ?? new byte[0];
             AddressOrigin = addressOrigin;
 

@@ -14,8 +14,7 @@ namespace Nethereum.EVM.Gas.Opcodes.Costs
             var memoryCost = program.CalculateMemoryExpansionGas(index, length);
             if (memoryCost >= GasConstants.OVERFLOW_GAS_COST) return GasConstants.OVERFLOW_GAS_COST;
 
-            var wordsU = (length + new EvmUInt256(31)) / new EvmUInt256(32);
-            var lengthWords = wordsU.ToLongSafe();
+            var lengthWords = WordCount.Of(length);
 
             return GasConstants.KECCAK256_BASE + (GasConstants.KECCAK256_PER_WORD * lengthWords) + memoryCost;
         }

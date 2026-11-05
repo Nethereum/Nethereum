@@ -9,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class RecordingAsyncStateRunnerSkipDisciplineTests
     {
         private const string SourceCategory = "stExample";

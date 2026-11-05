@@ -7,7 +7,7 @@
 	<TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
 	<AssemblyName>Nethereum.EVM.Contracts</AssemblyName>
 	<PackageId>Nethereum.EVM.Contracts</PackageId>
-	<PackageTags>Netherum;Ethereum;Blockchain;EVM</PackageTags>
+	<PackageTags>Nethereum;Ethereum;Blockchain;EVM</PackageTags>
 	<PackageReadmeFile>README.md</PackageReadmeFile>
 </PropertyGroup>
 <ItemGroup>
@@ -22,5 +22,13 @@
 <ItemGroup>
   <None Include="README.md" Pack="true" PackagePath="" />
 </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
 
 </Project>

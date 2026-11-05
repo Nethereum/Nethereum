@@ -12,14 +12,17 @@ namespace Nethereum.EVM.Precompiles.Backends
         public bool Verify(byte[] hash, byte[] r, byte[] s, byte[] publicKeyX, byte[] publicKeyY)
         {
             var curveParams = NistNamedCurves.GetByName("P-256");
-            var domainParams = new ECDomainParameters(
-                curveParams.Curve, curveParams.G, curveParams.N, curveParams.H);
+            var fieldPrime = curveParams.Curve.Field.Characteristic;
 
             var x = new Org.BouncyCastle.Math.BigInteger(1, publicKeyX);
             var y = new Org.BouncyCastle.Math.BigInteger(1, publicKeyY);
+            if (x.CompareTo(fieldPrime) >= 0 || y.CompareTo(fieldPrime) >= 0) return false;
+
             var point = curveParams.Curve.CreatePoint(x, y);
             if (!point.IsValid()) return false;
 
+            var domainParams = new ECDomainParameters(
+                curveParams.Curve, curveParams.G, curveParams.N, curveParams.H);
             var rInt = new Org.BouncyCastle.Math.BigInteger(1, r);
             var sInt = new Org.BouncyCastle.Math.BigInteger(1, s);
             var pubKey = new ECPublicKeyParameters(point, domainParams);

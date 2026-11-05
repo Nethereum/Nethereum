@@ -18,35 +18,37 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
 
         public override byte[] Execute(byte[] input)
         {
+            return Verify(input);
+        }
+
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            output = Verify(input);
+            return true;
+        }
+
+        private byte[] Verify(byte[] input)
+        {
             if (input == null || input.Length != InputLength)
                 return new byte[0];
 
-            try
-            {
-                var hash = new byte[32];
-                var r = new byte[32];
-                var s = new byte[32];
-                var x = new byte[32];
-                var y = new byte[32];
-                Array.Copy(input, 0, hash, 0, 32);
-                Array.Copy(input, 32, r, 0, 32);
-                Array.Copy(input, 64, s, 0, 32);
-                Array.Copy(input, 96, x, 0, 32);
-                Array.Copy(input, 128, y, 0, 32);
+            var hash = new byte[32];
+            var r = new byte[32];
+            var s = new byte[32];
+            var x = new byte[32];
+            var y = new byte[32];
+            Array.Copy(input, 0, hash, 0, 32);
+            Array.Copy(input, 32, r, 0, 32);
+            Array.Copy(input, 64, s, 0, 32);
+            Array.Copy(input, 96, x, 0, 32);
+            Array.Copy(input, 128, y, 0, 32);
 
-                if (_backend.Verify(hash, r, s, x, y))
-                {
-                    var result = new byte[32];
-                    result[31] = 1;
-                    return result;
-                }
+            if (!_backend.Verify(hash, r, s, x, y))
+                return new byte[0];
 
-                return new byte[0];
-            }
-            catch
-            {
-                return new byte[0];
-            }
+            var result = new byte[32];
+            result[31] = 1;
+            return result;
         }
     }
 }

@@ -15,11 +15,29 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
         public override int AddressNumeric => 9;
 
         private const int InputLength = 213;
+        private const int FinalFlagIndex = 212;
 
         public override byte[] Execute(byte[] input)
         {
             RequireInputLength(input, InputLength, "Blake2f");
+            if (input[FinalFlagIndex] > 1)
+                throw new ArgumentException("Invalid Blake2f final flag");
+            return Compress(input);
+        }
 
+        public override bool TryExecute(byte[] input, out byte[] output)
+        {
+            if (!HasInputLength(input, InputLength) || input[FinalFlagIndex] > 1)
+            {
+                output = null;
+                return false;
+            }
+            output = Compress(input);
+            return true;
+        }
+
+        private byte[] Compress(byte[] input)
+        {
             var rounds = (uint)((input[0] << 24) | (input[1] << 16) | (input[2] << 8) | input[3]);
 
             var h = new ulong[8];
@@ -32,11 +50,7 @@ namespace Nethereum.EVM.Execution.Precompiles.Handlers
 
             var t0 = BitConverter.ToUInt64(input, 196);
             var t1 = BitConverter.ToUInt64(input, 204);
-
-            if (input[212] > 1)
-                throw new ArgumentException("Invalid Blake2f final flag");
-
-            var f = input[212] != 0;
+            var f = input[FinalFlagIndex] != 0;
 
             _backend.Compress(rounds, h, m, t0, t1, f);
 

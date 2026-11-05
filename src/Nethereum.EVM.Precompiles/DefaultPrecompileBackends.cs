@@ -9,7 +9,7 @@ namespace Nethereum.EVM.Precompiles
             sha256: Backends.DefaultSha256Backend.Instance,
             ripemd160: Backends.DefaultRipemd160Backend.Instance,
             modExp: Backends.DefaultModExpBackend.Instance,
-            bn128: Backends.DefaultBn128Backend.Instance,
+            bn128: Backends.ManagedBn254Backend.Instance,
             blake2f: Backends.DefaultBlake2fBackend.Instance,
             p256Verify: Backends.DefaultP256VerifyBackend.Instance);
     }

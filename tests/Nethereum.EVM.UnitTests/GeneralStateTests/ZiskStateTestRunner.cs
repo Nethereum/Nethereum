@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Nethereum.Testing;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -103,11 +104,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 return;
             }
 
-            if (string.IsNullOrEmpty(_elfPath))
-            {
-                _output.WriteLine("SKIP Zisk tests — ELF binary not found. Run: bash scripts/build-zisk-source.sh");
-                return;
-            }
+            Assert.True(!string.IsNullOrEmpty(_elfPath),
+                "Zisk ELF binary not found; ExternalPaths:ZiskOutput must contain nethereum_evm_elf (bash scripts/build-zisk-source.sh).");
 
             var testFiles = Directory.GetFiles(categoryPath, "*.json", SearchOption.AllDirectories);
             int tested = 0, passed = 0, failed = 0;
@@ -139,7 +137,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
                         var result = RunZiskEmu(witnessFile);
 
-                        if ((result.Success && !expectsException) || (!result.Success && expectsException))
+                        if ((result.Success && !expectsException) || (expectsException && (!result.Success || result.TransactionsFailed > 0)))
                         {
                             _output.WriteLine($"  ZISK PASS: {fileName} gas={result.GasUsed}");
                             passed++;
@@ -255,18 +253,8 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             if (string.IsNullOrEmpty(_elfPath))
                 return new ZiskResult { Error = "ELF not found" };
 
-            var wslWitness = witnessFile.Replace("\\", "/").Replace("C:/", "/mnt/c/").Replace("c:/", "/mnt/c/");
-            var wslElf = _elfPath.Replace("\\", "/").Replace("C:/", "/mnt/c/").Replace("c:/", "/mnt/c/");
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "wsl",
-                Arguments = $"-d Ubuntu -e bash -c \"export PATH=$HOME/.zisk/bin:$HOME/.cargo/bin:$PATH && ziskemu -e {wslElf} --legacy-inputs {wslWitness} -n 100000000\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = false,
-                CreateNoWindow = true
-            };
+            var psi = ZiskHost.Command(
+                $"{TestEnvironment.Tool("Ziskemu")} -e {ZiskHost.Path(_elfPath)} --legacy-inputs {ZiskHost.Path(witnessFile)} -n 100000000");
 
             var process = Process.Start(psi);
             var output = process.StandardOutput.ReadToEnd();
@@ -277,6 +265,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             }
 
             var result = new ZiskResult();
+            var transactionsFailed = 0;
             foreach (var line in output.Split('\n'))
             {
                 var trimmed = line.Trim();
@@ -291,12 +280,20 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                     result.Success = false;
                     result.Error = trimmed.Length > 9 ? trimmed.Substring(9) : "unknown";
                 }
+                else if (trimmed.StartsWith("BIN:executed ok="))
+                {
+                    var failedAt = trimmed.IndexOf(" fail=", StringComparison.Ordinal);
+                    if (failedAt >= 0 && int.TryParse(trimmed.Substring(failedAt + " fail=".Length), out var failedTransactions))
+                        transactionsFailed = failedTransactions;
+                }
                 else if (trimmed.Contains("bad version"))
                 {
                     result.Success = false;
                     result.Error = "bad witness version";
                 }
             }
+
+            result.TransactionsFailed = transactionsFailed;
 
             if (!result.Success && string.IsNullOrEmpty(result.Error))
                 result.Error = $"exit code {process.ExitCode}";
@@ -306,37 +303,14 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
         private static string FindElfPath()
         {
-            var projectRoot = FindProjectRoot(Directory.GetCurrentDirectory());
-            if (projectRoot == null) return null;
-            var elfPath = Path.Combine(projectRoot, "scripts", "zisk-output", "nethereum_evm_elf");
+            var elfPath = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), "nethereum_evm_elf");
             return File.Exists(elfPath) ? elfPath : null;
         }
 
         private static string GetTestVectorsPath()
         {
-            var currentDir = Directory.GetCurrentDirectory();
-            var testDir = Path.Combine(currentDir, "Tests", "GeneralStateTests");
-            if (Directory.Exists(testDir)) return testDir;
-            var projectRoot = FindProjectRoot(currentDir);
-            if (projectRoot != null)
-            {
-                testDir = Path.Combine(projectRoot, "tests", "Nethereum.EVM.UnitTests", "Tests", "GeneralStateTests");
-                if (Directory.Exists(testDir)) return testDir;
-            }
-            return null;
-        }
-
-        private static string FindProjectRoot(string startDir)
-        {
-            var dir = new DirectoryInfo(startDir);
-            while (dir != null)
-            {
-                if (File.Exists(Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    File.Exists(Path.Combine(dir.FullName, "Nethereum.sln")))
-                    return dir.FullName;
-                dir = dir.Parent;
-            }
-            return null;
+            var testDir = Path.Combine(TestEnvironment.ExternalPath("EthereumTests"), "GeneralStateTests");
+            return Directory.Exists(testDir) ? testDir : null;
         }
 
         private class NativeResult
@@ -377,6 +351,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         private class ZiskResult
         {
             public bool Success { get; set; }
+            public int TransactionsFailed { get; set; }
             public long GasUsed { get; set; }
             public string Error { get; set; }
         }

@@ -72,7 +72,7 @@ namespace Nethereum.EVM.Execution
             }
 
             var requests = ExecuteRequestSystemCalls(block, stateReader, executor, balCollector, receipts);
-            var requestsHash = requests.Commitment();
+            var requestsHash = requests.Commitment(data => config.Precompiles.Execute(Sha256PrecompileAddress, data));
 
             byte[] withdrawalsRoot = null;
             if (block.Withdrawals != null)
@@ -284,6 +284,8 @@ namespace Nethereum.EVM.Execution
             }
         }
 
+        private const int Sha256PrecompileAddress = 0x02;
+
         private static HardforkConfig ResolveConfig(BlockWitnessData block, HardforkRegistry registry)
         {
             var fork = block.Features?.Fork ?? HardforkName.Unspecified;
@@ -292,7 +294,7 @@ namespace Nethereum.EVM.Execution
                     "BlockWitnessData.Features.Fork is Unspecified. Witness producers must " +
                     "stamp the fork explicitly — block-number/timestamp activation is a " +
                     "per-chain concern done at witness build time, not in BlockExecutor.");
-            return registry.Get(fork);
+            return registry.Get(fork).WithBlobParameters(block.Features.Blob);
         }
 
         private static byte GetTransactionType(byte[] rlpEncoded)
@@ -568,7 +570,7 @@ namespace Nethereum.EVM.Execution
             }
 
             var requests = await ExecuteRequestSystemCallsAsync(block, stateReader, executor, balCollector, receipts);
-            var requestsHash = requests.Commitment();
+            var requestsHash = requests.Commitment(data => config.Precompiles.Execute(Sha256PrecompileAddress, data));
 
             byte[] withdrawalsRoot = null;
             if (block.Withdrawals != null)

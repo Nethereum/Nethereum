@@ -14,6 +14,7 @@ using Nethereum.EVM.Gas;
 
 namespace Nethereum.EVM.Execution
 {
+    [Obsolete("Use the precompile registry and backends")]
     public class EvmPreCompiledContractsExecution
     {
         public bool EnableEIP7883 { get; set; }

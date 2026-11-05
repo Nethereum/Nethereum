@@ -1,23 +1,19 @@
 using System;
 using System.IO;
 using System.Linq;
+using Nethereum.Testing;
 using Xunit;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "GeneralStateTests")]
     public class CorpusCoverageTests
     {
         private static readonly string[] ForksThePinIsExpectedToShip = { "amsterdam" };
 
-        private static string FixturesRoot(string suite)
-        {
-            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-            while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, "external")))
-                dir = dir.Parent;
-
-            Assert.True(dir != null, "Could not find the repository root from the test working directory.");
-            return Path.Combine(dir.FullName, "external", "execution-spec-tests", "fixtures", suite);
-        }
+        private static string FixturesRoot(string suite) =>
+            Path.Combine(TestEnvironment.RequireExternalPath("EestAmsterdam"), suite);
 
         [Theory]
         [InlineData("state_tests")]

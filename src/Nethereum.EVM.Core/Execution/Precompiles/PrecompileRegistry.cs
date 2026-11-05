@@ -1,3 +1,4 @@
+using Nethereum.Documentation;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +7,9 @@ namespace Nethereum.EVM.Execution.Precompiles
     public sealed class PrecompileRegistry : IPrecompileRegistry
     {
         private readonly IPrecompileHandler[] _handlers;
+        private readonly HashSet<Nethereum.Util.EvmAddress> _addresses;
         private readonly PrecompileGasCalculators _gasCalculators;
+        private readonly IPrecompileCallObserver _observer;
 
         public PrecompileGasCalculators GasCalculators => _gasCalculators;
 
@@ -19,6 +22,23 @@ namespace Nethereum.EVM.Execution.Precompiles
 
             _gasCalculators = gasCalculators;
             _handlers = BuildSparseArray(handlers);
+            _addresses = BuildAddressSet(_handlers);
+        }
+
+        private PrecompileRegistry(
+            PrecompileGasCalculators gasCalculators, IPrecompileHandler[] handlers, IPrecompileCallObserver observer)
+        {
+            _gasCalculators = gasCalculators;
+            _handlers = handlers;
+            _observer = observer;
+            _addresses = BuildAddressSet(handlers);
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "precompile-outcome", "Wrap a registry with a call observer")]
+        public PrecompileRegistry WithCallObserver(IPrecompileCallObserver observer)
+        {
+            if (observer == null) throw new ArgumentNullException(nameof(observer));
+            return new PrecompileRegistry(_gasCalculators, _handlers, observer);
         }
 
         private static IPrecompileHandler[] BuildSparseArray(IEnumerable<IPrecompileHandler> handlers)
@@ -40,6 +60,18 @@ namespace Nethereum.EVM.Execution.Precompiles
             return arr;
         }
 
+        private static HashSet<Nethereum.Util.EvmAddress> BuildAddressSet(IPrecompileHandler[] handlers)
+        {
+            var addresses = new HashSet<Nethereum.Util.EvmAddress>();
+            for (int i = 0; i < handlers.Length; i++)
+                if (handlers[i] != null)
+                    addresses.Add(Nethereum.Util.EvmAddress.From(new[] { (byte)(i >> 24), (byte)(i >> 16), (byte)(i >> 8), (byte)i }));
+            return addresses;
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "precompile-outcome", "Whether a registry serves an address")]
+        public bool Handles(Nethereum.Util.EvmAddress address) => _addresses.Contains(address);
+
         public bool CanHandle(int address) =>
             address >= 0 && address < _handlers.Length && _handlers[address] != null;
 
@@ -56,6 +88,33 @@ namespace Nethereum.EVM.Execution.Precompiles
                 throw new InvalidOperationException(
                     $"No precompile handler installed at address 0x{address:x} on this spec.");
             return handler.Execute(input);
+        }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "precompile-outcome", "Run a precompile and fail as a value")]
+        public bool TryExecute(int address, byte[] input, out byte[] output)
+        {
+            var handler = Get(address);
+            if (handler == null)
+                throw new InvalidOperationException(
+                    $"No precompile handler installed at address 0x{address:x} on this spec.");
+            _observer?.OnCall(address);
+            if (handler is PrecompileHandlerBase outcomeHandler)
+                return outcomeHandler.TryExecute(input, out output);
+            return TryExecuteThroughLegacyHandler(handler, input, out output);
+        }
+
+        private static bool TryExecuteThroughLegacyHandler(IPrecompileHandler handler, byte[] input, out byte[] output)
+        {
+            try
+            {
+                output = handler.Execute(input);
+                return true;
+            }
+            catch (Exception ex) when (!BlockchainState.EvmHostException.IsHostOrSystemFault(ex))
+            {
+                output = null;
+                return false;
+            }
         }
 
         public IEnumerable<int> GetAddresses()
@@ -94,14 +153,14 @@ namespace Nethereum.EVM.Execution.Precompiles
             foreach (var h in GetHandlers()) combined.Add(h);
             foreach (var h in additional) if (h != null) combined.Add(h);
 
-            return new PrecompileRegistry(_gasCalculators, combined);
+            return new PrecompileRegistry(_gasCalculators, BuildSparseArray(combined), _observer);
         }
 
         public PrecompileRegistry WithGasCalculators(PrecompileGasCalculators gasCalculators)
         {
             if (gasCalculators == null) throw new ArgumentNullException(nameof(gasCalculators));
             if (ReferenceEquals(gasCalculators, _gasCalculators)) return this;
-            return new PrecompileRegistry(gasCalculators, GetHandlers());
+            return new PrecompileRegistry(gasCalculators, _handlers, _observer);
         }
     }
 }

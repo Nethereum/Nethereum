@@ -179,6 +179,71 @@ Assert.Throws<System.InvalidOperationException>(
     () => registry.ResolveAt(chainId: 424242, blockNumber: 1, timestamp: 1));
 ```
 
+### Blob parameters from a schedule
+
+Blob target, max and base-fee update fraction come from the chain's blob schedule rather than from a hardfork per blob-parameter change. `IChainActivations` implementations that carry one also implement `IChainBlobSchedule`; `MainnetChainActivations` does, and its `ResolveAt` returns `Osaka` from the Osaka timestamp onward, including after the BPO1 and BPO2 timestamps. The BPO numbers come from `BlobParametersAt`, and `AtBlock` applies them to the fork's `HardforkConfig`. `MainnetBlobSchedule` is documented in the [`Nethereum.EVM.Core` README](../Nethereum.EVM.Core/README.md#blob-parameters-from-a-schedule). The declarations:
+
+```csharp
+public readonly struct BlobParameters : IEquatable<BlobParameters>
+{
+    public BlobParameters(int target, int max, int baseFeeUpdateFraction);
+    public int Target { get; }
+    public int Max { get; }
+    public int BaseFeeUpdateFraction { get; }
+}
+
+public readonly struct BlobScheduleEntry
+{
+    public string Name { get; }
+    public HardforkName? Fork { get; }
+    public ulong? ActivationTimestamp { get; }
+    public BlobParameters Parameters { get; }
+    public static BlobScheduleEntry ForFork(HardforkName fork, BlobParameters parameters);
+    public static BlobScheduleEntry AtTimestamp(string name, ulong activationTimestamp, BlobParameters parameters);
+}
+
+public sealed class BlobSchedule
+{
+    public static readonly BlobSchedule Empty;
+    public BlobSchedule(IEnumerable<BlobScheduleEntry> entries);
+    public IReadOnlyList<BlobScheduleEntry> Entries { get; }
+    public IEnumerable<BlobScheduleEntry> TimedEntries { get; }
+    public BlobParameters? At(HardforkName protocolFork, ulong protocolForkActivatedAt, ulong timestamp);
+}
+
+public interface IChainBlobSchedule
+{
+    BlobParameters? BlobParametersAt(long blockNumber, ulong timestamp);
+}
+
+public static BlobParameters? BlobParametersAt(this IChainActivations activations, long blockNumber, ulong timestamp);
+public static HardforkConfig WithBlobParameters(this HardforkConfig config, BlobParameters? parameters);
+public static HardforkConfig AtBlock(this HardforkConfig config, IChainActivations activations, long blockNumber, ulong timestamp);
+```
+
+*From `EvmEngineSeamsDocExampleTests.MainnetResolvesBpoParametersWhileTheForkStaysOsaka` (use case `blob-schedule`).*
+
+```csharp
+var activations = MainnetChainActivations.Instance;
+
+Assert.Equal(HardforkName.Osaka, activations.ResolveAt(30_000_000, MainnetBlobSchedule.Bpo2Timestamp));
+Assert.Equal(MainnetBlobSchedule.Bpo2, activations.BlobParametersAt(30_000_000, MainnetBlobSchedule.Bpo2Timestamp));
+Assert.Equal(MainnetBlobSchedule.Osaka, activations.BlobParametersAt(30_000_000, MainnetBlobSchedule.Bpo1Timestamp - 1));
+```
+
+`AtBlock` returns the fork's `HardforkConfig` with that block's target, max and base-fee update fraction applied (a clone, cached per parameter set). `WithBlobParameters` does the same for parameters you already hold, and returns the config itself when `parameters` is `null`, when the fork has no blob rule (every fork before Cancun), or when the config already matches.
+
+*From `EvmEngineSeamsDocExampleTests.AtBlockAppliesTheScheduledBlobParametersToTheConfig` (use case `blob-schedule`).*
+
+```csharp
+var config = DefaultHardforkConfigs.Osaka.AtBlock(
+    MainnetChainActivations.Instance, blockNumber: 30_000_000, timestamp: MainnetBlobSchedule.Bpo1Timestamp);
+
+Assert.Equal(MainnetBlobSchedule.Bpo1.Target, config.TargetBlobsPerBlock);
+Assert.Equal(MainnetBlobSchedule.Bpo1.Max, config.MaxBlobsPerBlock);
+Assert.NotEqual(DefaultHardforkConfigs.Osaka.MaxBlobsPerBlock, config.MaxBlobsPerBlock);
+```
+
 ### The precompile registry
 
 A `HardforkConfig` **static preset** carries no precompiles — `HardforkConfig.Cancun.Precompiles` is `null`. `WithPrecompiles` clones the config and attaches a registry, so the shared preset is never mutated.
@@ -218,6 +283,47 @@ Assert.Equal(new byte[] { 0x01, 0x02, 0x03 }, registry.Execute(0x04, new byte[] 
 | `.WithKzgBackend()` (`Nethereum.EVM.Precompiles.Kzg`) | installs 0x0a |
 
 The same two extensions exist on `HardforkConfig`, so `HardforkConfig.Prague.WithPrecompiles(DefaultPrecompileRegistries.PragueBase()).WithBlsBackend(ops)` composes in one expression.
+
+A precompile can also be run as a value: `PrecompileRegistry.TryExecute(int address, byte[] input, out byte[] output)` returns `false` for input the specification rejects instead of throwing, and `WithCallObserver(IPrecompileCallObserver)` counts the calls. An example is in the [`Nethereum.EVM.Core` README](../Nethereum.EVM.Core/README.md#the-precompile-registry). Handlers derive from `PrecompileHandlerBase`, whose `TryExecute` the built-in handlers override; `PlaceholderPrecompile` (the unwired KZG and BLS addresses) implements `IPrecompileHandler` directly and has no `TryExecute`, so the registry runs its `Execute` and reports any exception that is not a host or system fault as `false`; the placeholder's own `UnwiredPrecompileException` is an `EvmHostException`, so it propagates. An address with no handler throws `InvalidOperationException`. The declarations:
+
+```csharp
+public abstract class PrecompileHandlerBase : IPrecompileHandler
+{
+    public abstract int AddressNumeric { get; }
+    public abstract byte[] Execute(byte[] input);
+    public virtual bool TryExecute(byte[] input, out byte[] output);
+}
+
+public bool Handles(EvmAddress address);
+public bool TryExecute(int address, byte[] input, out byte[] output);
+public PrecompileRegistry WithCallObserver(IPrecompileCallObserver observer);
+
+public interface IPrecompileCallObserver
+{
+    void OnCall(int address);
+}
+
+public interface IBn128OutcomeBackend
+{
+    bool TryAdd(byte[] input, out byte[] output);
+    bool TryMul(byte[] input, out byte[] output);
+    bool TryPairing(byte[] input, out byte[] output);
+}
+
+public sealed class ManagedBn254Backend : IBn128Backend, IBn128OutcomeBackend
+{
+    public static readonly ManagedBn254Backend Instance;
+    public ManagedBn254Backend(DefaultBn128Backend pairing);
+    public byte[] Add(byte[] input);
+    public byte[] Mul(byte[] input);
+    public byte[] Pairing(byte[] input);
+    public bool TryAdd(byte[] input, out byte[] output);
+    public bool TryMul(byte[] input, out byte[] output);
+    public bool TryPairing(byte[] input, out byte[] output);
+}
+```
+
+`ManagedBn254Backend.Instance` is the bn128 backend of `DefaultPrecompileBackends.Instance`: `ecAdd` and `ecMul` go through `BN128Curve.TryAdd` and `TryMul` from `Nethereum.Signer`, and the pairing is served by `DefaultBn128Backend`. `Add` and `Mul` throw `ArgumentException` when the matching `Try` method returns `false`.
 
 ## Simulating a transaction
 
@@ -288,6 +394,7 @@ public enum TransactionError
     TransactionTypeNotSupported,
     InvalidChainId,
     NonceMismatch,
+    InvalidSignature,
 }
 ```
 
@@ -495,6 +602,80 @@ Worked debugger scenarios live in `tests/Nethereum.EVM.UnitTests/EVMDebuggerTest
 | `EvmCallContext.ToCallInput()` / `List<EvmCallContext>.ToCallInputs()` | engine → RPC |
 | `EvmLog.ToFilterLog()` / `List<EvmLog>.ToFilterLogs()` | engine → RPC |
 
+## Halts, program construction and transaction rules
+
+A frame that halts exceptionally records why. `Program.HaltReason` is `EvmHaltReason.None` until the frame halts; `Program.Halt(EvmHaltReason)` throws `EvmHaltException`, and the asynchronous opcode loop catches `EvmHaltException` and nothing else. `OutOfGasException`, `StaticCallViolationException` and `SStoreGasStipendException` derive from it.
+
+```csharp
+public enum EvmHaltReason : byte
+{
+    None = 0,
+    ExceptionalHalt,
+    OutOfGas,
+    StackUnderflow,
+    StackOverflow,
+    InvalidOpcode,
+    InvalidJumpDestination,
+    WriteInStaticContext,
+    OutOfBoundsRead,
+    InvalidParameter
+}
+
+public class EvmHaltException : Exception
+{
+    public EvmHaltReason Reason { get; }
+    public EvmHaltException(EvmHaltReason reason);
+    public EvmHaltException(EvmHaltReason reason, string message);
+    public EvmHaltException(EvmHaltReason reason, string message, Exception innerException);
+}
+```
+
+`new Program(bytecode, codeHash, programContext)` shares the code analysis of known code across frames and transactions; `Program.ForInitCode` builds a `Program` whose analysis is never published under a hash.
+
+```csharp
+public Program(byte[] bytecode, byte[] codeHash, ProgramContext programContext = null);
+public static Program ForInitCode(byte[] initCode, ProgramContext programContext = null);
+```
+
+`LogIndexCounter` and `IndexingEthTransferLogRule` number ETH transfer logs from a counter shared across a block: the rule wraps another `IEthTransferLogRule` and gives each log it emits the counter's next `LogIndex`.
+
+```csharp
+public sealed class LogIndexCounter
+{
+    public long Next();
+}
+
+public sealed class IndexingEthTransferLogRule : IEthTransferLogRule
+{
+    public IndexingEthTransferLogRule(IEthTransferLogRule inner, LogIndexCounter counter);
+    public void Emit(List<FilterLog> logs, string from, string to, EvmUInt256 value);
+}
+```
+
+`BlockWitnessData.AnchorInputs` carries opaque 32-byte words the host binds to the proof; `AnchorBinding` lays them out and commits to them with keccak256.
+
+```csharp
+public static class AnchorBinding
+{
+    public const int WordSize = 32;
+    public const int CommitmentSlots = 8;
+    public static byte[] Encode(IReadOnlyList<EvmUInt256> words);
+    public static byte[] Commitment(byte[] anchorInputs);
+}
+```
+
+`TransactionSignatureValidationRule` checks `TransactionExecutionContext.Signature` before the transaction runs and fails with `TransactionError.InvalidSignature` and an `INVALID_SIGNATURE_VRS` message. It rejects `r` or `s` outside `[1, n-1]`; from Homestead (EIP-2) an `s` above `n/2`; for a legacy transaction a `v` that is neither 27 nor 28 and, from Spurious Dragon (EIP-155), not at least 35; and for a typed transaction a `y_parity` above 1. In `TransactionValidationRuleSets`, Cancun, Prague and Osaka check the chain id before the signature; Amsterdam checks it last, after the signature, blob, authorisation-list and intrinsic gas cap rules.
+
+```csharp
+public sealed class TransactionSignatureValidationRule : ITransactionValidationRule
+{
+    public static readonly TransactionSignatureValidationRule Frontier;
+    public static readonly TransactionSignatureValidationRule Homestead;
+    public static readonly TransactionSignatureValidationRule SpuriousDragon;
+    public void Validate(TransactionExecutionContext ctx, HardforkConfig config);
+}
+```
+
 ## Blocks, requests and state gas
 
 Block execution, witnesses, the EIP-7685 execution requests, the EIP-8037 state-gas dimension and the system-call policy live in the shared engine source, so they are in this assembly too. They are explained once, in **[the `Nethereum.EVM.Core` README](../Nethereum.EVM.Core/README.md)** — [hardforks and the registry](../Nethereum.EVM.Core/README.md#hardforks-a-registry-lookup-not-a-static-global), [state reading](../Nethereum.EVM.Core/README.md#state-reading), [execution requests](../Nethereum.EVM.Core/README.md#eip-7685-execution-requests), [system calls](../Nethereum.EVM.Core/README.md#system-calls), [state gas](../Nethereum.EVM.Core/README.md#eip-8037-the-state-gas-dimension) and [witnesses](../Nethereum.EVM.Core/README.md#witnesses-and-block-execution). Use `BlockExecutor.ExecuteAsync(...)` here where that page shows `BlockExecutor.Execute(...)`; the parameters are identical.
@@ -573,7 +754,9 @@ public static class ExecutionRequests
     public static bool IsValidEngineRequestsList(IReadOnlyList<byte[]> requests);
     public static bool IsActive(HardforkName fork);
     public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests);
+    public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256);
     public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests);
+    public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256);
 }
 
 public static class SystemCallContracts

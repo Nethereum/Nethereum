@@ -20,8 +20,31 @@ namespace Nethereum.EVM
     {
         public ExecutionMode Mode { get; set; } = ExecutionMode.Transaction;
         public bool IsCallMode => Mode == ExecutionMode.Call || Mode == ExecutionMode.SystemCall;
-        public string Sender { get; set; }
-        public string To { get; set; }
+        private string _sender;
+        private string _to;
+        private string _coinbase;
+        private EvmAddress? _senderAddress;
+        private EvmAddress? _toAddress;
+        private EvmAddress? _coinbaseAddress;
+
+        public string Sender
+        {
+            get => _sender;
+            set { _sender = value; _senderAddress = null; }
+        }
+
+        public string To
+        {
+            get => _to;
+            set { _to = value; _toAddress = null; }
+        }
+
+        public EvmAddress SenderAddress => _senderAddress ??= EvmAddress.FromHex(_sender);
+
+        public EvmAddress ToAddress => _toAddress ??= EvmAddress.FromHex(_to);
+
+        public EvmAddress CoinbaseAddress => _coinbaseAddress ??= EvmAddress.FromHex(_coinbase);
+
         public byte[] Data { get; set; }
 
         public EvmUInt256 GasLimit { get; set; }
@@ -37,6 +60,7 @@ namespace Nethereum.EVM
         public TransactionType TransactionType { get; set; } = TransactionType.LegacyTransaction;
         public List<string> BlobVersionedHashes { get; set; }
         public EvmUInt256 MaxFeePerBlobGas { get; set; }
+        public EvmUInt256? BlobBaseFeeOverride { get; set; }
         public List<AccessListEntry> AccessList { get; set; }
         public List<Authorisation7702Signed> AuthorisationList { get; set; }
 
@@ -44,7 +68,11 @@ namespace Nethereum.EVM
 
         public EvmUInt256 BlockNumber { get; set; }
         public EvmUInt256 Timestamp { get; set; }
-        public string Coinbase { get; set; }
+        public string Coinbase
+        {
+            get => _coinbase;
+            set { _coinbase = value; _coinbaseAddress = null; }
+        }
         public EvmUInt256 BaseFee { get; set; }
         public EvmUInt256 Difficulty { get; set; }
         public EvmUInt256 SlotNumber { get; set; } = EvmUInt256.Zero;
@@ -62,6 +90,9 @@ namespace Nethereum.EVM
         public EvmUInt256 ChainId { get; set; }
 
         public EvmUInt256? DeclaredChainId { get; set; }
+
+        [NethereumDocExample(DocSection.EvmSimulator, "transaction-signature", "The signature a transaction is validated against")]
+        public ISignature Signature { get; set; }
 
         public EvmUInt256 Fee { get; set; }
 
@@ -138,6 +169,10 @@ namespace Nethereum.EVM
         public bool TrackAccessList { get; set; }
 
         public IEthTransferLogRule EthTransferLogRuleOverride { get; set; }
+
+#if !EVM_SYNC
+        public LogIndexCounter LogIndexCounter { get; set; }
+#endif
 
         public bool EnforceSenderBalance { get; set; }
 

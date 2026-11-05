@@ -1,3 +1,4 @@
+using Nethereum.EEST.Conformance.Diagnosis;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +16,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
         public LegacyFailureClassifier(ITestOutputHelper output)
         {
             _output = output;
-            _gethRunner = new GethEvmRunner();
+            _gethRunner = GethTools.EvmRunner();
         }
 
         public async Task<List<FailureClassification>> ClassifyCategoryAsync(string categoryDir, string fork)

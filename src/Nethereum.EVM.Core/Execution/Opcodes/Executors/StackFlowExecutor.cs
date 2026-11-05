@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Nethereum.EVM.Execution.Opcodes.Executors
 {
     public sealed class StackFlowExecutor : IOpcodeExecutor
@@ -11,7 +13,28 @@ namespace Nethereum.EVM.Execution.Opcodes.Executors
             _hasPush0 = hasPush0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Execute(Instruction opcode, Program program)
+        {
+            if (opcode >= Instruction.PUSH1 && opcode <= Instruction.PUSH32)
+            {
+                _stackFlow.Push(program);
+                return true;
+            }
+            if (opcode >= Instruction.DUP1 && opcode <= Instruction.DUP16)
+            {
+                _stackFlow.Dup(program);
+                return true;
+            }
+            if (opcode >= Instruction.SWAP1 && opcode <= Instruction.SWAP16)
+            {
+                _stackFlow.Swap(program);
+                return true;
+            }
+            return ExecuteOther(opcode, program);
+        }
+
+        private bool ExecuteOther(Instruction opcode, Program program)
         {
             switch (opcode)
             {
@@ -43,26 +66,6 @@ namespace Nethereum.EVM.Execution.Opcodes.Executors
                     program.MarkExceptionalHalt();
                     program.Stop();
                     return true;
-            }
-
-            if (opcode >= Instruction.PUSH1 && opcode <= Instruction.PUSH32)
-            {
-                _stackFlow.Push(program);
-                return true;
-            }
-            if (opcode >= Instruction.DUP1 && opcode <= Instruction.DUP16)
-            {
-                _stackFlow.Dup(program);
-                return true;
-            }
-            if (opcode >= Instruction.SWAP1 && opcode <= Instruction.SWAP16)
-            {
-                _stackFlow.Swap(program);
-                return true;
-            }
-
-            switch (opcode)
-            {
                 case Instruction.DUPN:
                     _stackFlow.Dupn(program);
                     return true;

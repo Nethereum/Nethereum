@@ -11,6 +11,8 @@ A synchronous, `Task`-free, AOT- and trim-safe EVM. Execute a block or a transac
 - **Execute under any fork's rules**, Frontier to Amsterdam, resolved per block rather than per process.
 - **Swap the crypto** — supply your own ecrecover, SHA-256, modexp, BN128, Blake2f and P-256 backends, which is how a guest gets circuit-friendly implementations.
 - **Commit to EIP-7685 execution requests** and account for the EIP-8037 state-gas dimension.
+- **Resolve blob parameters from a schedule** — target, max and base-fee update fraction per fork and per BPO timestamp, applied to each block's `HardforkConfig`.
+- **Read why a frame halted** — an `EvmHaltReason` on `Program.HaltReason`, the same in both arms.
 - **Choose the state tree** — Patricia, or the EIP-7864 binary tree with Blake3 or Poseidon.
 
 Most applications want [`Nethereum.EVM`](../Nethereum.EVM/README.md) instead — the asynchronous build of this same engine, with RPC-backed state, decoding and a source-level debugger. Reach for `Nethereum.EVM.Core` directly for zkVM guests, AOT or trimmed hosts, and the minimum dependency footprint.
@@ -214,7 +216,7 @@ Build one per chain with `MainnetHardforkRegistry.Build(PrecompileBackends backe
 
 `IChainActivations` is one method: `HardforkName ResolveAt(long blockNumber, ulong timestamp)`.
 
-`MainnetChainActivations.Instance` carries the mainnet table as public constants — block heights `FrontierThawingBlock` 200_000 through `ParisBlock` 15_537_394, then timestamps `ShanghaiTimestamp` 1_681_338_455, `CancunTimestamp` 1_710_338_135, `PragueTimestamp` 1_746_612_311, and the nullable `OsakaTimestamp` 1_764_798_551, `OsakaBpo1Timestamp` 1_765_290_071, `OsakaBpo2Timestamp` 1_767_747_671. (`MainnetHardforkActivations.ResolveAt` is a static shorthand for the same instance.)
+`MainnetChainActivations.Instance` carries the mainnet table as public constants — block heights `FrontierThawingBlock` 200_000 through `ParisBlock` 15_537_394, then timestamps `ShanghaiTimestamp` 1_681_338_455, `CancunTimestamp` 1_710_338_135, `PragueTimestamp` 1_746_612_311, and the nullable `OsakaTimestamp` 1_764_798_551, `OsakaBpo1Timestamp` 1_765_290_071, `OsakaBpo2Timestamp` 1_767_747_671. (`MainnetHardforkActivations.ResolveAt` is a static shorthand for the same instance.) `ResolveAt` returns `Osaka` at and after both BPO timestamps; the BPO blob parameters come from the blob schedule below.
 
 `ChainActivationsRegistry` maps chain id → activations. Mainnet (chain 1) is pre-registered by the constructor; L2s, testnets and AppChains register their own. An unknown chain id **throws** — a silent fallback would replay transactions under the wrong fork's rules.
 
@@ -231,6 +233,90 @@ Assert.Throws<System.InvalidOperationException>(
     () => registry.ResolveAt(chainId: 424242, blockNumber: 1, timestamp: 1));
 ```
 
+### Blob parameters from a schedule
+
+Blob target, max and base-fee update fraction are data, not a hardfork per blob-parameter change. `BlobParameters` holds one entry's numbers, `BlobScheduleEntry` pins them to a fork or to an activation timestamp, and `BlobSchedule` resolves the parameters in force for a block. `At` returns the latest timed entry whose activation is neither after `timestamp` nor before the protocol fork's own activation, else the entry for `protocolFork`, else `null` (the fork's own defaults then apply). `MainnetChainActivations` and `PreviewingChainActivations` implement `IChainBlobSchedule`; `ScheduledChainActivations` takes a `BlobSchedule` in its constructor and exposes it as `BlobSchedule`.
+
+```csharp
+public readonly struct BlobParameters : IEquatable<BlobParameters>
+{
+    public BlobParameters(int target, int max, int baseFeeUpdateFraction);
+    public int Target { get; }
+    public int Max { get; }
+    public int BaseFeeUpdateFraction { get; }
+}
+
+public readonly struct BlobScheduleEntry
+{
+    public string Name { get; }
+    public HardforkName? Fork { get; }
+    public ulong? ActivationTimestamp { get; }
+    public BlobParameters Parameters { get; }
+    public static BlobScheduleEntry ForFork(HardforkName fork, BlobParameters parameters);
+    public static BlobScheduleEntry AtTimestamp(string name, ulong activationTimestamp, BlobParameters parameters);
+}
+
+public sealed class BlobSchedule
+{
+    public static readonly BlobSchedule Empty;
+    public BlobSchedule(IEnumerable<BlobScheduleEntry> entries);
+    public IReadOnlyList<BlobScheduleEntry> Entries { get; }
+    public IEnumerable<BlobScheduleEntry> TimedEntries { get; }
+    public BlobParameters? At(HardforkName protocolFork, ulong protocolForkActivatedAt, ulong timestamp);
+}
+
+public interface IChainBlobSchedule
+{
+    BlobParameters? BlobParametersAt(long blockNumber, ulong timestamp);
+}
+
+public static BlobParameters? BlobParametersAt(this IChainActivations activations, long blockNumber, ulong timestamp);
+public static HardforkConfig WithBlobParameters(this HardforkConfig config, BlobParameters? parameters);
+public static HardforkConfig AtBlock(this HardforkConfig config, IChainActivations activations, long blockNumber, ulong timestamp);
+```
+
+*From `EvmEngineSeamsDocExampleTests.ABlobScheduleResolvesTheParametersActiveAtATimestamp` (use case `blob-schedule`).*
+
+```csharp
+var osaka = new BlobParameters(target: 6, max: 9, baseFeeUpdateFraction: 5_007_716);
+var bpo1 = new BlobParameters(target: 10, max: 15, baseFeeUpdateFraction: 8_346_193);
+
+var schedule = new BlobSchedule(new[]
+{
+    BlobScheduleEntry.ForFork(HardforkName.Osaka, osaka),
+    BlobScheduleEntry.AtTimestamp("bpo1", activationTimestamp: 2_000, bpo1)
+});
+
+Assert.Equal(osaka, schedule.At(HardforkName.Osaka, protocolForkActivatedAt: 1_000, timestamp: 1_999));
+Assert.Equal(bpo1, schedule.At(HardforkName.Osaka, protocolForkActivatedAt: 1_000, timestamp: 2_000));
+Assert.Null(schedule.At(HardforkName.Prague, protocolForkActivatedAt: 0, timestamp: 1_999));
+```
+
+`MainnetBlobSchedule.Instance` holds the mainnet values (`Cancun`, `Prague`, `Osaka`, `Bpo1`, `Bpo2`, `Amsterdam`, plus `Bpo1Timestamp` 1_765_290_071 and `Bpo2Timestamp` 1_767_747_671). On mainnet `ResolveAt` returns `Osaka` from the Osaka timestamp onward, including after both BPO timestamps; the BPO numbers arrive through `BlobParametersAt`.
+
+*From `EvmEngineSeamsDocExampleTests.MainnetResolvesBpoParametersWhileTheForkStaysOsaka` (use case `blob-schedule`).*
+
+```csharp
+var activations = MainnetChainActivations.Instance;
+
+Assert.Equal(HardforkName.Osaka, activations.ResolveAt(30_000_000, MainnetBlobSchedule.Bpo2Timestamp));
+Assert.Equal(MainnetBlobSchedule.Bpo2, activations.BlobParametersAt(30_000_000, MainnetBlobSchedule.Bpo2Timestamp));
+Assert.Equal(MainnetBlobSchedule.Osaka, activations.BlobParametersAt(30_000_000, MainnetBlobSchedule.Bpo1Timestamp - 1));
+```
+
+`AtBlock` returns the fork's `HardforkConfig` with that block's target, max and base-fee update fraction applied (a clone, cached per parameter set). `WithBlobParameters` does the same for parameters you already hold, and returns the config itself when `parameters` is `null`, when the fork has no blob rule (every fork before Cancun), or when the config already matches.
+
+*From `EvmEngineSeamsDocExampleTests.AtBlockAppliesTheScheduledBlobParametersToTheConfig` (use case `blob-schedule`).*
+
+```csharp
+var config = DefaultHardforkConfigs.Osaka.AtBlock(
+    MainnetChainActivations.Instance, blockNumber: 30_000_000, timestamp: MainnetBlobSchedule.Bpo1Timestamp);
+
+Assert.Equal(MainnetBlobSchedule.Bpo1.Target, config.TargetBlobsPerBlock);
+Assert.Equal(MainnetBlobSchedule.Bpo1.Max, config.MaxBlobsPerBlock);
+Assert.NotEqual(DefaultHardforkConfigs.Osaka.MaxBlobsPerBlock, config.MaxBlobsPerBlock);
+```
+
 ## The precompile registry
 
 Precompiles are split three ways so a guest can supply its own crypto:
@@ -241,6 +327,50 @@ Precompiles are split three ways so a guest can supply its own crypto:
 | `IPrecompileGasCalculator` / `PrecompileGasCalculators` | the fork's gas schedule, independent of the handler |
 | `PrecompileRegistry : IPrecompileRegistry` | `CanHandle(int address)`, `Get(int address)`, `GetGasCost(int address, byte[] input)`, `Execute(int address, byte[] input)`, `GetAddresses()`, `GetHandlers()`, `GasCalculators`, plus the copy-on-write `WithHandlers(params IPrecompileHandler[] additional)` and `WithGasCalculators(PrecompileGasCalculators gasCalculators)` |
 | `PrecompileBackends` | the crypto seam: `EcRecover`, `Sha256`, `Ripemd160`, `ModExp`, `Bn128`, `Blake2f`, and the optional `P256Verify` |
+
+`PrecompileRegistry` runs a precompile as a value: `bool TryExecute(int address, byte[] input, out byte[] output)` returns `false` for input the specification rejects instead of throwing, and `bool Handles(EvmAddress address)` answers from the registry's own address set. Handlers derive from `PrecompileHandlerBase`, whose `public virtual bool TryExecute(byte[] input, out byte[] output)` the built-in handlers override; `PlaceholderPrecompile` (the unwired KZG and BLS addresses) implements `IPrecompileHandler` directly and has no `TryExecute`, so `PrecompileRegistry.TryExecute` runs its `Execute` and reports any exception that is not a host or system fault as `false`; the placeholder's own `UnwiredPrecompileException` is an `EvmHostException`, so it propagates. `Execute` remains the throwing form, and a host or system fault still propagates. An address with no handler throws `InvalidOperationException`. `WithCallObserver(IPrecompileCallObserver observer)` returns a registry that calls `void OnCall(int address)` before each `TryExecute`. A crypto backend that reports invalid input without throwing implements the additive `IBn128OutcomeBackend` (`TryAdd`, `TryMul` and `TryPairing`, each `bool (byte[] input, out byte[] output)`).
+
+```csharp
+public abstract class PrecompileHandlerBase : IPrecompileHandler
+{
+    public abstract int AddressNumeric { get; }
+    public abstract byte[] Execute(byte[] input);
+    public virtual bool TryExecute(byte[] input, out byte[] output);
+}
+
+public bool Handles(EvmAddress address);
+public bool TryExecute(int address, byte[] input, out byte[] output);
+public PrecompileRegistry WithCallObserver(IPrecompileCallObserver observer);
+
+public interface IPrecompileCallObserver
+{
+    void OnCall(int address);
+}
+
+public interface IBn128OutcomeBackend
+{
+    bool TryAdd(byte[] input, out byte[] output);
+    bool TryMul(byte[] input, out byte[] output);
+    bool TryPairing(byte[] input, out byte[] output);
+}
+```
+
+In the example `CountingObserver` is an `IPrecompileCallObserver` that appends each address to a list.
+
+*From `EvmEngineSeamsDocExampleTests.APrecompileFailsAsAValueAndAnObserverCountsTheCalls` (use case `precompile-outcome`).*
+
+```csharp
+var observer = new CountingObserver();
+var registry = DefaultPrecompileRegistries.CancunBase().WithCallObserver(observer);
+
+Assert.True(registry.TryExecute(0x04, new byte[] { 1, 2, 3 }, out var echoed));
+Assert.Equal(new byte[] { 1, 2, 3 }, echoed);
+
+Assert.False(registry.TryExecute(0x08, new byte[] { 1 }, out var rejected));
+Assert.Null(rejected);
+
+Assert.Equal(new[] { 0x04, 0x08 }, observer.Calls);
+```
 
 `PrecompileRegistries` builds the fork-shaped registries (`FrontierHandlers`, `CoreHandlers`, `FromSpec`, `WithGas`, `CancunBase`, `PragueBase`, `OsakaBase`); `MainnetPrecompileExecutorFactory` wires a `PrecompileBackends` into them for `MainnetHardforkRegistry.Build`.
 
@@ -300,7 +430,6 @@ That is the whole trick: implement ten methods and the engine runs, in either ar
 | `InMemoryStateReader` | witness-backed: constructed from `Dictionary<string, AccountState>`, exposes `Accounts`, `GetAccountState`, `AccountHasStorage`, `CommitChanges(ExecutionStateService executionState)` |
 | `AccountState` | `Balance`, `Nonce`, `Code`, `Storage` |
 | `ExecutionStateService` | wraps a reader and tracks every read and write for one transaction — warm/cold access, balance credits/debits (`AccountExecutionBalance`), storage modifications, code deployment |
-| `IStateSnapshot` / `StateSnapshot` | revert points for nested frames |
 | `MissingWitnessDataException` | thrown by a strict reader on a read the witness does not cover |
 
 `InMemoryStateReader.Strict` turns a missing-data read from a silent zero into `MissingWitnessDataException`. For a zkVM guest that is essential: a missed read means the recorder is buggy, not that the slot is legitimately zero.
@@ -324,7 +453,9 @@ public static class ExecutionRequests
     public static bool IsValidEngineRequestsList(IReadOnlyList<byte[]> requests);
     public static bool IsActive(HardforkName fork);
     public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests);
+    public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256);
     public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests);
+    public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256);
 }
 ```
 
@@ -339,6 +470,7 @@ Each type byte belongs to one predeploy: deposits come from logs of `DepositRequ
 | `bool IsActive(HardforkName fork)` | `fork >= HardforkName.Prague` |
 | `byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests)` | the commitment, or `null` before Prague |
 | `byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests)` | `sha256(concat(sha256(request) for each non-empty request))` |
+| `byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256)` / `byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256)` | the same hash through the given SHA-256; `BlockExecutor` passes the hardfork's `0x02` precompile backend so the Zisk guest never reaches the BCL |
 
 Empty items are excluded from the intermediate list, so a block with an empty deposit list commits to the same hash as one that omits it entirely. Before Prague the header carries **no** `requests_hash` at all — which is a different thing from carrying the hash of an empty list.
 
@@ -487,11 +619,22 @@ From Prague, `BlockHashExecutor` delegates to `Eip2935BlockHashRule`, which read
 
 ## Witnesses and block execution
 
-`BlockWitnessData` is the in-memory witness: block context (`BlockNumber`, `Timestamp`, `BaseFee`, `BlockGasLimit`, `ChainId`, `Coinbase`, `Difficulty`, `PreStateRoot`, `ParentHash`, `ExtraData`, `MixHash`, `Nonce`, `SlotNumber`), the Cancun/Shanghai/Prague extras (`Withdrawals`, `BlobGasUsed`, `ExcessBlobGas`, `ParentBeaconBlockRoot`, `RequestsHash`), `Transactions` (`BlockWitnessTransaction { From, RlpEncoded, AuthorisationAuthorities }`), the pre-state `Accounts`, an optional `DeclaredBlockAccessList`, the `Features` (`BlockFeatureConfig { Fork, StateTree, HashFunction }`), and the flags `VerifyWitnessProofs`, `ComputePostStateRoot`, `ProduceBlockCommitments`.
+`BlockWitnessData` is the in-memory witness: block context (`BlockNumber`, `Timestamp`, `BaseFee`, `BlockGasLimit`, `ChainId`, `Coinbase`, `Difficulty`, `PreStateRoot`, `ParentHash`, `ExtraData`, `MixHash`, `Nonce`, `SlotNumber`), the Cancun/Shanghai/Prague extras (`Withdrawals`, `BlobGasUsed`, `ExcessBlobGas`, `ParentBeaconBlockRoot`, `RequestsHash`), `Transactions` (`BlockWitnessTransaction { From, RlpEncoded, AuthorisationAuthorities }`), the pre-state `Accounts`, an optional `DeclaredBlockAccessList`, `AnchorInputs`, the `Features` (`BlockFeatureConfig { Fork, StateTree, HashFunction, Blob }`), and the flags `VerifyWitnessProofs`, `ComputePostStateRoot`, `ProduceBlockCommitments`.
 
 `BlockFeatureConfig` has ready-made presets: `Cancun`, `Prague`, `Osaka`, and `BinaryBlake3(HardforkName fork = HardforkName.Osaka)` / `BinaryPoseidon(HardforkName fork = HardforkName.Osaka)` for the EIP-7864 binary state tree (`WitnessStateTreeType`, `WitnessHashFunction`).
 
 `BinaryBlockWitness` is the wire format; `WitnessRecordingStateReader` wraps any `IStateReader`, captures every read, and `GetWitnessAccounts()` returns the minimal pre-state needed to re-execute; `WitnessStateBuilder.BuildAccountState` turns witness accounts back into the executor's `Dictionary<string, AccountState>`.
+
+`BlockWitnessData` also carries `AnchorInputs` (an opaque `byte[]` of 32-byte words the host binds to the proof), and `BlockFeatureConfig.Blob` is the `BlobParameters?` resolved for the block, so a guest executes with the schedule the host used. `AnchorBinding.Encode(IReadOnlyList<EvmUInt256> words)` lays the words out as 32-byte big-endian values and `AnchorBinding.Commitment(byte[] anchorInputs)` is their keccak256 (`WordSize` 32, `CommitmentSlots` 8). The wire format is `BinaryBlockWitness.VERSION` 4: a second flags byte marks the anchor trailer, and a witness without anchor inputs serialises with the flag clear. The reader accepts only version 4; a version 3 witness is refused with `InvalidOperationException`.
+
+*From `EvmEngineSeamsDocExampleTests.AnchorBindingEncodesWordsAndCommitsKeccak256OfThem` (use case `witness`).*
+
+```csharp
+var encoded = Nethereum.EVM.Witness.AnchorBinding.Encode(new[] { new EvmUInt256(1), new EvmUInt256(2) });
+
+Assert.Equal(2 * Nethereum.EVM.Witness.AnchorBinding.WordSize, encoded.Length);
+Assert.Equal(new Sha3Keccack().CalculateHash(encoded), Nethereum.EVM.Witness.AnchorBinding.Commitment(encoded));
+```
 
 `BlockExecutor` is the entry point, in both arms:
 
@@ -514,6 +657,36 @@ Task<BlockExecutionResult> ExecuteAsync( … same five parameters … )
 `TransactionExecutionContext` carries the whole transaction: sender/recipient/data/value, the fee-market fields (`IsEip1559`, `MaxFeePerGas`, `MaxPriorityFeePerGas`, `EffectiveGasPrice`), blob fields (`IsType3Transaction`, `BlobVersionedHashes`, `MaxFeePerBlobGas`, `BlobGasCost`), `AccessList`, `AuthorisationList` + `AuthorisationAuthorities`, the block environment, the gas split (`IntrinsicExecutionGas`, `FloorGas`, `ExecutionGasGrant`, `StateGasReservoir`, `StateGas`, `StateGasUsed`), snapshots, and `ExecutionState`. `ExecutionMode` is `Transaction`, `Call`, `SystemCall`.
 
 `TransactionContextFactory` builds one from a signed transaction (`From`), an RLP blob (`FromRlpEncoded`) or a witness transaction (`FromBlockWitnessTransaction`).
+
+`SenderAddress`, `ToAddress` and `CoinbaseAddress` (`EvmAddress`) are parsed from the string properties once and dropped whenever the string is assigned. `Signature` (`ISignature`, set by `TransactionContextFactory.From`) is checked by `TransactionSignatureValidationRule` before the transaction runs; a failure is `TransactionError.InvalidSignature` with an `INVALID_SIGNATURE_VRS` message. The rule rejects `r` or `s` outside `[1, n-1]`; from Homestead (EIP-2) an `s` above `n/2`; for a legacy transaction a `v` that is neither 27 nor 28 and, from Spurious Dragon (EIP-155), not at least 35; and for a typed transaction a `y_parity` above 1. `TransactionSignatureValidationRule.Frontier`, `.Homestead` and `.SpuriousDragon` are wired into `TransactionValidationRuleSets` for those forks and every later one. In Cancun, Prague and Osaka the chain id is checked before the signature and before the blob and EIP-7702 authorisation-list checks, in the order EELS applies them. In Amsterdam the order is transaction type, signature, blob, maximum blobs per transaction, authorisation list and intrinsic gas cap, with `ChainIdValidationRule` last.
+
+```csharp
+public sealed class TransactionSignatureValidationRule : ITransactionValidationRule
+{
+    public static readonly TransactionSignatureValidationRule Frontier;
+    public static readonly TransactionSignatureValidationRule Homestead;
+    public static readonly TransactionSignatureValidationRule SpuriousDragon;
+    public void Validate(TransactionExecutionContext ctx, HardforkConfig config);
+}
+```
+
+`LogIndexCounter` and `IndexingEthTransferLogRule` (asynchronous build only) number ETH transfer logs from a counter shared across a block: the rule wraps another `IEthTransferLogRule` and assigns each log it emits the counter's next `LogIndex`. `TransactionExecutionContext.LogIndexCounter` and `ProgramContext.LogIndexCounter` carry the counter.
+
+*From `EvmEngineSeamsDocExampleTests.AnIndexingTransferLogRuleNumbersLogsFromASharedCounter` (use case `log-index`).*
+
+```csharp
+var counter = new LogIndexCounter();
+var rule = new IndexingEthTransferLogRule(Eip7708EthTransferLogRule.Instance, counter);
+var logs = new List<FilterLog>();
+
+rule.Emit(logs, "0x1111111111111111111111111111111111111111", "0x2222222222222222222222222222222222222222", new EvmUInt256(5));
+rule.Emit(logs, "0x2222222222222222222222222222222222222222", "0x3333333333333333333333333333333333333333", new EvmUInt256(7));
+
+Assert.Equal(2, logs.Count);
+Assert.Equal(0, (long)logs[0].LogIndex.Value);
+Assert.Equal(1, (long)logs[1].LogIndex.Value);
+Assert.Equal(2, counter.Next());
+```
 
 ```csharp
 public enum ExecutionMode
@@ -562,6 +735,7 @@ public enum TransactionError
     TransactionTypeNotSupported,
     InvalidChainId,
     NonceMismatch,
+    InvalidSignature,
 }
 ```
 
@@ -576,12 +750,68 @@ Assert.Equal(TransactionError.None, result.ErrorCode);
 Assert.False(result.IsValidationError);
 ```
 
+## Exceptional halts
+
+A frame that halts exceptionally records why, as a value, on both engines:
+
+```csharp
+public enum EvmHaltReason : byte
+{
+    None = 0,
+    ExceptionalHalt,
+    OutOfGas,
+    StackUnderflow,
+    StackOverflow,
+    InvalidOpcode,
+    InvalidJumpDestination,
+    WriteInStaticContext,
+    OutOfBoundsRead,
+    InvalidParameter
+}
+
+public class EvmHaltException : Exception
+{
+    public EvmHaltReason Reason { get; }
+    public EvmHaltException(EvmHaltReason reason);
+    public EvmHaltException(EvmHaltReason reason, string message);
+    public EvmHaltException(EvmHaltReason reason, string message, Exception innerException);
+}
+```
+
+`Program.HaltReason` is `EvmHaltReason.None` until the frame halts. Under `EVM_SYNC` a halt marks the frame (`Program.MarkHalted(EvmHaltReason)`); in the async arm `Program.Halt(EvmHaltReason)` throws `EvmHaltException`. `OutOfGasException`, `StaticCallViolationException` and `SStoreGasStipendException` now derive from `EvmHaltException`, so catches by those types still bind. The async opcode loop catches `EvmHaltException` and nothing else: any other exception surfaces instead of being settled as a failed frame, and an undefined opcode byte halts with `InvalidOpcode`.
+
+*From `EvmEngineSeamsDocExampleTests.AFrameThatHaltsReportsItsReason` (use case `exceptional-halt`).*
+
+```csharp
+var simulator = new EVMSimulator(DefaultHardforkConfigs.Cancun);
+var program = new Program("50".HexToByteArray());
+
+await simulator.ExecuteWithCallStackAsync(program, traceEnabled: false);
+
+Assert.True(program.IsExceptionalHalt);
+Assert.Equal(EvmHaltReason.StackUnderflow, program.HaltReason);
+```
+
+`Program` executes on a byte program counter over `ByteCode`. The decoded instruction list is built only when something asks for `Instructions` (a traced step, a debugger, inner-call capture), and each `Program` that reads it gets its own copy. Contract code analysis is cached by code hash, least recently used first out, within 64 MiB of estimated bytes. New members:
+
+```csharp
+public Program(byte[] bytecode, byte[] codeHash, ProgramContext programContext = null);
+public static Program ForInitCode(byte[] initCode, ProgramContext programContext = null);
+public byte CurrentOpcodeByte { get; }
+public Instruction CurrentOpcode { get; }
+public byte[] CurrentImmediate { get; }
+public EvmUInt256 CurrentPushValue { get; }
+public byte CurrentImmediateByte { get; }
+```
+
+Pass the keccak256 `codeHash` of known code to share its analysis across frames and transactions (a non-null hash that is not 32 bytes throws `ArgumentException`); `ForInitCode` builds a `Program` whose analysis is never published under a hash.
+
 ## Project layout
 
 | Area | Key types |
 |---|---|
-| Forks & registries | `HardforkName`, `HardforkNames`, `HardforkConfig`, `HardforkRegistry`, `MainnetHardforkRegistry`, `IChainActivations`, `MainnetChainActivations`, `ChainActivationsRegistry`, `Hardforks/*Spec.cs`, `HardforkSpecRegistry` |
-| State | `IStateReader`, `InMemoryStateReader`, `ExecutionStateService`, `AccountState`, `AccountExecutionState`, `AccountExecutionBalance`, `IStateSnapshot`, `MissingWitnessDataException` |
+| Forks & registries | `HardforkName`, `HardforkNames`, `HardforkConfig`, `HardforkRegistry`, `MainnetHardforkRegistry`, `IChainActivations`, `IChainBlobSchedule`, `BlobParameters`, `BlobSchedule`, `MainnetBlobSchedule`, `MainnetChainActivations`, `ChainActivationsRegistry`, `Hardforks/*Spec.cs`, `HardforkSpecRegistry` |
+| State | `IStateReader`, `InMemoryStateReader`, `ExecutionStateService`, `AccountState`, `AccountExecutionState`, `AccountExecutionBalance`, `MissingWitnessDataException` |
 | Executor | `EVMSimulator`, `TransactionExecutor`, `BlockExecutor`, `CallFrame`, `ProgramContext`, `Program`, `ProgramResult`, `ProgramTrace` |
 | Opcodes | `Execution/Opcodes/Executors/*Executor.cs`, `OpcodeHandlerTable`, `OpcodeHandlerSets`, `Instruction`, `InstructionLookup` |
 | Gas | `Gas/GasConstants`, `Gas/IntrinsicGasRuleSets`, `Gas/Opcodes/Costs/*`, `Gas/Opcodes/Rules/*`, `Gas/StateGasMeter`, `Gas/BlockGasCapacity` |
@@ -589,7 +819,7 @@ Assert.False(result.IsValidationError);
 | Rule seams | `Execution/CallFrame/Rules/*`, `Execution/SelfDestruct/Rules/*`, `Execution/TransactionSetup/Rules/*`, `Execution/TransactionValidation/Rules/*`, `Execution/Storage/*`, `Execution/TransferLogs/Rules/*`, `Execution/TxFinalisation/*` |
 | Requests & system calls | `Execution/ExecutionRequests`, `BlockExecutionRequests`, `DepositRequests`, `SystemCallContracts`, `SystemCallExecution`, `SystemCallFailurePolicy` |
 | Block access lists | `Execution/BlockAccessListBuilder`, `BlockAccessListCollector`, `BlockAccessListSizeRule`, `BlockAccessListStructureRule` |
-| Witness | `Witness/BlockWitnessData`, `BinaryBlockWitness`, `WitnessRecordingStateReader`, `WitnessStateBuilder`, `HistoryContractHelpers`, `WitnessStateTreeType`, `WitnessHashFunction` |
+| Witness | `Witness/BlockWitnessData`, `BinaryBlockWitness`, `WitnessRecordingStateReader`, `WitnessStateBuilder`, `HistoryContractHelpers`, `WitnessStateTreeType`, `WitnessHashFunction`, `AnchorBinding` |
 | Trie seams | `IStateRootCalculator`, `IBlockRootCalculator`, `IMerkleTreeBuilder` (implemented in `Nethereum.CoreChain`) |
 
 ## See also

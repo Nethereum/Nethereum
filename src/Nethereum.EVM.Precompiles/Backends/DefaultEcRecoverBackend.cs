@@ -9,11 +9,10 @@ namespace Nethereum.EVM.Precompiles.Backends
 
         public byte[] Recover(byte[] hash, byte v, byte[] r, byte[] s)
         {
-            return EthECKey
-                .RecoverFromSignature(
-                    EthECDSASignatureFactory.FromComponents(r, s, new byte[] { v }),
-                    hash)
-                .GetPublicAddressAsBytes();
+            var key = EthECKey.RecoverFromSignature(
+                EthECDSASignatureFactory.FromComponents(r, s, new byte[] { v }),
+                hash);
+            return key?.GetPublicAddressAsBytes();
         }
     }
 }

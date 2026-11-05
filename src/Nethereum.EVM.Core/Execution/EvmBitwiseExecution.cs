@@ -1,11 +1,9 @@
-using System.Runtime.CompilerServices;
 using Nethereum.Util;
 
 namespace Nethereum.EVM.Execution
 {
     public class EvmBitwiseExecution
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ShiftSignedRight(Program program)
         {
             var shift = program.StackPopU256();
@@ -22,7 +20,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CountLeadingZeros(Program program)
         {
             var value = program.StackPopU256();
@@ -30,33 +27,25 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SignExtend(Program program)
         {
-            var widthBig = program.StackPopU256();
-            var item = program.StackPop();
+            var width = program.StackPopU256();
+            var value = program.StackPopU256();
 
-            if (widthBig < new EvmUInt256(32))
+            if (width < new EvmUInt256(31))
             {
-                var result = new byte[32];
-                System.Buffer.BlockCopy(item, 0, result, 0, 32);
-                var width = (int)(ulong)widthBig;
-                var signedNegative = (result[31 - width] & 0x80) == 0x80;
-                for (var i = 0; i < 31 - width; i++)
-                    if (signedNegative)
-                        result[i] = 0xFF;
-                    else
-                        result[i] = 0;
-                program.StackPush(result);
+                var signBit = (int)(ulong)width * 8 + 7;
+                var lowBits = (EvmUInt256.One << (signBit + 1)) - EvmUInt256.One;
+                var negative = !((value >> signBit) & EvmUInt256.One).IsZero;
+                program.StackPush(negative ? value | ~lowBits : value & lowBits);
             }
             else
             {
-                program.StackPush(item);
+                program.StackPush(value);
             }
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Byte(Program program)
         {
             var pos = program.StackPopU256();
@@ -73,7 +62,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void And(Program program)
         {
             var first = program.StackPopU256();
@@ -82,7 +70,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ShiftLeft(Program program)
         {
             var shift = program.StackPopU256();
@@ -98,7 +85,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ShiftRight(Program program)
         {
             var shift = program.StackPopU256();
@@ -114,7 +100,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void OrSimple(Program program)
         {
             var first = program.StackPopU256();
@@ -123,7 +108,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Or(Program program)
         {
             var first = program.StackPopU256();
@@ -132,7 +116,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void XorSimple(Program program)
         {
             var first = program.StackPopU256();
@@ -141,7 +124,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Xor(Program program)
         {
             var first = program.StackPopU256();
@@ -150,7 +132,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Not(Program program)
         {
             var value = program.StackPopU256();
@@ -158,7 +139,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LT(Program program)
         {
             var first = program.StackPopU256();
@@ -167,7 +147,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EQ(Program program)
         {
             var first = program.StackPopU256();
@@ -176,7 +155,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void IsZero(Program program)
         {
             var first = program.StackPopU256();
@@ -184,7 +162,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GT(Program program)
         {
             var first = program.StackPopU256();
@@ -193,7 +170,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SLT(Program program)
         {
             var first = program.StackPopU256();
@@ -210,7 +186,6 @@ namespace Nethereum.EVM.Execution
             program.Step();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SGT(Program program)
         {
             var first = program.StackPopU256();

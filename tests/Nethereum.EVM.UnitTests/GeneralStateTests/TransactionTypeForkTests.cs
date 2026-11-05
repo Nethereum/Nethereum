@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Category", "GeneralStateTests")]
     public class TransactionTypeForkTests
     {
 

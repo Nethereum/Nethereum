@@ -13,19 +13,21 @@ using Nethereum.Model;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.RPC.Eth.Mappers;
 using Nethereum.Signer;
+using Nethereum.Testing;
 using Nethereum.Util;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Nethereum.EVM.UnitTests.GeneralStateTests
 {
+    [Trait("Requires", "Externals")]
+    [Trait("Category", "Zisk")]
+    [Trait("Category", "GeneralStateTests")]
     public class RpcWitnessE2ETests
     {
         private readonly ITestOutputHelper _output;
 
-        private static string RpcUrl =>
-            Environment.GetEnvironmentVariable("ETHEREUM_RPC_URL")
-            ?? "https://mainnet.infura.io/v3/206cfadcef274b49a3a15c45c285211c";
+        private static string RpcUrl => TestEnvironment.Service("MainnetRpcUrl");
 
         public RpcWitnessE2ETests(ITestOutputHelper output)
         {
@@ -52,8 +54,15 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 + "Treating that as a value would let the parity gate pass vacuously.");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
-        public async Task FetchBlock_RecordWitness_ReExecute_VerifyStateRoot()
+        public Task FetchBlock_RecordWitness_ReExecute_VerifyStateRoot() => RunAsync(prove: false);
+
+        [Trait("Category", "LiveNetwork")]
+        [Fact]
+        public Task FetchBlock_RecordWitness_ReExecute_VerifyStateRoot_AndProve() => RunAsync(prove: true);
+
+        private async Task RunAsync(bool prove)
         {
             var parityGateRan = false;
 
@@ -182,8 +191,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
             Assert.Equal(blockData.Accounts.Count, roundTrip.Accounts.Count);
             Assert.Equal(blockData.Transactions.Count, roundTrip.Transactions.Count);
 
-            var outputDir = Path.Combine(ZiskEmulatorRunner.FindProjectRoot(Directory.GetCurrentDirectory())
-                ?? Directory.GetCurrentDirectory(), "scripts", "zisk-output", "witnesses");
+            var outputDir = Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), "witnesses");
             var witnessFile = ZiskEmulatorRunner.WriteLegacyInput(outputDir, $"mainnet_block_{block.Number.Value}", witnessBytes);
             _output.WriteLine($"Witness file: {witnessFile}");
 
@@ -191,7 +199,7 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
 
             var elfPath = ZiskEmulatorRunner.FindDefaultElfPath();
             Assert.True(elfPath != null,
-                "Zisk guest ELF not found at scripts/zisk-output/nethereum_evm_elf, so the "
+                "Zisk guest ELF not found under ExternalPaths:ZiskOutput (nethereum_evm_elf), so the "
                 + "guest/host post-state-root parity gate cannot run. Build it with "
                 + "`bash scripts/build-evm-zisk.sh`. This is a hard failure by design: a "
                 + "parity comparison that is skipped must never report success.");
@@ -263,9 +271,9 @@ namespace Nethereum.EVM.UnitTests.GeneralStateTests
                 + $"  delta (ziskemu - async) = {asyncGasDelta}\n"
                 + $"  witness: {witnessFile}");
 
-            if (Environment.GetEnvironmentVariable("ZISK_PROVE_E2E") == "1")
+            if (prove)
             {
-                _output.WriteLine("\nRunning cargo-zisk prove (ZISK_PROVE_E2E=1)...");
+                _output.WriteLine("\nRunning cargo-zisk prove...");
                 var proveResult = ZiskEmulatorRunner.RunCargoZiskProve(elfPath, witnessFile);
                 _output.WriteLine(proveResult.RawOutput ?? "<no output>");
                 Assert.True(proveResult.Success,

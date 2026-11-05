@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Nethereum.Model;
@@ -40,6 +41,9 @@ namespace Nethereum.EVM.Execution
                 ExecutionRequests.RequestTypeFor(predeployAddress), requestData));
 
         public byte[] Commitment() => ExecutionRequests.CommitmentFor(_fork, _requests);
+
+        public byte[] Commitment(Func<byte[], byte[]> sha256) =>
+            ExecutionRequests.CommitmentFor(_fork, _requests, sha256);
 
         public IReadOnlyList<byte[]> NonEmptyRequests() =>
             _requests.Where(ExecutionRequests.CarriesData).ToList();

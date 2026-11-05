@@ -16,7 +16,7 @@ namespace Nethereum.EVM.Execution
     {
         public void Log(Program program)
         {
-            Log(program, (int)program.GetCurrentInstruction().Value - (int)Instruction.LOG0);
+            Log(program, program.CurrentOpcodeByte - (int)Instruction.LOG0);
         }
         public void Log(Program program, int numberTopics)
         {
@@ -26,17 +26,16 @@ namespace Nethereum.EVM.Execution
             var memLengthU256 = program.StackPopU256();
 
 
-            var topics = new List<string>();
+            var topics = new string[numberTopics];
             for (int i = 0; i < numberTopics; ++i)
             {
-                var topic = program.StackPop();
-                topics.Add(topic.ToHex());
+                topics[i] = HexText.FromWord(program.StackPopU256());
             }
 
-            byte[] data;
+            string data;
             if (memLengthU256.IsZero)
             {
-                data = new byte[0];
+                data = string.Empty;
             }
             else
             {
@@ -47,24 +46,27 @@ namespace Nethereum.EVM.Execution
                 {
                     program.ExpandMemory(memStart + memLength);
                 }
-                data = new byte[memLength];
-                program.Memory.CopyTo(memStart, data, 0, memLength);
+                data = program.ReadMemoryHex(memStart, memLength);
             }
 
 #if EVM_SYNC
             var filterLog = new EvmLog
             {
                 Address = address,
-                Topics = topics.ToArray(),
-                Data = data.ToHex()
+                Topics = topics,
+                Data = data
             };
 #else
             var filterLog = new FilterLog
             {
                 Address = address,
-                Topics = topics.ToArray(),
-                Data = data.ToHex()
+                Topics = topics,
+                Data = data
             };
+#endif
+#if !EVM_SYNC
+            if (program.ProgramContext.LogIndexCounter != null)
+                filterLog.LogIndex = new Nethereum.Hex.HexTypes.HexBigInteger(program.ProgramContext.LogIndexCounter.Next());
 #endif
             program.ProgramResult.Logs.Add(filterLog);
             program.Step();
@@ -80,11 +82,8 @@ namespace Nethereum.EVM.Execution
             var endU = resultIndexU + lengthResultU;
             if (endU < resultIndexU || !endU.FitsInInt || endU.ToInt() > result.Length)
             {
-#if EVM_SYNC
-                program.SetExecutionError(); return;
-#else
-                throw new OutOfGasException(program.GasRemaining, 0);
-#endif
+                program.Halt(EvmHaltReason.OutOfBoundsRead);
+                return;
             }
 
             var memoryIndex = memoryIndexU.ToInt();
@@ -93,9 +92,7 @@ namespace Nethereum.EVM.Execution
 
             if (lengthResult > 0)
             {
-                var dataToCopy = new byte[lengthResult];
-                Array.Copy(result, resultIndex, dataToCopy, 0, lengthResult);
-                program.WriteToMemory(memoryIndex, lengthResult, dataToCopy);
+                program.CopyToMemory(memoryIndex, lengthResult, result, resultIndex, lengthResult);
             }
             program.Step();
         }
@@ -114,15 +111,8 @@ namespace Nethereum.EVM.Execution
 
         public void Revert(Program program)
         {
-            try
-            {
-                program.ProgramResult.IsRevert = true;
-                Return(program);
-            }
-            catch
-            {
-                program.Stop();
-            }
+            program.ProgramResult.IsRevert = true;
+            Return(program);
         }
 
         public  void Return(Program program)

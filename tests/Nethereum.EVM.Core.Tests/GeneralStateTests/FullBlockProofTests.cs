@@ -8,6 +8,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
 using Nethereum.Model;
 using Nethereum.Util;
+using Nethereum.Testing;
 using Xunit;
 using Xunit.Abstractions;
 using Nethereum.Merkle.Patricia.Nodes;
@@ -132,16 +133,15 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
         }
 
         [Fact]
+        [Trait("Requires", "Externals")]
+        [Trait("Category", "Zisk")]
         public void FullBlockProof_ZiskEmu_TwoTransfers()
         {
             var elfPath = FindElfPath();
-            if (string.IsNullOrEmpty(elfPath))
-            {
-                _output.WriteLine("SKIP — ELF not found");
-                return;
-            }
+            Assert.True(!string.IsNullOrEmpty(elfPath),
+                "Zisk guest ELF not found; ExternalPaths:ZiskOutput must contain nethereum_evm_elf.");
 
-            var block = CreateSignedBlockProof();
+            var block = CreateSignedBlockProof().AddRequestPredeploys();
             var witnessBytes = BinaryBlockWitness.Serialize(block);
 
             int padLen = (8 - witnessBytes.Length % 8) % 8;
@@ -160,15 +160,8 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
             var witnessFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "zisk-block-test.bin");
             System.IO.File.WriteAllBytes(witnessFile, legacyInput);
 
-            var wsl = witnessFile.Replace("\\", "/").Replace("C:/", "/mnt/c/").Replace("c:/", "/mnt/c/");
-            var elf = elfPath.Replace("\\", "/").Replace("C:/", "/mnt/c/").Replace("c:/", "/mnt/c/");
-
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "wsl",
-                Arguments = $"-d Ubuntu -e bash -c \"export PATH=$HOME/.zisk/bin:$HOME/.cargo/bin:$PATH && ziskemu -e {elf} --legacy-inputs {wsl} -n 500000000\"",
-                UseShellExecute = false, RedirectStandardOutput = true, CreateNoWindow = true
-            };
+            var psi = ZiskHost.Command(
+                $"{TestEnvironment.Tool("Ziskemu")} -e {ZiskHost.Path(elfPath)} --legacy-inputs {ZiskHost.Path(witnessFile)} -n 500000000");
 
             var process = System.Diagnostics.Process.Start(psi);
             var output = process.StandardOutput.ReadToEnd();
@@ -220,18 +213,8 @@ namespace Nethereum.EVM.Core.Tests.GeneralStateTests
 
         private static string FindElfPath()
         {
-            var dir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
-            while (dir != null)
-            {
-                if (System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.slnx")) ||
-                    System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "Nethereum.sln")))
-                {
-                    var p = System.IO.Path.Combine(dir.FullName, "zisk", "output", "nethereum_evm_elf");
-                    return System.IO.File.Exists(p) ? p : null;
-                }
-                dir = dir.Parent;
-            }
-            return null;
+            var p = System.IO.Path.Combine(TestEnvironment.ExternalPath("ZiskOutput"), "nethereum_evm_elf");
+            return System.IO.File.Exists(p) ? p : null;
         }
     }
 }

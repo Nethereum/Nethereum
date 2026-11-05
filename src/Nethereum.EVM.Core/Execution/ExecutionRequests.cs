@@ -1,4 +1,5 @@
 using Nethereum.Documentation;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using Nethereum.Util;
@@ -85,22 +86,29 @@ namespace Nethereum.EVM.Execution
         public static byte[] CommitmentFor(HardforkName fork, IEnumerable<byte[]> blockRequests) =>
             IsActive(fork) ? ComputeRequestsHash(blockRequests) : null;
 
+        public static byte[] CommitmentFor(
+            HardforkName fork, IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256) =>
+            IsActive(fork) ? ComputeRequestsHash(blockRequests, sha256) : null;
+
         public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests)
         {
             using (var sha256 = SHA256.Create())
-            {
-                var intermediate = new List<byte>();
-                if (blockRequests != null)
-                {
-                    foreach (var request in blockRequests)
-                    {
-                        if (!CarriesData(request)) continue;
-                        intermediate.AddRange(sha256.ComputeHash(request));
-                    }
-                }
+                return ComputeRequestsHash(blockRequests, data => sha256.ComputeHash(data));
+        }
 
-                return sha256.ComputeHash(intermediate.ToArray());
+        public static byte[] ComputeRequestsHash(IEnumerable<byte[]> blockRequests, Func<byte[], byte[]> sha256)
+        {
+            var intermediate = new List<byte>();
+            if (blockRequests != null)
+            {
+                foreach (var request in blockRequests)
+                {
+                    if (!CarriesData(request)) continue;
+                    intermediate.AddRange(sha256(request));
+                }
             }
+
+            return sha256(intermediate.ToArray());
         }
     }
 }

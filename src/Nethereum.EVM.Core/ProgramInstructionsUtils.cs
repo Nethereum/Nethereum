@@ -86,72 +86,26 @@ namespace Nethereum.EVM
 
         public static List<ProgramInstruction> GetProgramInstructions(byte[] byteCodeArray, bool eip8024Enabled)
         {
-            var i = 0;
             var programInstructions = new List<ProgramInstruction>();
-            while (i < byteCodeArray.Length)
+            var pc = 0;
+            while (pc < byteCodeArray.Length)
             {
-                var currentByte = byteCodeArray[i];
-                if (currentByte >= 0x60 && currentByte <= 0x60 + 31)
-                {
-                    var opcode = (Instruction)byteCodeArray[i];
-                    var dataLength = currentByte - 0x60 + 1;
-                    var availableBytes = byteCodeArray.Length - i - 1;
-                    var actualDataLength = Math.Min(dataLength, availableBytes);
-                    var dataBytes = new byte[dataLength];
-                    for (int x = 0; x < actualDataLength; x++)
-                    {
-                        dataBytes[x] = byteCodeArray[i + x + 1];
-                    }
-
-                    programInstructions.Add(new ProgramInstruction()
-                    {
-                        Step = i,
-                        Instruction = opcode,
-                        Arguments = dataBytes,
-                        Value = byteCodeArray[i]
-                    });
-                    i = i + 1 + dataLength;
-                }
-                else if (eip8024Enabled && Eip8024ImmediateCodec.IsStackAccessOpcode(currentByte))
-                {
-                    var hasImmediateByte = i + 1 < byteCodeArray.Length;
-                    var immediateByte = hasImmediateByte ? byteCodeArray[i + 1] : (byte)0;
-                    var immediateIsValid = Eip8024ImmediateCodec.IsImmediateValid(currentByte, immediateByte);
-
-                    programInstructions.Add(new ProgramInstruction()
-                    {
-                        Step = i,
-                        Instruction = (Instruction)currentByte,
-                        Arguments = new[] { immediateByte },
-                        Value = currentByte
-                    });
-                    i = i + 1 + (immediateIsValid ? 1 : 0);
-                }
-                else
-                {
-
-                    if (InstructionLookup.IsValid(byteCodeArray[i]))
-                    {
-                        programInstructions.Add(new ProgramInstruction()
-                        {
-                            Step = i,
-                            Instruction = (Instruction)byteCodeArray[i],
-                            Value = byteCodeArray[i]
-                        });
-                        i++;
-                    }
-                    else
-                    {
-                        programInstructions.Add(new ProgramInstruction()
-                        {
-                            Step = i,
-                            Value = byteCodeArray[i]
-                        });
-                        i++;
-                    }
-                }
+                programInstructions.Add(DecodeInstructionAt(byteCodeArray, pc, eip8024Enabled));
+                pc = BytecodeDecoder.NextPc(byteCodeArray, pc, eip8024Enabled);
             }
             return programInstructions;
+        }
+
+        private static ProgramInstruction DecodeInstructionAt(byte[] code, int pc, bool eip8024Enabled)
+        {
+            var opcodeByte = code[pc];
+            var instruction = new ProgramInstruction() { Step = pc, Value = opcodeByte };
+            instruction.Arguments = BytecodeDecoder.ImmediateBytes(code, pc, eip8024Enabled);
+            if (instruction.Arguments != null || InstructionLookup.IsValid(opcodeByte))
+            {
+                instruction.Instruction = (Instruction)opcodeByte;
+            }
+            return instruction;
         }
 
 
