@@ -5,6 +5,7 @@ using Nethereum.AppChain.Anchoring.Postgres.Entities;
 
 namespace Nethereum.Explorer.Anchoring.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "explorer-anchoring", "NullAnchorExplorerService")]
     public class NullAnchorExplorerService : IAnchorExplorerService
     {
         public bool IsConfigured => false;

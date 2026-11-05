@@ -195,7 +195,7 @@ Bound from `IConfiguration` section `"Explorer"` into `ExplorerOptions`:
 | `ExplorerBrandSuffix` | `string` | `"Explorer"` | Navbar brand suffix |
 | `LogoUrl` | `string?` | `null` | Logo image URL |
 | `FaviconUrl` | `string?` | `null` | Favicon URL |
-| `ApiKey` | `string?` | `null` | Optional dev-time guard for ABI upload POST endpoints (`X-Api-Key` header). If null, POST endpoints are open |
+| `ApiKey` | `string?` | `null` | Guard for ABI upload POST endpoints (`X-Api-Key` header). If null or empty, POST endpoints reject every request with 401 |
 | `EnableMud` | `bool` | `true` | Show MUD World browser pages |
 | `EnableTokens` | `bool` | `true` | Show token sections on account pages |
 | `EnableTracing` | `bool` | `true` | Show state diff card on transaction detail (requires RPC with debug namespace) |
@@ -224,7 +224,7 @@ Resolution order: in-memory cache, local filesystem (if enabled, highest priorit
 
 ## API Endpoints
 
-All endpoints are rate-limited: 100 requests per minute, fixed window, 429 on rejection.
+All endpoints are rate-limited: 100 requests per minute per client IP, fixed window, 429 on rejection.
 
 ### Token API (`/api/tokens`)
 
@@ -246,7 +246,7 @@ Returns `503 { error: "Token indexing not configured" }` if `ITokenExplorerServi
 | POST | `/{address}/abi` | Upload ABI for a contract. Body: `{ "abi": "...", "name": "..." }` |
 | POST | `/batch` | Batch upload (max 50). Body: `{ "contracts": [{ "address": "...", "abi": "...", "name": "..." }] }` |
 
-POST endpoints validate ABI JSON via `ABIDeserialiserFactory.DeserialiseContractABI()`. If `ExplorerOptions.ApiKey` is set, POST requests must include a matching `X-Api-Key` header (simple ordinal string check, intended as a dev-time guard — not a production auth mechanism). If `ApiKey` is null (the default), POST endpoints are open.
+POST endpoints validate ABI JSON via `ABIDeserialiserFactory.DeserialiseContractABI()`. If `ExplorerOptions.ApiKey` is set, POST requests must include a matching `X-Api-Key` header (constant-time comparison, checked before the request body is read; intended as a dev-time guard — not a production auth mechanism). If `ApiKey` is null or empty (the default), POST endpoints reject every request with 401 and store nothing.
 
 ## Aspire Integration
 

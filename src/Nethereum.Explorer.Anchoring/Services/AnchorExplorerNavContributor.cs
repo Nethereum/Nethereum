@@ -4,6 +4,7 @@ using Nethereum.Explorer.Services.Localization;
 
 namespace Nethereum.Explorer.Anchoring.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "explorer-anchoring", "AnchorExplorerNavContributor")]
     public class AnchorExplorerNavContributor : IExplorerNavContributor
     {
         private readonly IAnchorExplorerService _anchorService;

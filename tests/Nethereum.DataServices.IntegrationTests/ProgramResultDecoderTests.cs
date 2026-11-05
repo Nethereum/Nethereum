@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
 {
+    [Trait("Category", "LiveNetwork")]
     public class ProgramResultDecoderTests
     {
         private const string WETH_CONTRACT = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";

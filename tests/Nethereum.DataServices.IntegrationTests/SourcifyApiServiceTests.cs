@@ -11,6 +11,7 @@ using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
 {
+    [Trait("Category", "LiveNetwork")]
     public partial class SourcifyApiServiceTests
     {
         private const string ETH2_DEPOSIT_CONTRACT = "0x00000000219ab540356cBB839Cbe05303d7705Fa";
@@ -110,6 +111,7 @@ namespace Nethereum.DataServices.IntegrationTests
         }
     }
 
+    [Trait("Category", "LiveNetwork")]
     public class SourcifyABIInfoStorageTests
     {
         private const string USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -153,6 +155,7 @@ namespace Nethereum.DataServices.IntegrationTests
         }
     }
 
+    [Trait("Category", "LiveNetwork")]
     public class ABIInfoStorageFactoryTests
     {
         private const string USDC_CONTRACT = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -186,6 +189,7 @@ namespace Nethereum.DataServices.IntegrationTests
         }
     }
 
+    [Trait("Category", "LiveNetwork")]
     public class Sourcify4ByteSignatureServiceTests
     {
         [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "Sourcify 4Byte function lookup", Order = 8)]
@@ -269,6 +273,7 @@ namespace Nethereum.DataServices.IntegrationTests
         }
     }
 
+    [Trait("Category", "LiveNetwork")]
     public class SourcifyParquetExportServiceTests
     {
         [NethereumDocExample(DocSection.DataServices, "etherscan-api", "Sourcify Parquet file listing", Order = 3)]
@@ -339,6 +344,7 @@ namespace Nethereum.DataServices.IntegrationTests
         }
     }
 
+    [Trait("Category", "LiveNetwork")]
     public class SourcifyABIInfoStorage4ByteFallbackTests
     {
         [Fact]

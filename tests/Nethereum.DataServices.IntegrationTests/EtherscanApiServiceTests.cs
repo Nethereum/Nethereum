@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 
 namespace Nethereum.DataServices.Etherscan.IntegrationTests
 {
+    [Trait("Category", "LiveNetwork")]
     public class EtherscanApiServiceTests
     {
         //NOTE: Etherscan has a rate limit of 5 calls per second

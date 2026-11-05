@@ -6,6 +6,7 @@ using Xunit;
 namespace Nethereum.DataServices.IntegrationTests
 {
    
+        [Trait("Category", "LiveNetwork")]
         public class ChainlistRpcApiServiceTests
         {
             [NethereumDocExample(DocSection.DataServices, "chainlist-rpc", "Chainlist RPC chain discovery", Order = 1)]

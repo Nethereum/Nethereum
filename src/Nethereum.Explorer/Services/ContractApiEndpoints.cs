@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nethereum.ABI.ABIDeserialisation;
@@ -27,12 +30,16 @@ public static class ContractApiEndpoints
             });
         });
 
-        group.MapPost("/{address}/abi", async (string address, AbiUploadRequest request,
+        group.MapPost("/{address}/abi", async (string address,
             IAbiStorageService abiStorage, IOptions<ExplorerOptions> options,
             HttpContext httpContext, ILogger<AbiUploadRequest> logger) =>
         {
             if (!ValidateApiKey(httpContext, options.Value))
                 return Results.Unauthorized();
+
+            var (request, rejection) = await ReadBodyAsync<AbiUploadRequest>(httpContext);
+            if (request == null)
+                return rejection!;
 
             if (string.IsNullOrWhiteSpace(request.Abi))
                 return Results.BadRequest(new { error = "ABI JSON is required" });
@@ -59,12 +66,16 @@ public static class ContractApiEndpoints
             });
         });
 
-        group.MapPost("/batch", async (BatchAbiUploadRequest request,
+        group.MapPost("/batch", async (
             IAbiStorageService abiStorage, IOptions<ExplorerOptions> options,
             HttpContext httpContext, ILogger<BatchAbiUploadRequest> logger) =>
         {
             if (!ValidateApiKey(httpContext, options.Value))
                 return Results.Unauthorized();
+
+            var (request, rejection) = await ReadBodyAsync<BatchAbiUploadRequest>(httpContext);
+            if (request == null)
+                return rejection!;
 
             if (request.Contracts == null || !request.Contracts.Any())
                 return Results.BadRequest(new { error = "At least one contract entry is required" });
@@ -110,10 +121,33 @@ public static class ContractApiEndpoints
     private static bool ValidateApiKey(HttpContext httpContext, ExplorerOptions options)
     {
         if (string.IsNullOrEmpty(options.ApiKey))
-            return true;
+            return false;
 
         var providedKey = httpContext.Request.Headers["X-Api-Key"].FirstOrDefault();
-        return string.Equals(providedKey, options.ApiKey, StringComparison.Ordinal);
+        if (providedKey == null)
+            return false;
+
+        var expected = Encoding.UTF8.GetBytes(options.ApiKey);
+        var provided = Encoding.UTF8.GetBytes(providedKey);
+        return expected.Length == provided.Length && CryptographicOperations.FixedTimeEquals(expected, provided);
+    }
+
+    private static async Task<(T? Value, IResult? Rejection)> ReadBodyAsync<T>(HttpContext httpContext) where T : class
+    {
+        if (!httpContext.Request.HasJsonContentType())
+            return (null, Results.StatusCode(StatusCodes.Status415UnsupportedMediaType));
+
+        try
+        {
+            var value = await httpContext.Request.ReadFromJsonAsync<T>();
+            if (value == null)
+                return (null, Results.BadRequest(new { error = "Request body is required" }));
+            return (value, null);
+        }
+        catch (JsonException)
+        {
+            return (null, Results.BadRequest(new { error = "Invalid JSON body" }));
+        }
     }
 }
 

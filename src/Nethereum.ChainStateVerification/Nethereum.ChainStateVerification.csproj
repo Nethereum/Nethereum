@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Verified execution-state primitives (account/storage/receipt proofs rooted in the light client).</Description>
     <AssemblyTitle>Nethereum.ChainStateVerification</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(UIFrameworksBlazor)</TargetFrameworks>
     <AssemblyName>Nethereum.ChainStateVerification</AssemblyName>
     <PackageId>Nethereum.ChainStateVerification</PackageId>

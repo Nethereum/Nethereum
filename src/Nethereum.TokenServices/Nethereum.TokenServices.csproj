@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Nethereum TokenServices library - token discovery, balances, and pricing for ERC20 tokens</Description>
     <AssemblyTitle>Nethereum.TokenServices</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>netstandard2.0;net462;net6.0;net8.0;net9.0</TargetFrameworks>
     <AssemblyName>Nethereum.TokenServices</AssemblyName>
     <PackageId>Nethereum.TokenServices</PackageId>

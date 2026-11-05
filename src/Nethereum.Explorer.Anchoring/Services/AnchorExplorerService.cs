@@ -6,6 +6,7 @@ using Nethereum.AppChain.Anchoring.Postgres.Repositories;
 
 namespace Nethereum.Explorer.Anchoring.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "explorer-anchoring", "AnchorExplorerService")]
     public class AnchorExplorerService : IAnchorExplorerService
     {
         private readonly IAnchorRecordRepository _anchorRepo;

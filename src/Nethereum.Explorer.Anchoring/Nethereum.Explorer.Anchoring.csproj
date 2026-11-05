@@ -9,6 +9,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>Nethereum.Explorer.Anchoring</AssemblyName>
     <PackageId>Nethereum.Explorer.Anchoring</PackageId>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -23,7 +24,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Update="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

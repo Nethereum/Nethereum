@@ -1,5 +1,6 @@
 namespace Nethereum.Explorer.Anchoring.Services
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "explorer-anchoring", "AnchoringKeys")]
     public static class AnchoringKeys
     {
         public static class Nav

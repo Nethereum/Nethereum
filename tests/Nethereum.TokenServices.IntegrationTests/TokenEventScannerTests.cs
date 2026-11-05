@@ -25,6 +25,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output = output;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Token discovery via Transfer events", Order = 9)]
         [Fact]
         public async Task ScanTransferEvents_FindsRecentTransfers()
@@ -56,6 +57,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetAffectedTokenAddresses_ReturnsDistinctAddresses()
         {
@@ -79,6 +81,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task RefreshBalancesFromEvents_UpdatesAffectedTokens()
         {
@@ -108,6 +111,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task ScanTransferEvents_ViaMainService()
         {

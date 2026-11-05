@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Nethereum.DataServices.IntegrationTests
 {
+    [Trait("Category", "LiveNetwork")]
     public class FourByteDirectoryServiceTests
     {
         [NethereumDocExample(DocSection.DataServices, "abi-retrieval", "4Byte function signature lookup", Order = 10)]

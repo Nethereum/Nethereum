@@ -110,18 +110,24 @@ public static class ExplorerServiceCollectionExtensions
             return new NullTokenExplorerService();
         });
 
-        services.AddRateLimiter(options =>
-        {
-            options.RejectionStatusCode = 429;
-            options.AddFixedWindowLimiter("api", limiter =>
-            {
-                limiter.PermitLimit = 100;
-                limiter.Window = TimeSpan.FromMinutes(1);
-                limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                limiter.QueueLimit = 0;
-            });
-        });
+        services.AddRateLimiter(options => options.ConfigureApiRateLimit());
 
         return services;
+    }
+
+    public static RateLimiterOptions ConfigureApiRateLimit(this RateLimiterOptions options)
+    {
+        options.RejectionStatusCode = 429;
+        options.AddPolicy("api", httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+        return options;
     }
 }

@@ -52,6 +52,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output = output;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get token list for chain", Order = 4)]
         [Fact]
         public async Task GetTokenList_ReturnsTokensForEthereumMainnet()
@@ -71,6 +72,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"USDC address: {usdcToken?.Address}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Theory]
         [InlineData(EthereumMainnet)]
         [InlineData(Optimism)]
@@ -99,6 +101,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             Assert.True(supported, "Ethereum mainnet should be supported");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get token balances without prices", Order = 2)]
         [Fact]
         public async Task GetAllBalances_ReturnsVitalikBalances()
@@ -130,6 +133,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get all token balances with prices", Order = 1)]
         [Fact]
         public async Task GetBalancesWithPrices_ReturnsBalancesAndPrices()
@@ -169,6 +173,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Theory]
         [InlineData(EthereumMainnet)]
         [InlineData(Base)]
@@ -202,6 +207,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task InitializeCache_PreloadsTokenLists()
         {
@@ -220,6 +226,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetAllBalances_BNBChain()
         {
@@ -252,6 +259,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetBalancesWithPrices_BNBChain()
         {
@@ -290,6 +298,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetAllBalances_BNBChain_BatchProcessing()
         {
@@ -337,6 +346,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task Ethereum_TokenListCount()
         {
@@ -346,6 +356,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             Assert.NotNull(tokens);
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task BNBChain_DirectMulticallTest()
         {
@@ -403,6 +414,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Get balances for specific tokens", Order = 3)]
         [Fact]
         public async Task GetBalancesForTokens_WithSpecificTokens()

@@ -108,7 +108,7 @@ All options are bound from `appsettings.json` section `Explorer`:
 | `ExplorerBrandSuffix` | `string` | `"Explorer"` | Navbar brand suffix |
 | `LogoUrl` | `string?` | `null` | Custom logo URL |
 | `FaviconUrl` | `string?` | `null` | Custom favicon URL |
-| `ApiKey` | `string?` | `null` | Protects write API endpoints (X-Api-Key header) |
+| `ApiKey` | `string?` | `null` | Required for the write API endpoints (X-Api-Key header); unset, they answer 401 |
 | `EnableMud` | `bool` | `true` | Show MUD World browser pages |
 | `EnableTokens` | `bool` | `true` | Show token balance and transfer pages |
 | `EnableTracing` | `bool` | `true` | Enable transaction tracing |
@@ -148,7 +148,7 @@ ABI sources are chained as a composite: in-memory cache is checked first, then e
 - **QR codes** — address QR code display
 - **Wallet integration** — EIP-6963 wallet discovery, authentication state, send transactions from contract interaction UI
 - **Localization** — English and Spanish translations
-- **Rate limiting** — built-in fixed-window rate limiter on API endpoints (100 req/min)
+- **Rate limiting** — built-in fixed-window rate limiter on API endpoints (100 req/min per client IP)
 - **Toast notifications** — success/error feedback
 
 ## Pages Reference
@@ -188,8 +188,8 @@ ABI sources are chained as a composite: in-memory cache is checked first, then e
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/{address}/abi` | Retrieve cached ABI for a contract |
-| POST | `/{address}/abi` | Upload ABI for a contract (requires `X-Api-Key` if configured) |
-| POST | `/batch` | Batch upload ABIs (max 50, requires `X-Api-Key` if configured) |
+| POST | `/{address}/abi` | Upload ABI for a contract (requires `X-Api-Key`) |
+| POST | `/batch` | Batch upload ABIs (max 50, requires `X-Api-Key`) |
 
 Upload ABI example:
 

@@ -6,6 +6,7 @@ using Nethereum.Explorer.Services;
 
 namespace Nethereum.Explorer.Anchoring
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DataIndexing, "explorer-anchoring", "AnchorExplorerServiceCollectionExtensions")]
     public static class AnchorExplorerServiceCollectionExtensions
     {
         public static IServiceCollection AddAnchorExplorerServices(

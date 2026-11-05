@@ -21,6 +21,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output = output;
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetPrices_ReturnsEthereumPrice()
         {
@@ -35,6 +36,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"ETH price: ${prices["ethereum"].Price:N2}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Batch price service multi-chain", Order = 5)]
         [Fact]
         public async Task GetPrices_ReturnsBatchPrices()
@@ -53,6 +55,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [NethereumDocExample(DocSection.DataServices, "token-portfolio", "Native token price fetch", Order = 6)]
         [Fact]
         public async Task GetNativeTokenPrice_ReturnsPrice()
@@ -72,6 +75,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"Base native price: ${basePrice.Price:N2}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetPricesByContract_ReturnsUSDCPrice()
         {
@@ -94,6 +98,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"USDC price: ${usdcPrice.Price:N4}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetTokenId_FindsUSDC()
         {
@@ -109,6 +114,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             _output.WriteLine($"USDC CoinGecko ID: {tokenId}");
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetTokenIds_FindsMultipleTokens()
         {
@@ -132,6 +138,7 @@ namespace Nethereum.TokenServices.IntegrationTests
             }
         }
 
+        [Trait("Category", "LiveNetwork")]
         [Fact]
         public async Task GetPrices_CacheHit_ReturnsCachedData()
         {

@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum DataServices library, provides client access to different external services like the Etherscan rest apis</Description>
     <AssemblyTitle>Nethereum.DataServices</AssemblyTitle>
-    <VersionPrefix>$(NethereumVersion)</VersionPrefix>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(DefaultFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.DataServices</AssemblyName>
     <PackageId>Nethereum.DataServices</PackageId>
-    <PackageTags>Netherum;Ethereum;Blockchain;Etherscan</PackageTags>
+    <PackageTags>Nethereum;Ethereum;Blockchain;Etherscan</PackageTags>
 	<SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
@@ -28,5 +29,9 @@
       <ProjectReference Include="..\Nethereum.Util.Rest\Nethereum.Util.Rest.csproj" />
     </ItemGroup>
 
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
 
 </Project>
