@@ -311,6 +311,75 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
+        public async Task ValidateBackwardParentChain_BrokenAtIndex_ReportsIt()
+        {
+            using var bundle = InMemoryChainStoreBundle.Open();
+            var chain = TestChain.Build(blockCount: 50);
+            var scheduler = new ReverseScheduler(chain)
+            {
+                TamperBatch = batch =>
+                {
+                    var tampered = new List<BlockHeader>(batch);
+                    var broken = tampered[2].ShallowCopy();
+                    broken.ParentHash = new byte[32];
+                    tampered[2] = broken;
+                    return tampered;
+                }
+            };
+            var logger = new CapturingLogger();
+
+            var result = await WalkAllAsync(scheduler, bundle, chain, logger);
+
+            Assert.False(result.Success);
+            Assert.Equal(WalkerExitReason.PeerPoolEmpty, result.ExitReason);
+            Assert.Equal(0UL, result.HeadersWritten);
+            Assert.Contains(logger.Messages, m => m.Contains("backward parent-hash chain break at index 1 of batch top 49"));
+        }
+
+        [Fact]
+        public async Task HeadersAreContiguous_Descending_RejectsAGap()
+        {
+            using var bundle = InMemoryChainStoreBundle.Open();
+            var chain = TestChain.Build(blockCount: 50);
+            var scheduler = new ReverseScheduler(chain)
+            {
+                TamperBatch = batch =>
+                {
+                    var gapped = new List<BlockHeader>(batch);
+                    gapped.RemoveAt(2);
+                    return gapped;
+                }
+            };
+            var logger = new CapturingLogger();
+
+            var result = await WalkAllAsync(scheduler, bundle, chain, logger);
+
+            Assert.False(result.Success);
+            Assert.Equal(WalkerExitReason.PeerPoolEmpty, result.ExitReason);
+            Assert.Equal(0UL, result.HeadersWritten);
+            Assert.Contains(logger.Messages, m => m.Contains("non-descending-contiguous header batch at top 49"));
+        }
+
+        private static Task<WalkResult> WalkAllAsync(
+            ReverseScheduler scheduler, InMemoryChainStoreBundle bundle, TestChain chain, CapturingLogger logger)
+        {
+            var walker = new BackwardBlockWalker(
+                scheduler, bundle,
+                new BackwardBlockWalkerOptions
+                {
+                    HeaderBatchSize = 16,
+                    MaxAnchorRetries = 3,
+                    PeerRetryDelay = TimeSpan.Zero,
+                },
+                logger);
+
+            return walker.WalkAsync(
+                49, chain.HashAt(49), toBlockNumber: 0,
+                lookupLocalBlock: (n, ct) => Task.FromResult<(byte[]? hash, bool exists)>((null, false)),
+                CancellationToken.None);
+        }
+
+        [Fact]
         public async Task PeerPoolEmpty_ReportedWhenRetriesExhausted()
         {
             using var bundle = InMemoryChainStoreBundle.Open();
@@ -450,6 +519,25 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 };
         }
 
+        private sealed class CapturingLogger : Microsoft.Extensions.Logging.ILogger
+        {
+            public List<string> Messages { get; } = new();
+
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+            public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+
+            public void Log<TState>(
+                Microsoft.Extensions.Logging.LogLevel logLevel,
+                Microsoft.Extensions.Logging.EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                lock (Messages) Messages.Add(formatter(state, exception));
+            }
+        }
+
         private sealed class ReverseScheduler : IFetchRequestScheduler
         {
             private readonly TestChain _chain;
@@ -458,6 +546,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public bool AlwaysFailHeaders;
             public bool PoisonFirstHeaderBatch;
             public bool FailBodies;
+            public Func<List<BlockHeader>, List<BlockHeader>>? TamperBatch;
             private int _poisonFired;
 
             public ReverseScheduler(TestChain chain)
@@ -504,7 +593,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     if (n < 0 || n >= _chain.Count) break;
                     result.Add(_chain.HeaderAt((ulong)n));
                 }
-                return Task.FromResult(result);
+                return Task.FromResult(TamperBatch == null ? result : TamperBatch(result));
             }
 
             public Task<List<BlockBody>> FetchBodiesAsync(

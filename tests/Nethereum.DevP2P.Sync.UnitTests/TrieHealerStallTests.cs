@@ -86,45 +86,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 $"happy path should take a small number of rounds; FetchCalls={scheduler.FetchCalls}");
         }
 
-        [Fact]
-        public async Task Heal_SeededFromAccountsNeedingHeal_FetchesMissingStorageSubtree()
-        {
-            var storage = new InMemoryContentNodeStore();
-
-            var slotStorage = new InMemoryContentNodeStore();
-            var storageTrie = new PatriciaTrie(slotStorage);
-            var slotKey = new byte[32]; slotKey[0] = 0x77;
-            storageTrie.Put(slotKey, Nethereum.RLP.RLP.EncodeElement(new byte[] { 0x09 }));
-            storageTrie.SaveNodesToStorage();
-            var storageRoot = storageTrie.Root.GetHash();
-            var storageBlob = slotStorage.Get(storageRoot);
-
-            var accountHash = new byte[32]; accountHash[0] = 0x33;
-            var account = new Account
-            {
-                Nonce = (EvmUInt256)0,
-                Balance = (EvmUInt256)0,
-                StateRoot = storageRoot,
-                CodeHash = DefaultValues.EMPTY_DATA_HASH,
-            };
-            var stateTrie = new PatriciaTrie(storage);
-            stateTrie.Put(accountHash, new AccountEncoder().Encode(account));
-            stateTrie.SaveNodesToStorage();
-            var stateRoot = stateTrie.Root.GetHash();
-
-            Assert.Null(storage.Get(storageRoot));
-
-            var scheduler = new FakeFetchScheduler { ServeOnceNode = storageBlob };
-            var healer = new TrieHealer(scheduler, storage, NullLogger.Instance);
-
-            var result = await healer.HealAsync(
-                stateRoot, new[] { (accountHash, storageRoot) }, ct: CancellationToken.None);
-
-            Assert.NotNull(storage.Get(storageRoot));
-            Assert.True(result.Matched);
-        }
-
-
         private static (byte[] root, byte[] leafBlob) SeedSingleLeafTrie(InMemoryContentNodeStore storage)
         {
             var trie = new PatriciaTrie(storage);

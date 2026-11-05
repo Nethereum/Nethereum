@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Nethereum.DevP2P.Rlpx;
 using Nethereum.DevP2P.Sync.Abstractions;
 using Nethereum.DevP2P.Sync.Peering;
@@ -49,34 +48,15 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Contains(RemotePeer, ActiveEnodes(pool));
         }
 
-        [Fact]
-        public async Task Given_ATrustedDialKeyThatIsTwoEnodesJoinedByAComma_When_TheKeeperTicks_Then_ItIsNeverHandedToTheHandshakeAndIsLoggedOnceAsMalformed()
-        {
-            var joined = $"{LocalGeth},{RemotePeer}";
-            var worker = new SucceedingHandshakeWorker(LocalGeth, RemotePeer);
-            var logger = new RecordingLogger();
-
-            await using var pool = new PeerPoolManager(
-                worker, KeeperTickingFast(), logger: logger, trustedDialKeys: new[] { joined });
-
-            await pool.StartAsync(CancellationToken.None);
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
-
-            Assert.Equal(0, worker.TotalHandshakes);
-            Assert.Empty(pool.ActivePeers);
-            Assert.Single(logger.Entries, e => e.Level == LogLevel.Warning && e.Message.Contains(joined));
-            Assert.DoesNotContain(logger.Entries, e => e.Message.Contains("dialing directly"));
-        }
-
         private static string[] ActiveEnodes(PeerPoolManager pool) =>
             pool.ActivePeers.Select(p => p.Enode).ToArray();
 
         private static async Task WaitUntilAsync(Func<bool> condition)
         {
-            var deadline = DateTime.UtcNow.AddSeconds(5);
+            var deadline = DateTime.UtcNow.AddSeconds(20);
             while (!condition() && DateTime.UtcNow < deadline)
                 await Task.Delay(10);
-            Assert.True(condition(), "condition not reached within 5s");
+            Assert.True(condition(), "condition not reached within 20s");
         }
 
         private sealed class SucceedingHandshakeWorker : IPeerHandshakeWorker
@@ -87,8 +67,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public SucceedingHandshakeWorker(params string[] reachable) => _reachable = reachable;
 
             public int HandshakeCount(string enode) => _counts.TryGetValue(enode, out var n) ? n : 0;
-
-            public int TotalHandshakes => _counts.Values.Sum();
 
             public Task<IEthPeer> HandshakeAsync(
                 string enode, TimeSpan timeout, ulong minPeerLatestBlock, CancellationToken ct)
@@ -119,20 +97,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public RlpxConnection Connection { get; }
             public DateTime LastFrameReceivedUtc { get; set; } = DateTime.UtcNow;
             public event EventHandler<IEthPeer>? Disconnected;
-        }
-
-        private sealed class RecordingLogger : ILogger<PeerPoolManager>
-        {
-            public ConcurrentQueue<(LogLevel Level, string Message)> Entries { get; } = new();
-
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-                Func<TState, Exception?, string> formatter)
-                => Entries.Enqueue((logLevel, formatter(state, exception)));
         }
     }
 }

@@ -56,6 +56,20 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(TimeSpan.FromSeconds(2), timeout);
         }
 
+        [Fact]
+        public async Task Given_APerRequestTimeoutBelowTheAdaptiveFloor_When_AMeasuredPeerIsAskedAgain_Then_TheFetchSucceedsWithinTheConfiguredTimeout()
+        {
+            var pool = new FakePeerPool(new[] { MakeEnode(1) });
+            var scheduler = new FetchRequestScheduler(
+                pool, new DelayingWorker(0), new FetchRequestSchedulerOptions(PerRequestTimeout: TimeSpan.FromSeconds(1)));
+
+            await scheduler.FetchHeadersAsync(0, 1, CancellationToken.None);
+            var second = await scheduler.FetchHeadersAsync(1, 1, CancellationToken.None);
+
+            Assert.Single(second);
+            Assert.Equal(TimeSpan.FromSeconds(1), scheduler.GetAdaptiveTimeoutForTest(pool.ActivePeers.Single().Id));
+        }
+
         private sealed class DelayingWorker : IPeerRequestWorker
         {
             private readonly int _delayMs;

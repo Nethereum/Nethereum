@@ -71,6 +71,7 @@ namespace Nethereum.DevP2P.Sync.Peering
 
         public event EventHandler<IEthPeer>? PeerAdded;
         public event EventHandler<IEthPeer>? PeerRemoved;
+        public event EventHandler<SyncPeerSession>? PeerHeadAdvanced;
 
         public IReadOnlyCollection<IEthPeer> ActivePeers => _activeByPoolId.Values.ToList();
 
@@ -104,21 +105,13 @@ namespace Nethereum.DevP2P.Sync.Peering
             _logger = logger ?? NullLogger<PeerPoolManager>.Instance;
             _peerCache = peerCache;
             _dialScheduler = dialScheduler;
-            _trustedDialKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _trustedDialKeys = new HashSet<string>(
+                trustedDialKeys ?? Array.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
             _trustedNodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var key in trustedDialKeys ?? Array.Empty<string>())
-            {
-                if (string.IsNullOrWhiteSpace(key)) continue;
+            foreach (var key in _trustedDialKeys)
                 if (TryGetNodeId(key, out var nodeId))
-                {
-                    _trustedDialKeys.Add(key);
                     _trustedNodeIds.Add(nodeId);
-                }
-                else
-                {
-                    _logger.LogWarning("trusted peer keeper: malformed trusted enode, never dialed: {Enode}", key);
-                }
-            }
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
 
             if (_options.MaxPeersPerIPv4Subnet > 0 || _options.MaxPeersPerIPv6Subnet > 0)
@@ -151,10 +144,10 @@ namespace Nethereum.DevP2P.Sync.Peering
             if (_peerCache is not null)
             {
                 foreach (var enode in _peerCache.GetPreferredEnodes(_options.CandidateQueueCapacity))
-                    TryEnqueueCandidate(enode);
+                    EnqueueCandidate(enode);
             }
             foreach (var enode in _bootnodes)
-                TryEnqueueCandidate(enode);
+                EnqueueCandidate(enode);
 
             _dialLoop = Task.Run(() => DialLoopAsync(_lifetime.Token), _lifetime.Token);
             _trustedKeeperLoop = Task.Run(() => TrustedPeerKeeperLoopAsync(_lifetime.Token), _lifetime.Token);
@@ -239,16 +232,9 @@ namespace Nethereum.DevP2P.Sync.Peering
         private static bool TryGetNodeId(string enode, out string nodeId)
         {
             nodeId = string.Empty;
-            if (string.IsNullOrWhiteSpace(enode)) return false;
-            try
-            {
-                nodeId = EnodeUrl.Parse(enode).PeerId;
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            if (string.IsNullOrWhiteSpace(enode) || !EnodeUrl.TryParse(enode, out var parsed)) return false;
+            nodeId = parsed.PeerId;
+            return true;
         }
 
         public bool IsTrustedEnode(string enode)
@@ -340,12 +326,6 @@ namespace Nethereum.DevP2P.Sync.Peering
             _dialConcurrency.Dispose();
         }
 
-        private void TryEnqueueCandidate(string enode)
-        {
-            if (string.IsNullOrWhiteSpace(enode)) return;
-            _candidates.Writer.TryWrite(enode);
-        }
-
         private void MaybeSweepMaps()
         {
             var now = DateTimeOffset.UtcNow;
@@ -408,14 +388,24 @@ namespace Nethereum.DevP2P.Sync.Peering
 
                 if (batch.Count > 1) RankBatchByScoreDescending(batch);
 
-                foreach (var candidate in batch)
+                for (var i = 0; i < batch.Count; i++)
                 {
                     if (ct.IsCancellationRequested) return;
-                    if (ShouldPauseDialing()) break;
-                    var result = await TryDialCandidateAsync(candidate, ct).ConfigureAwait(false);
+                    if (ShouldPauseDialing())
+                    {
+                        RequeueUndialed(batch, i);
+                        break;
+                    }
+                    var result = await TryDialCandidateAsync(batch[i], ct).ConfigureAwait(false);
                     if (result == DialClaimResult.Canceled) return;
                 }
             }
+        }
+
+        private void RequeueUndialed(List<string> batch, int firstUndialed)
+        {
+            for (var i = firstUndialed; i < batch.Count; i++)
+                _candidates.Writer.TryWrite(batch[i]);
         }
 
         private enum DialClaimResult { Dialed, Skipped, Canceled }
@@ -513,8 +503,7 @@ namespace Nethereum.DevP2P.Sync.Peering
                     }
                     waitMs = Math.Max(1.0, (1.0 - _dialTokens) * 1000.0 / _options.DialBudgetPerSecond);
                 }
-                try { await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { throw; }
+                await Task.Delay(TimeSpan.FromMilliseconds(waitMs), ct).ConfigureAwait(false);
             }
         }
 
@@ -570,6 +559,7 @@ namespace Nethereum.DevP2P.Sync.Peering
                 if (mp != null && IsTrustedEnode(enode)) mp.MarkTrusted();
 
                 peer.Disconnected += OnPeerDisconnected;
+                if (mp != null) mp.HeadAdvanced += OnPeerHeadAdvanced;
 
                 _activeByEnode[ActiveKeyFor(enode)] = peer.Id;
                 _activeByPoolId[peer.Id] = peer;
@@ -620,6 +610,8 @@ namespace Nethereum.DevP2P.Sync.Peering
             if (_peerAddressByEnode.TryRemove(enode, out var addr) && addr != null)
                 _subnetTracker.Remove(addr);
         }
+
+        private void OnPeerHeadAdvanced(object? sender, SyncPeerSession peer) => PeerHeadAdvanced?.Invoke(this, peer);
 
         private void OnPeerDisconnected(object? sender, IEthPeer peer)
         {

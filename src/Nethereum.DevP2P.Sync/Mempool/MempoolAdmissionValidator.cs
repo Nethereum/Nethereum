@@ -13,19 +13,14 @@ namespace Nethereum.DevP2P.Sync.Mempool
 {
     public sealed class MempoolAdmissionValidator
     {
-        public const int DefaultMaxTransactionSizeBytes = 128 * 1024;
+        public const int DefaultMaxTransactionSizeBytes = TransactionAdmissionRules.DefaultMaxTransactionSizeBytes;
 
-        public const int DefaultMaxBlobTransactionSizeBytes =
-            Eip7594MaxBlobsPerTxRule.MAX_BLOBS_PER_TX * BlobGasCalculator.GAS_PER_BLOB
-            + DefaultMaxTransactionSizeBytes;
+        public const int DefaultMaxBlobTransactionSizeBytes = TransactionAdmissionRules.DefaultMaxBlobTransactionSizeBytes;
 
         public const long DefaultMaxGasLimit = 100_000_000;
 
-        private readonly EvmUInt256 _chainId;
+        private readonly TransactionAdmissionRules _rules;
         private readonly IntrinsicGasRules _intrinsicGas;
-        private readonly int _maxTransactionSizeBytes;
-        private readonly int _maxBlobTransactionSizeBytes;
-        private readonly EvmUInt256 _maxGasLimit;
 
         public MempoolAdmissionValidator(
             System.Numerics.BigInteger chainId,
@@ -34,11 +29,8 @@ namespace Nethereum.DevP2P.Sync.Mempool
             long maxGasLimit = DefaultMaxGasLimit,
             int maxBlobTransactionSizeBytes = DefaultMaxBlobTransactionSizeBytes)
         {
-            _chainId = (EvmUInt256)chainId;
+            _rules = new TransactionAdmissionRules(chainId, maxGasLimit, maxTransactionSizeBytes, maxBlobTransactionSizeBytes);
             _intrinsicGas = intrinsicGas ?? IntrinsicGasRuleSets.Prague;
-            _maxTransactionSizeBytes = maxTransactionSizeBytes;
-            _maxBlobTransactionSizeBytes = maxBlobTransactionSizeBytes;
-            _maxGasLimit = new EvmUInt256((ulong)maxGasLimit);
         }
 
         public async Task<MempoolAdmission> ValidateAsync(
@@ -50,36 +42,18 @@ namespace Nethereum.DevP2P.Sync.Mempool
             if (tx == null) throw new ArgumentNullException(nameof(tx));
             if (bundle == null) throw new ArgumentNullException(nameof(bundle));
 
-            if (tx is Transaction4844 shapeBlobTx)
-            {
-                if (!BlobSidecarValidator.HasSidecar(shapeBlobTx))
-                    return MempoolAdmission.Reject(MempoolRejectReason.BlobSidecarMissing,
-                        "type-3 blob transaction has no sidecar to relay");
+            if (tx is Transaction4844 shapeBlobTx && !BlobSidecarValidator.HasSidecar(shapeBlobTx))
+                return MempoolAdmission.Reject(MempoolRejectReason.BlobSidecarMissing,
+                    "type-3 blob transaction has no sidecar to relay");
 
-                var blobCount = shapeBlobTx.BlobVersionedHashes?.Count ?? 0;
-                if (blobCount < 1 || blobCount > Eip7594MaxBlobsPerTxRule.MAX_BLOBS_PER_TX)
-                    return MempoolAdmission.Reject(MempoolRejectReason.BlobCountInvalid,
-                        $"blob count {blobCount} not in [1, {Eip7594MaxBlobsPerTxRule.MAX_BLOBS_PER_TX}]");
-            }
+            if (_rules.BlobCountReason(tx) is string blobCountInvalid)
+                return MempoolAdmission.Reject(MempoolRejectReason.BlobCountInvalid, blobCountInvalid);
 
-            if (tx is Transaction4844 sizeBlobTx)
-            {
-                var blobEncoded = sizeBlobTx.GetRLPEncodedWithSidecar();
-                if (blobEncoded.Length > _maxBlobTransactionSizeBytes)
-                    return MempoolAdmission.Reject(MempoolRejectReason.Oversize,
-                        $"blob transaction size {blobEncoded.Length} exceeds blob cap {_maxBlobTransactionSizeBytes}");
-            }
-            else
-            {
-                var encoded = tx.GetRLPEncoded();
-                if (encoded.Length > _maxTransactionSizeBytes)
-                    return MempoolAdmission.Reject(MempoolRejectReason.Oversize,
-                        $"transaction size {encoded.Length} exceeds cap {_maxTransactionSizeBytes}");
-            }
+            if (_rules.OversizeReason(tx) is string oversize)
+                return MempoolAdmission.Reject(MempoolRejectReason.Oversize, oversize);
 
-            if (!tx.VerifyTransaction())
-                return MempoolAdmission.Reject(MempoolRejectReason.InvalidSignature,
-                    "signature failed to verify");
+            if (_rules.InvalidSignatureReason(tx) is string invalidSignature)
+                return MempoolAdmission.Reject(MempoolRejectReason.InvalidSignature, invalidSignature);
 
             var sender = tx.GetSenderAddress();
             if (string.IsNullOrEmpty(sender))
@@ -87,10 +61,8 @@ namespace Nethereum.DevP2P.Sync.Mempool
                     "no sender could be recovered");
             var senderKey = sender.ToLowerInvariant();
 
-            if (tx.DeclaresItsOwnChainId() && tx.GetChainId() != _chainId)
-                return MempoolAdmission.Reject(MempoolRejectReason.WrongChainId,
-                    $"transaction chain id {tx.GetChainId()} does not match node chain id {_chainId}",
-                    senderKey);
+            if (_rules.WrongChainIdReason(tx) is string wrongChainId)
+                return MempoolAdmission.Reject(MempoolRejectReason.WrongChainId, wrongChainId, senderKey);
 
             var data = tx.GetData() ?? Array.Empty<byte>();
             var isContractCreation = tx.IsContractCreation();
@@ -106,14 +78,11 @@ namespace Nethereum.DevP2P.Sync.Mempool
                 return MempoolAdmission.Reject(MempoolRejectReason.IntrinsicGasTooLow,
                     $"gas limit {gasLimit} below intrinsic minimum {minimumGas}", senderKey);
 
-            if (gasLimit > _maxGasLimit)
-                return MempoolAdmission.Reject(MempoolRejectReason.GasLimitTooHigh,
-                    $"gas limit {gasLimit} exceeds cap {_maxGasLimit}", senderKey);
+            if (_rules.GasLimitTooHighReason(tx) is string gasLimitTooHigh)
+                return MempoolAdmission.Reject(MempoolRejectReason.GasLimitTooHigh, gasLimitTooHigh, senderKey);
 
-            if (tx.IsFeeMarketCapable() && tx.GetMaxPriorityFeePerGas() > tx.GetMaxFeePerGas())
-                return MempoolAdmission.Reject(MempoolRejectReason.FeeCapBelowPriorityFee,
-                    $"maxPriorityFeePerGas {tx.GetMaxPriorityFeePerGas()} exceeds maxFeePerGas {tx.GetMaxFeePerGas()}",
-                    senderKey);
+            if (_rules.FeeCapBelowPriorityFeeReason(tx) is string feeCapBelowPriorityFee)
+                return MempoolAdmission.Reject(MempoolRejectReason.FeeCapBelowPriorityFee, feeCapBelowPriorityFee, senderKey);
 
             if (tx is Transaction4844 structureBlobTx
                 && !BlobSidecarValidator.HasValidVersionedHashes(structureBlobTx))

@@ -85,33 +85,82 @@ namespace Nethereum.DevP2P.Sync.Peering
         string IEthPeer.Host => PeerHost;
         public event EventHandler<IEthPeer>? Disconnected;
 
-        public event EventHandler<NewBlockMessage>? NewBlockReceived;
+        public event EventHandler<SyncPeerSession>? HeadAdvanced;
 
         private void OnPushMessageReceived(object sender, RlpxConnection.RlpxPushMessageEventArgs e)
         {
-            if (e.MessageId != _ethOffset + EthMessageIds.NewBlock) return;
+            var localId = e.MessageId - _ethOffset;
+            if (localId == EthMessageIds.BlockRangeUpdate) OnBlockRangeUpdate(e.Payload);
+            else if (localId == EthMessageIds.NewBlock) OnNewBlock(e.Payload);
+        }
+
+        private void OnBlockRangeUpdate(byte[] payload)
+        {
+            if (_ethVersion < 69)
+            {
+                Breach("BlockRangeUpdate received on eth/68 (only valid on eth/69+)");
+                return;
+            }
+
+            BlockRangeUpdateMessage update;
+            try { update = BlockRangeUpdateMessageEncoder.Decode(payload); }
+            catch (Exception ex)
+            {
+                _logger?.LogDebug(ex, "Undecodable BlockRangeUpdate from {Peer}", PeerEnode);
+                Breach("undecodable BlockRangeUpdate");
+                return;
+            }
+
+            var violation = BlockRangeValidator.Violation(update.EarliestBlock, update.LatestBlock, update.LatestBlockHash);
+            if (violation != null)
+            {
+                Breach($"invalid BlockRangeUpdate: {violation}");
+                return;
+            }
+
+            SetPeerHead(update.LatestBlock, update.LatestBlockHash);
+        }
+
+        private void OnNewBlock(byte[] payload)
+        {
+            if (_ethVersion >= 69)
+            {
+                Breach("NewBlock received on eth/69+ (only valid on eth/68)");
+                return;
+            }
 
             NewBlockMessage message;
-            try { message = NewBlockMessageEncoder.Decode(e.Payload); }
+            try { message = NewBlockMessageEncoder.Decode(payload); }
             catch (Exception ex)
             {
                 _logger?.LogDebug(ex, "Undecodable NewBlock push from {Peer}", PeerEnode);
                 return;
             }
 
-            AdvancePeerHead(message);
-            NewBlockReceived?.Invoke(this, message);
+            if (message?.Header == null) return;
+            var announced = (ulong)message.Header.BlockNumber;
+            if (announced > PeerLatestBlock) SetPeerHead(announced, Nethereum.CoreChain.BlockHashCalculator.ForHeader(message.Header));
         }
 
-        private void AdvancePeerHead(NewBlockMessage message)
+        private void Breach(string reason)
         {
-            if (message?.Header == null) return;
+            _logger?.LogWarning("eth ProtocolBreach from {Peer}: {Reason}", PeerEnode, reason);
+            _ = DisconnectQuietlyAsync(DisconnectReason.ProtocolBreach);
+        }
 
-            var announced = (ulong)message.Header.BlockNumber;
-            if (announced <= PeerLatestBlock) return;
+        private async Task DisconnectQuietlyAsync(DisconnectReason reason)
+        {
+            try { await _conn.DisconnectAsync(reason).ConfigureAwait(false); }
+            catch { }
+        }
 
+        private void SetPeerHead(ulong announced, byte[] announcedHash)
+        {
+            var advanced = announced > PeerLatestBlock
+                || (announced == PeerLatestBlock && !ByteUtil.AreEqual(announcedHash, PeerLatestBlockHash));
             PeerLatestBlock = announced;
-            PeerLatestBlockHash = Nethereum.CoreChain.BlockHashCalculator.ForHeader(message.Header);
+            PeerLatestBlockHash = announcedHash;
+            if (advanced) HeadAdvanced?.Invoke(this, this);
         }
 
         private SyncPeerSession(
@@ -176,32 +225,6 @@ namespace Nethereum.DevP2P.Sync.Peering
                 $"All {bootnodes.Length} bootnodes refused or timed out. Last: {last?.Message}", last);
         }
 
-        /// <param name="forkBlocks">
-        /// EIP-2124 block-activated fork heights (chronological), derived from the chain's own
-        /// schedule — <c>Nethereum.EVM.MainnetChainSchedule.ForkIdentity.BlockHeights</c>
-        /// for mainnet. Null/empty means the caller has
-        /// no opinion on fork identity (AppChain/dev-chain dials) — the session falls back to
-        /// echoing the peer's forkHash regardless of <paramref name="computeOwnForkId"/>, since
-        /// there is nothing to compute from.
-        /// </param>
-        /// <param name="forkTimestamps">EIP-2124 time-activated fork timestamps (chronological); see <paramref name="forkBlocks"/>.</param>
-        /// <param name="computeOwnForkId">
-        /// AMS-2124-01 two-hats flag. True (default): compute our own forkHash/forkNext from
-        /// <paramref name="forkBlocks"/>/<paramref name="forkTimestamps"/> per EIP-2124 and reject
-        /// a peer whose announced forkId fails <see cref="Eip2124ForkIdCalculator.ValidateForkId"/>.
-        /// False: revert to the pre-fix behaviour (echo the peer's forkHash, no validation) — kept
-        /// reachable as a safety net if the computed id is ever wrong against a real peer
-        /// population; do not remove without re-running the field validation described in AMS-2124-01.
-        /// </param>
-        /// <param name="ourHeadBlockNumber">
-        /// OUR current chain head — mirrors geth's <c>NewIDWithChain</c>, which computes from the
-        /// local node's own head, never the peer's. The peer's reported <c>LatestBlock</c> must NOT
-        /// be used here: it's 0 on eth/68 (TD-only, no head field) and even on eth/69 it's THEIR
-        /// progress, not ours — using it would announce a genesis-only fork-ID for a synced node (or
-        /// vice versa) and validate the peer against a fake head. 0 (the default) honestly reports
-        /// "our head is unknown / genesis" when the caller has no chain to consult (dev/test dials).
-        /// </param>
-        /// <param name="ourHeadTimestamp">The timestamp of the block at <paramref name="ourHeadBlockNumber"/>; see that parameter.</param>
         public static async Task<SyncPeerSession> ConnectAsync(
             string enodeUrl, TimeSpan timeout, CancellationToken ct,
             byte[] expectedGenesisHash, ulong expectedNetworkId,
@@ -210,7 +233,7 @@ namespace Nethereum.DevP2P.Sync.Peering
             ulong ourHeadBlockNumber = 0, ulong ourHeadTimestamp = 0,
             bool advertiseSnap2 = false)
         {
-            var (nodeId, host, port) = ParseEnode(enodeUrl);
+            var enode = EnodeUrl.Parse(enodeUrl);
             localKey ??= EthECKey.GenerateKey();
             var cfg = BuildDialConfig(timeout, advertiseSnap2);
 
@@ -220,72 +243,86 @@ namespace Nethereum.DevP2P.Sync.Peering
             var conn = new RlpxConnection(localKey, cfg);
             try
             {
-                await conn.ConnectAsync(host, port, nodeId, cts.Token);
-                var ethCap = conn.SharedCapabilities.Find(c => c.Name == "eth")
-                    ?? throw new InvalidOperationException("Peer did not negotiate any eth/* capability");
-                var ethOffset = conn.GetCapabilityOffset("eth");
-                if (expectedGenesisHash == null || expectedGenesisHash.Length == 0)
-                    throw new ArgumentException("A genesis hash is required — the session assumes no chain.", nameof(expectedGenesisHash));
-                if (expectedNetworkId == 0)
-                    throw new ArgumentException("A network id is required — the session assumes no chain.", nameof(expectedNetworkId));
-                var genesisHash = expectedGenesisHash;
-                var networkId = expectedNetworkId;
-
-                var peerInfo = await ReceiveStatusAsync(conn, ethCap.Version, ethOffset, genesisHash, networkId, cts.Token);
-
-                if (ShouldRejectAsBehind(ethCap.Version, peerInfo.LatestBlock, minPeerLatestBlock))
-                {
-                    throw new UselessPeerException(
-                        $"Peer Latest={peerInfo.LatestBlock} < required minimum {minPeerLatestBlock}");
-                }
-
-                var outboundForkId = ResolveOutboundForkId(
-                    peerInfo.ForkHash, genesisHash, forkBlocks, forkTimestamps,
-                    ourHeadBlockNumber, ourHeadTimestamp, computeOwnForkId);
-                EnsurePeerForkIdAccepted(
-                    peerInfo, genesisHash, forkBlocks, forkTimestamps,
-                    ourHeadBlockNumber, ourHeadTimestamp, computeOwnForkId);
-
-                await SendStatusAsync(conn, ethCap.Version, ethOffset,
-                    forkHash: outboundForkId.Hash,
-                    forkNext: outboundForkId.Next,
-                    latestBlock: peerInfo.LatestBlock,
-                    latestBlockHash: peerInfo.LatestBlockHash ?? genesisHash,
-                    networkId: networkId,
-                    genesisHash: genesisHash,
-                    cts.Token);
-
-                conn.StartDispatching();
-
-                return new SyncPeerSession(enodeUrl, host, conn, ethCap.Version, ethOffset, peerInfo.LatestBlock, peerInfo.LatestBlockHash, peerInfo.ForkHash, logger);
+                await conn.ConnectAsync(enode.Host, enode.Port, enode.PublicKey, cts.Token);
+                return await HandshakeAsync(
+                    conn, enodeUrl, enode.Host, expectedGenesisHash, expectedNetworkId, minPeerLatestBlock, logger,
+                    forkBlocks, forkTimestamps, computeOwnForkId, ourHeadBlockNumber, ourHeadTimestamp, cts.Token);
             }
             catch (UselessPeerException)
             {
-                if (conn.IsConnected)
-                {
-                    try { await conn.DisconnectAsync(DisconnectReason.UselessPeer); } catch { }
-                }
-                conn.Dispose();
+                await DisconnectAndDisposeAsync(conn, DisconnectReason.UselessPeer);
                 throw;
             }
             catch (InvalidOperationException)
             {
-                if (conn.IsConnected)
-                {
-                    try { await conn.DisconnectAsync(DisconnectReason.ProtocolBreach); } catch { }
-                }
-                conn.Dispose();
+                await DisconnectAndDisposeAsync(conn, DisconnectReason.ProtocolBreach);
                 throw;
             }
             catch
             {
-                if (conn.IsConnected)
-                {
-                    try { await conn.DisconnectAsync(DisconnectReason.ClientQuitting); } catch { }
-                }
-                conn.Dispose();
+                await DisconnectAndDisposeAsync(conn, DisconnectReason.ClientQuitting);
                 throw;
             }
+        }
+
+        private static async Task<SyncPeerSession> HandshakeAsync(
+            RlpxConnection conn, string enodeUrl, string host,
+            byte[] expectedGenesisHash, ulong expectedNetworkId, ulong minPeerLatestBlock, ILogger logger,
+            ulong[] forkBlocks, ulong[] forkTimestamps, bool computeOwnForkId,
+            ulong ourHeadBlockNumber, ulong ourHeadTimestamp, CancellationToken ct)
+        {
+            var ethCap = conn.SharedCapabilities.Find(c => c.Name == "eth")
+                ?? throw new InvalidOperationException("Peer did not negotiate any eth/* capability");
+            var ethOffset = conn.GetCapabilityOffset("eth");
+            if (expectedGenesisHash == null || expectedGenesisHash.Length == 0)
+                throw new ArgumentException("A genesis hash is required — the session assumes no chain.", nameof(expectedGenesisHash));
+            if (expectedNetworkId == 0)
+                throw new ArgumentException("A network id is required — the session assumes no chain.", nameof(expectedNetworkId));
+            var genesisHash = expectedGenesisHash;
+            var networkId = expectedNetworkId;
+
+            var expected = new EthStatusExpectation
+            {
+                NetworkId = networkId,
+                GenesisHash = genesisHash,
+                ForkBlocks = computeOwnForkId ? forkBlocks : null,
+                ForkTimestamps = computeOwnForkId ? forkTimestamps : null,
+                HeadBlock = ourHeadBlockNumber,
+                HeadTimestamp = ourHeadTimestamp
+            };
+            var peerInfo = await ReceiveStatusAsync(conn, ethCap.Version, ethOffset, expected, ct);
+
+            if (ShouldRejectAsBehind(ethCap.Version, peerInfo.LatestBlock, minPeerLatestBlock))
+            {
+                throw new UselessPeerException(
+                    $"Peer Latest={peerInfo.LatestBlock} < required minimum {minPeerLatestBlock}");
+            }
+
+            var outboundForkId = ResolveOutboundForkId(
+                peerInfo.ForkHash, genesisHash, forkBlocks, forkTimestamps,
+                ourHeadBlockNumber, ourHeadTimestamp, computeOwnForkId);
+
+            await SendStatusAsync(conn, ethCap.Version, ethOffset,
+                forkHash: outboundForkId.Hash,
+                forkNext: outboundForkId.Next,
+                latestBlock: peerInfo.LatestBlock,
+                latestBlockHash: peerInfo.LatestBlockHash ?? genesisHash,
+                networkId: networkId,
+                genesisHash: genesisHash,
+                ct);
+
+            conn.StartDispatching();
+
+            return new SyncPeerSession(enodeUrl, host, conn, ethCap.Version, ethOffset, peerInfo.LatestBlock, peerInfo.LatestBlockHash, peerInfo.ForkHash, logger);
+        }
+
+        private static async Task DisconnectAndDisposeAsync(RlpxConnection conn, DisconnectReason reason)
+        {
+            if (conn.IsConnected)
+            {
+                try { await conn.DisconnectAsync(reason); } catch { }
+            }
+            conn.Dispose();
         }
 
         public sealed class UselessPeerException : Exception
@@ -302,43 +339,24 @@ namespace Nethereum.DevP2P.Sync.Peering
         }
 
         private static async Task<PeerStatusInfo> ReceiveStatusAsync(
-            RlpxConnection conn, int ethVersion, int ethOffset, byte[] expectedGenesis, ulong expectedNetworkId, CancellationToken ct)
+            RlpxConnection conn, int ethVersion, int ethOffset, EthStatusExpectation expected, CancellationToken ct)
         {
-            var (msgId, payload) = await conn.ReceiveMessageAsync(ct);
+            var (msgId, payload) = await conn.ReceiveStatusAsync(ct);
             if (msgId != ethOffset + EthMessageIds.Status)
                 throw new InvalidOperationException($"Expected Status (0x10), got msgId=0x{msgId:x2}");
 
-            var info = new PeerStatusInfo();
-            ulong networkId;
-            byte[] peerGenesis;
-            if (ethVersion >= 69)
-            {
-                var s = Eth69StatusMessageEncoder.Decode(payload);
-                networkId = s.NetworkId;
-                peerGenesis = s.GenesisHash;
-                info.ForkHash = s.ForkHash;
-                info.ForkNext = s.ForkNext;
-                info.LatestBlock = s.LatestBlock;
-                info.LatestBlockHash = s.LatestBlockHash;
-            }
-            else
-            {
-                var s = Eth68StatusMessageEncoder.Decode(payload);
-                networkId = s.NetworkId;
-                peerGenesis = s.GenesisHash;
-                info.ForkHash = s.ForkHash;
-                info.ForkNext = s.ForkNext;
-                info.LatestBlock = 0;
-                info.LatestBlockHash = s.BestHash;
-            }
+            var decoded = EthStatusValidator.Decode(ethVersion, payload);
+            var violation = EthStatusValidator.Violation(expected, ethVersion, decoded.Status);
+            if (violation != null)
+                throw new InvalidOperationException(violation);
 
-            if (networkId != expectedNetworkId)
-                throw new InvalidOperationException($"Peer is on network {networkId}, expected {expectedNetworkId}");
-            if (!ByteUtil.AreEqual(peerGenesis, expectedGenesis))
-                throw new InvalidOperationException(
-                    $"Peer genesis {peerGenesis.ToHex()} != expected genesis {expectedGenesis.ToHex()}");
-
-            return info;
+            return new PeerStatusInfo
+            {
+                ForkHash = decoded.Status.ForkHash,
+                ForkNext = decoded.Status.ForkNext,
+                LatestBlock = decoded.LatestBlock,
+                LatestBlockHash = decoded.Status.BestHash
+            };
         }
 
         public static bool ShouldRejectAsBehind(int ethVersion, ulong peerLatestBlock, ulong minPeerLatestBlock)
@@ -366,20 +384,6 @@ namespace Nethereum.DevP2P.Sync.Peering
                 return new Eip2124ForkId(peerForkHashForEchoFallback, 0);
 
             return Eip2124ForkIdCalculator.NewId(genesisHash, forkBlocks, forkTimestamps, ourHeadBlock, ourHeadTime);
-        }
-
-        private static void EnsurePeerForkIdAccepted(
-            PeerStatusInfo peerInfo, byte[] genesisHash, ulong[] forkBlocks, ulong[] forkTimestamps,
-            ulong ourHeadBlock, ulong ourHeadTime, bool computeOwnForkId)
-        {
-            if (!computeOwnForkId || !HasForkSchedule(forkBlocks, forkTimestamps)) return;
-
-            var result = Eip2124ForkIdCalculator.ValidateForkId(
-                peerInfo.ForkHash, peerInfo.ForkNext, genesisHash, forkBlocks, forkTimestamps,
-                ourHeadBlock, ourHeadTime);
-            if (result != Eip2124ValidationResult.Accepted)
-                throw new InvalidOperationException(
-                    $"Peer forkId 0x{peerInfo.ForkHash:x8}/next={peerInfo.ForkNext} rejected by EIP-2124 validation: {result}");
         }
 
         private static Task SendStatusAsync(
@@ -456,11 +460,12 @@ namespace Nethereum.DevP2P.Sync.Peering
         private async Task<List<BlockHeader>> SendAndAwaitHeadersAsync(
             ulong reqId, GetBlockHeadersMessage req, CancellationToken ct)
         {
-            var payload = await _conn.SendRequestAsync(
+            var headers = await _conn.SendRequestAsync(
                 _ethOffset + EthMessageIds.GetBlockHeaders,
                 GetBlockHeadersMessageEncoder.Encode(req),
-                _ethOffset + EthMessageIds.BlockHeaders, reqId, RequestTimeout, ct);
-            return BlockHeadersMessageEncoder.Decode(payload).Headers ?? new List<BlockHeader>();
+                _ethOffset + EthMessageIds.BlockHeaders, reqId, RequestTimeout,
+                ItemsBound(req.Limit), p => BlockHeadersMessageEncoder.Decode(p).Headers, ct);
+            return headers ?? new List<BlockHeader>();
         }
 
         public async Task<List<BlockBody>> GetBodiesAsync(List<byte[]> blockHashes, CancellationToken ct)
@@ -468,18 +473,23 @@ namespace Nethereum.DevP2P.Sync.Peering
             if (blockHashes.Count == 0) return new List<BlockBody>();
             var reqId = _conn.NextRequestId();
             var req = new GetBlockBodiesMessage { RequestId = reqId, BlockHashes = blockHashes.ToArray() };
-            var payload = await _conn.SendRequestAsync(
+            var bodies = await _conn.SendRequestAsync(
                 _ethOffset + EthMessageIds.GetBlockBodies,
                 GetBlockBodiesMessageEncoder.Encode(req),
-                _ethOffset + EthMessageIds.BlockBodies, reqId, RequestTimeout, ct);
-            return BlockBodiesMessageEncoder.Decode(payload).Bodies ?? new List<BlockBody>();
+                _ethOffset + EthMessageIds.BlockBodies, reqId, RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Count), p => BlockBodiesMessageEncoder.Decode(p).Bodies, ct);
+            return bodies ?? new List<BlockBody>();
         }
 
         public Task<List<List<Receipt>>> GetReceiptsAsync(List<byte[]> blockHashes, CancellationToken ct)
+            => GetReceiptsAsync(blockHashes, null, ct);
+
+        public Task<List<List<Receipt>>> GetReceiptsAsync(
+            List<byte[]> blockHashes, IReadOnlyList<ulong> gasUsedByBlock, CancellationToken ct)
         {
             if (blockHashes.Count == 0) return Task.FromResult(new List<List<Receipt>>());
             return _ethVersion >= 70
-                ? GetReceipts70Async(blockHashes, ct)
+                ? GetReceipts70Async(blockHashes, gasUsedByBlock, ct)
                 : GetReceiptsLegacyAsync(blockHashes, ct);
         }
 
@@ -487,19 +497,21 @@ namespace Nethereum.DevP2P.Sync.Peering
         {
             var reqId = _conn.NextRequestId();
             var req = new GetReceiptsMessage { RequestId = reqId, BlockHashes = blockHashes.ToArray() };
-            var payload = await _conn.SendRequestAsync(
+            var receipts = await _conn.SendRequestAsync(
                 _ethOffset + EthMessageIds.GetReceipts,
                 GetReceiptsMessageEncoder.Encode(req),
-                _ethOffset + EthMessageIds.Receipts, reqId, RequestTimeout, ct);
-            var resp = _ethVersion >= 69
-                ? ReceiptsMessageEth69Encoder.Decode(payload)
-                : ReceiptsMessageEncoder.Decode(payload);
-            return resp.ReceiptsByBlock ?? new List<List<Receipt>>();
+                _ethOffset + EthMessageIds.Receipts, reqId, RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Count),
+                p => (_ethVersion >= 69
+                    ? ReceiptsMessageEth69Encoder.Decode(p)
+                    : ReceiptsMessageEncoder.Decode(p)).ReceiptsByBlock, ct);
+            return receipts ?? new List<List<Receipt>>();
         }
 
         private const int MaxReceipts70ContinuationRounds = 4096;
 
-        private async Task<List<List<Receipt>>> GetReceipts70Async(List<byte[]> blockHashes, CancellationToken ct)
+        private async Task<List<List<Receipt>>> GetReceipts70Async(
+            List<byte[]> blockHashes, IReadOnlyList<ulong> gasUsedByBlock, CancellationToken ct)
         {
             var hashes = blockHashes.ToArray();
             return await AssembleReceipts70Async(
@@ -516,21 +528,30 @@ namespace Nethereum.DevP2P.Sync.Peering
                         FirstBlockReceiptIndex = firstBlockReceiptIndex,
                         BlockHashes = requestHashes
                     };
-                    var payload = await _conn.SendRequestAsync(
+                    var resp = await _conn.SendRequestAsync(
                         _ethOffset + EthMessageIds.GetReceipts,
                         GetReceiptsMessage70Encoder.Encode(req),
-                        _ethOffset + EthMessageIds.Receipts, reqId, RequestTimeout, ct).ConfigureAwait(false);
-                    var resp = ReceiptsMessageEth70Encoder.Decode(payload);
+                        _ethOffset + EthMessageIds.Receipts, reqId, RequestTimeout,
+                        RlpxResponseBound.Items(requestHashes.Length),
+                        ReceiptsMessageEth70Encoder.Decode, ct).ConfigureAwait(false);
                     return ((IReadOnlyList<List<Receipt>>)(resp.ReceiptsByBlock ?? new List<List<Receipt>>()),
                         resp.LastBlockIncomplete);
                 },
-                MaxReceipts70ContinuationRounds).ConfigureAwait(false);
+                MaxReceipts70ContinuationRounds,
+                gasUsedByBlock).ConfigureAwait(false);
         }
+
+        public static Task<List<List<Receipt>>> AssembleReceipts70Async(
+            int hashCount,
+            Func<int, ulong, Task<(IReadOnlyList<List<Receipt>> entries, bool lastBlockIncomplete)>> fetchFromPos,
+            int maxRounds)
+            => AssembleReceipts70Async(hashCount, fetchFromPos, maxRounds, null);
 
         public static async Task<List<List<Receipt>>> AssembleReceipts70Async(
             int hashCount,
             Func<int, ulong, Task<(IReadOnlyList<List<Receipt>> entries, bool lastBlockIncomplete)>> fetchFromPos,
-            int maxRounds)
+            int maxRounds,
+            IReadOnlyList<ulong> gasUsedByBlock)
         {
             var assembled = new List<List<Receipt>>();
             int pos = 0;
@@ -547,6 +568,7 @@ namespace Nethereum.DevP2P.Sync.Peering
 
                 if (entries.Count == 1 && lastBlockIncomplete)
                 {
+                    EnforceReceiptBounds(current, pos, gasUsedByBlock);
                     carry = current;
                     continue;
                 }
@@ -573,9 +595,20 @@ namespace Nethereum.DevP2P.Sync.Peering
                 }
 
                 carry = entries[entries.Count - 1];
+                EnforceReceiptBounds(carry, pos, gasUsedByBlock);
             }
 
             return assembled;
+        }
+
+        private static void EnforceReceiptBounds(List<Receipt> partial, int blockPos, IReadOnlyList<ulong> gasUsedByBlock)
+        {
+            var gasUsed = gasUsedByBlock != null && blockPos < gasUsedByBlock.Count
+                ? gasUsedByBlock[blockPos]
+                : ReceiptBounds.UnknownBlockGasUsed;
+            if (ReceiptBounds.Exceeded(partial, gasUsed))
+                throw new PeerMisbehaviourException(
+                    $"partial receipts of block {blockPos} exceed what a block using {gasUsed} gas can hold");
         }
 
         public async Task<List<List<AccountChanges>>> GetBlockAccessListsAsync(List<byte[]> blockHashes, CancellationToken ct)
@@ -586,11 +619,16 @@ namespace Nethereum.DevP2P.Sync.Peering
             if (blockHashes.Count == 0) return new List<List<AccountChanges>>();
             var reqId = _conn.NextRequestId();
             var req = new Nethereum.Model.P2P.GetBlockAccessListsMessage { RequestId = reqId, BlockHashes = blockHashes.ToArray() };
-            var payload = await _conn.SendRequestAsync(
+            return await _conn.SendRequestAsync(
                 _ethOffset + EthMessageIds.GetBlockAccessLists,
                 Nethereum.Model.P2P.GetBlockAccessListsMessageEncoder.Encode(req),
-                _ethOffset + EthMessageIds.BlockAccessLists, reqId, RequestTimeout, ct);
+                _ethOffset + EthMessageIds.BlockAccessLists, reqId, RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Count),
+                DecodeBlockAccessLists, ct);
+        }
 
+        private static List<List<AccountChanges>> DecodeBlockAccessLists(byte[] payload)
+        {
             var rawBals = Nethereum.Model.P2P.BlockAccessListsMessageEncoder.Decode(payload).BlockAccessListsByBlock;
             var balEncoder = BlockAccessListRLPEncoder.Current;
             var result = new List<List<AccountChanges>>(rawBals?.Count ?? 0);
@@ -607,11 +645,13 @@ namespace Nethereum.DevP2P.Sync.Peering
             if (txHashes.Count == 0) return new List<ISignedTransaction>();
             var reqId = _conn.NextRequestId();
             var req = new GetPooledTransactionsMessage { RequestId = reqId, Hashes = new List<byte[]>(txHashes) };
-            var payload = await _conn.SendRequestAsync(
+            var transactions = await _conn.SendRequestAsync(
                 _ethOffset + EthMessageIds.GetPooledTransactions,
                 GetPooledTransactionsMessageEncoder.Encode(req),
-                _ethOffset + EthMessageIds.PooledTransactions, reqId, RequestTimeout, ct);
-            return PooledTransactionsMessageEncoder.Decode(payload).Transactions ?? new List<ISignedTransaction>();
+                _ethOffset + EthMessageIds.PooledTransactions, reqId, RequestTimeout,
+                RlpxResponseBound.Items(txHashes.Count),
+                p => PooledTransactionsMessageEncoder.Decode(p).Transactions, ct);
+            return transactions ?? new List<ISignedTransaction>();
         }
 
         public bool SupportsSnap => _conn.SharedCapabilities.Find(c => c.Name == "snap") != null;
@@ -672,10 +712,10 @@ namespace Nethereum.DevP2P.Sync.Peering
             var sw = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                var respPayload = await _conn.SendRequestAsync(
+                var resp = await _conn.SendRequestAsync(
                     snapOffset + SnapMessageIds.GetAccountRange, reqPayload,
-                    snapOffset + SnapMessageIds.AccountRange, reqId, RequestTimeout, ct);
-                var resp = AccountRangeMessageEncoder.Decode(respPayload);
+                    snapOffset + SnapMessageIds.AccountRange, reqId, RequestTimeout,
+                    ContentBytesBound(responseBytes), AccountRangeMessageEncoder.Decode, ct);
                 _logger.LogTrace(
                     "snap.phase2.getaccountrange RECV-OK peer={Peer} reqId={ReqId} elapsedMs={ElapsedMs} " +
                     "accounts={Accounts} proofs={Proofs}",
@@ -706,11 +746,11 @@ namespace Nethereum.DevP2P.Sync.Peering
                 LimitHash = limitHash,
                 ResponseBytes = responseBytes
             };
-            var payload = await _conn.SendRequestAsync(
+            return await _conn.SendRequestAsync(
                 snapOffset + SnapMessageIds.GetStorageRanges,
                 GetStorageRangesMessageEncoder.Encode(req),
-                snapOffset + SnapMessageIds.StorageRanges, reqId, RequestTimeout, ct);
-            return StorageRangesMessageEncoder.Decode(payload);
+                snapOffset + SnapMessageIds.StorageRanges, reqId, RequestTimeout,
+                ContentBytesBound(responseBytes), StorageRangesMessageEncoder.Decode, ct);
         }
 
         public async Task<ByteCodesMessage> GetByteCodesAsync(
@@ -724,11 +764,11 @@ namespace Nethereum.DevP2P.Sync.Peering
                 Hashes = codeHashes,
                 ResponseBytes = responseBytes
             };
-            var payload = await _conn.SendRequestAsync(
+            return await _conn.SendRequestAsync(
                 snapOffset + SnapMessageIds.GetByteCodes,
                 GetByteCodesMessageEncoder.Encode(req),
-                snapOffset + SnapMessageIds.ByteCodes, reqId, RequestTimeout, ct);
-            return ByteCodesMessageEncoder.Decode(payload);
+                snapOffset + SnapMessageIds.ByteCodes, reqId, RequestTimeout,
+                RlpxResponseBound.Items(codeHashes.Count), ByteCodesMessageEncoder.Decode, ct);
         }
 
         public async Task<TrieNodesMessage> GetTrieNodesAsync(
@@ -743,11 +783,13 @@ namespace Nethereum.DevP2P.Sync.Peering
                 Paths = paths,
                 ResponseBytes = responseBytes
             };
-            var payload = await _conn.SendRequestAsync(
+            var requestedPaths = 0L;
+            foreach (var group in paths) requestedPaths += group.Count;
+            return await _conn.SendRequestAsync(
                 snapOffset + SnapMessageIds.GetTrieNodes,
                 GetTrieNodesMessageEncoder.Encode(req),
-                snapOffset + SnapMessageIds.TrieNodes, reqId, RequestTimeout, ct);
-            return TrieNodesMessageEncoder.Decode(payload);
+                snapOffset + SnapMessageIds.TrieNodes, reqId, RequestTimeout,
+                RlpxResponseBound.Items(requestedPaths), TrieNodesMessageEncoder.Decode, ct);
         }
 
         public async Task<Nethereum.Model.P2P.Snap.BlockAccessListsMessage> GetBlockAccessListsAsync(
@@ -761,12 +803,21 @@ namespace Nethereum.DevP2P.Sync.Peering
                 Hashes = blockHashes,
                 Bytes = responseBytes
             };
-            var payload = await _conn.SendRequestAsync(
+            return await _conn.SendRequestAsync(
                 snapOffset + SnapMessageIds.GetBlockAccessLists,
                 Nethereum.Model.P2P.Snap.GetBlockAccessListsMessageEncoder.Encode(req),
-                snapOffset + SnapMessageIds.BlockAccessLists, reqId, RequestTimeout, ct);
-            return Nethereum.Model.P2P.Snap.BlockAccessListsMessageEncoder.Decode(payload);
+                snapOffset + SnapMessageIds.BlockAccessLists, reqId, RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Count),
+                Nethereum.Model.P2P.Snap.BlockAccessListsMessageEncoder.Decode, ct);
         }
+
+        private static RlpxResponseBound ItemsBound(ulong maxItems)
+            => RlpxResponseBound.Items(maxItems > long.MaxValue ? long.MaxValue : (long)maxItems);
+
+        private static RlpxResponseBound ContentBytesBound(ulong responseBytes)
+            => responseBytes > long.MaxValue / 2
+                ? RlpxResponseBound.Unbounded
+                : RlpxResponseBound.ContentBytes(2 * (long)responseBytes);
 
         public async ValueTask DisposeAsync()
         {
@@ -781,20 +832,6 @@ namespace Nethereum.DevP2P.Sync.Peering
         {
             var at = enode.IndexOf('@');
             return at < 0 ? enode : enode.Substring(at + 1);
-        }
-
-        private static (byte[] NodeId, string Host, int Port) ParseEnode(string enode)
-        {
-            const string prefix = "enode://";
-            if (!enode.StartsWith(prefix)) throw new ArgumentException("Not an enode URL", nameof(enode));
-            var rest = enode.Substring(prefix.Length);
-            var atIdx = rest.IndexOf('@');
-            var nodeIdHex = rest.Substring(0, atIdx);
-            var hostPort = rest.Substring(atIdx + 1);
-            var colonIdx = hostPort.IndexOf(':');
-            var host = hostPort.Substring(0, colonIdx);
-            var port = int.Parse(hostPort.Substring(colonIdx + 1));
-            return (nodeIdHex.HexToByteArray(), host, port);
         }
     }
 

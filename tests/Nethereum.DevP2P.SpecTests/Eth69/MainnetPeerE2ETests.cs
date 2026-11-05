@@ -12,6 +12,7 @@ using Nethereum.DevP2P.Sync.Peering;
 
 namespace Nethereum.DevP2P.SpecTests.Eth69
 {
+    [Trait("Category", "LivePeer")]
     public class MainnetPeerE2ETests : MainnetPeerTestBase
     {
         private const ulong CrossCheckBlockStart = 19_500_000UL;

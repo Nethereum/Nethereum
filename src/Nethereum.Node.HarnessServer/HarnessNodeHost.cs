@@ -6,19 +6,26 @@ using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Genesis;
 using Nethereum.CoreChain.Storage;
+using Nethereum.DevChain;
 using Nethereum.DevChain.Configuration;
 using Nethereum.DevChain.Hosting;
+using Nethereum.EVM;
 using Nethereum.EVM.Precompiles.Bls;
+using Newtonsoft.Json.Linq;
 
 namespace Nethereum.Node.HarnessServer
 {
     public static class HarnessNodeHost
     {
+        public static readonly HardforkRegistry Registry = Bls12381AwareMainnetHardforkRegistry.Build(
+            Nethereum.EVM.Precompiles.Kzg.KzgAwareMainnetHardforkRegistry.Instance,
+            new Nethereum.Signer.Bls.Herumi.Bls12381Operations());
+
         public static async Task<WebApplication> BuildAsync(HarnessServerOptions options, string[] args)
         {
-            var document = StandardGenesisLoader.LoadFromFile(options.GenesisPath);
+            var document = LoadGenesis(options.GenesisPath, options.HiveEnvironment);
 
-            var builder = WebApplication.CreateBuilder(args);
+            var builder = WebApplication.CreateBuilder(Nethereum.CoreChain.Hosting.HostArguments.WithoutConfigReload(args));
 
             var config = new DevChainServerConfig
             {
@@ -34,12 +41,7 @@ namespace Nethereum.Node.HarnessServer
                 EngineBindAddress = options.AuthRpcAddr,
             };
 
-            var liveChainConfig = config.GetLiveChainConfig();
-            StandardGenesisLoader.ApplyToChainConfig(liveChainConfig, document);
-            liveChainConfig.Registry = Bls12381AwareMainnetHardforkRegistry.Build(
-                Nethereum.EVM.Precompiles.Kzg.KzgAwareMainnetHardforkRegistry.Instance,
-                new Nethereum.Signer.Bls.Herumi.Bls12381Operations());
-            liveChainConfig.RewardPolicy = EthereumProofOfWorkRewardPolicy.Instance;
+            ConfigureChain(config, document, scheduleOverride: null, HiveGenesisMapping.TargetGasLimit(options.HiveEnvironment));
 
             builder.Services.AddDevChainServer(config);
             builder.Services.AddCors(o => o.AddDefaultPolicy(
@@ -53,20 +55,9 @@ namespace Nethereum.Node.HarnessServer
             var importSummary = RlpBlockImportSummary.Empty;
             await app.MapDevChainEndpointsAsync(async node =>
             {
-                await StandardGenesisLoader.PopulateAllocAsync(node.State, document.Alloc);
-                await node.StartAsync();
+                await StartNodeAsync(node, document);
 
-                var bundle = app.Services.GetRequiredService<IChainStoreBundle>();
-                var importer = new BlockImporter(
-                    node.BlockManager.Engine, node.Blocks, node.State,
-                    node.Transactions, node.Receipts, node.Logs,
-                    uncleStore: bundle.Uncles,
-                    logger: null,
-                    nodeCommitBlockContext: null,
-                    atomicFlush: null,
-                    flushCadence: null,
-                    blockAccessListStore: bundle.BlockAccessLists,
-                    withdrawalStore: bundle.Withdrawals);
+                var importer = CreateImporter(node, app.Services.GetRequiredService<IChainStoreBundle>());
                 importSummary = await new RlpBlockFileImporter(importer)
                     .ImportAsync(options.ImportChainRlpPath, options.ImportBlocksDir);
             });
@@ -74,6 +65,70 @@ namespace Nethereum.Node.HarnessServer
             LogStartup(app, options, config, importSummary);
 
             return app;
+        }
+
+        public static StandardGenesisDocument LoadGenesis(string path, IReadOnlyDictionary<string, string> hiveEnvironment)
+        {
+            var root = JObject.Parse(File.ReadAllText(path));
+            return StandardGenesisLoader.Parse(
+                HiveGenesisMapping.IsHiveEnvironment(hiveEnvironment) ? HiveGenesisMapping.Apply(root, hiveEnvironment) : root);
+        }
+
+        public static void ConfigureChain(
+            DevChainServerConfig config, StandardGenesisDocument document, ChainForkSchedule? scheduleOverride,
+            long targetGasLimit = HiveGenesisMapping.DefaultTargetGasLimit)
+        {
+            var chain = config.GetLiveChainConfig();
+            StandardGenesisLoader.ApplyToChainConfig(chain, document);
+            chain.Registry = Registry;
+            chain.RewardPolicy = EthereumProofOfWorkRewardPolicy.Instance;
+            chain.PredeploySystemContracts = !StandardGenesisLoader.DeclaresAnySystemContract(document);
+            chain.BaseFee = document.BaseFeePerGas ?? 0;
+            chain.EstimateGasPaddingPercent = 0;
+            chain.TargetGasLimit = targetGasLimit;
+
+            if (scheduleOverride != null)
+            {
+                scheduleOverride.ChainId = chain.ForkSchedule.ChainId;
+                chain.ForkSchedule = scheduleOverride;
+            }
+        }
+
+        public static async Task StartNodeAsync(DevChainNode node, StandardGenesisDocument document)
+        {
+            await StandardGenesisLoader.PopulateAllocAsync(node.State, document.Alloc);
+            await node.StartAsync();
+        }
+
+        public static BlockImporter CreateImporter(DevChainNode node, IChainStoreBundle bundle) =>
+            ExecutionStackFactory.CreateImporter(
+                bundle, node.BlockManager.Engine,
+                new ExecutionStackOptions { SideChain = new SideChainOptions { AdoptByDifficulty = true } });
+
+        public static async Task<HarnessNode> ComposeInProcessAsync(
+            StandardGenesisDocument document, ChainForkSchedule? scheduleOverride = null,
+            long targetGasLimit = HiveGenesisMapping.DefaultTargetGasLimit)
+        {
+            var config = new DevChainServerConfig
+            {
+                Storage = "memory",
+                Persist = true,
+                EngineApiEnabled = true,
+            };
+            ConfigureChain(config, document, scheduleOverride, targetGasLimit);
+
+            var services = new ServiceCollection();
+            services.AddLogging();
+            services.AddDevChainServer(config);
+            var provider = services.BuildServiceProvider();
+
+            var node = provider.GetRequiredService<DevChainNode>();
+            var bundle = provider.GetRequiredService<IChainStoreBundle>();
+            var composed = await DevChainComposition.ComposeAsync(
+                config, node, bundle, n => StartNodeAsync(n, document),
+                provider.GetRequiredService<ILoggerFactory>());
+
+            return new HarnessNode(provider, composed, CreateImporter(node, bundle));
         }
 
         private static void LogStartup(
@@ -91,6 +146,9 @@ namespace Nethereum.Node.HarnessServer
                 logger.LogInformation(
                     "Preloaded chain imported - imported={Imported} rejected={Rejected}",
                     importSummary.Imported, importSummary.Rejected);
+
+            foreach (var rejection in importSummary.Rejections)
+                logger.LogWarning("Preloaded block rejected - {Rejection}", rejection);
         }
     }
 }

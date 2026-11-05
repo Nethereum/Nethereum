@@ -27,16 +27,27 @@ namespace Nethereum.DevP2P.Sync.Mempool
             _logger = (ILogger)logger ?? NullLogger.Instance;
         }
 
+        public Task ReconcileAsync(
+            IChainStoreBundle bundle,
+            ulong commonAncestor,
+            ulong orphanedHead,
+            IReadOnlyList<ISignedTransaction> winningBranchTransactions,
+            CancellationToken ct) =>
+            ReconcileAsync(bundle, commonAncestor, orphanedHead, orphanedBranchTransactions: null, winningBranchTransactions, ct);
+
         public async Task ReconcileAsync(
             IChainStoreBundle bundle,
             ulong commonAncestor,
             ulong orphanedHead,
+            IReadOnlyList<ISignedTransaction> orphanedBranchTransactions,
             IReadOnlyList<ISignedTransaction> winningBranchTransactions,
             CancellationToken ct)
         {
             if (bundle == null) throw new ArgumentNullException(nameof(bundle));
 
-            var discarded = await CollectOrphanedBranchTransactionsAsync(bundle, commonAncestor, orphanedHead, ct)
+            var discarded = orphanedBranchTransactions != null
+                ? new List<ISignedTransaction>(orphanedBranchTransactions)
+                : await CollectOrphanedBranchTransactionsAsync(bundle, commonAncestor, orphanedHead, ct)
                 .ConfigureAwait(false);
             var included = winningBranchTransactions ?? Array.Empty<ISignedTransaction>();
 

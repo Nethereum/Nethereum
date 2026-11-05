@@ -13,6 +13,10 @@ using Nethereum.DevP2P.Sync.Peering;
 
 namespace Nethereum.DevP2P.Sync.UnitTests
 {
+    [CollectionDefinition("Peer pool responsive grace", DisableParallelization = true)]
+    public class PeerPoolResponsiveActiveGraceTestsCollection { }
+
+    [Collection("Peer pool responsive grace")]
     public class PeerPoolResponsiveActiveGraceTests
     {
         private static string MakeEnode(int index) =>

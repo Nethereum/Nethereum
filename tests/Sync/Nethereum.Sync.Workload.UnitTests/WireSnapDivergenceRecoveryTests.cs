@@ -107,16 +107,10 @@ namespace Nethereum.Chain.TestData.UnitTests
 
                 var chainConfig = new ChainConfig { ChainId = sequencer.ChainId, BaseFee = BigInteger.Zero, Coinbase = sequencer.SequencerAddress };
                 var hardforkConfig = chainConfig.GetHardforkConfig();
-                var fallback = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot, backfill: true);
-                var calc = new IncrementalStateRootCalculator(bundle.State, bundle.StateTrieNodes,
-                    emitTombstones: !ReferenceEquals(bundle.StateTrieNodes, bundle.TrieNodes));
-                var engine = new BlockExecutor(fallback, bundle.Blocks, activations,
-                    chainConfigFactory: _ => chainConfig, hardforkConfigFactory: _ => hardforkConfig,
-                    stateRootCalculator: calc, rewardPolicy: NoRewardPolicy.Instance, trieNodeStore: bundle.TrieNodes);
-                var importer = new BlockImporter(engine, bundle.Blocks, fallback,
-                    bundle.Transactions, bundle.Receipts, bundle.Logs, bundle.Uncles,
-                    logger: null, nodeCommitBlockContext: bundle.NodeCommitBlockSource,
-                    atomicFlush: bundle as IAtomicBlockFlush);
+                using var stack = ExecutionStackFactory.Build(bundle, activations,
+                    _ => chainConfig, _ => hardforkConfig,
+                    new ExecutionStackOptions { RewardPolicy = NoRewardPolicy.Instance });
+                var importer = stack.Importer;
 
                 for (var i = 0; i < headers.Count; i++)
                 {

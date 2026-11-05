@@ -17,6 +17,7 @@ using Nethereum.DevP2P.Sync.Peering;
 
 namespace Nethereum.DevP2P.SpecTests.Snap
 {
+    [Trait("Category", "LivePeer")]
     public class MainnetPeerSnapTests : MainnetPeerTestBase
     {
         private const ulong ResponseBudgetBytes = 2 * 1024 * 1024;

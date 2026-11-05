@@ -86,7 +86,7 @@ namespace Nethereum.DevP2P.SpecTests.Enr
             var key = EthECKey.GenerateKey();
             var localEnr = new EnrRecord { Sequence = 1 };
             localEnr.Pairs["id"] = System.Text.Encoding.ASCII.GetBytes("v4");
-            localEnr.Pairs["eth"] = EnrForkIdEntry.Encode(expected.Hash, expected.Next);
+            localEnr.SetListValue("eth", EnrForkIdEntry.Encode(expected.Hash, expected.Next));
             EnrRecordSigner.Sign(localEnr, key);
 
             var wireEncoded = EnrRecordEncoder.EncodeRecord(localEnr);

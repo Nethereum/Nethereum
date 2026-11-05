@@ -129,5 +129,21 @@ namespace Nethereum.DevP2P.SpecTests.Discv4
             Assert.Empty(decoded.Nodes);
             Assert.Equal(1700000000L, decoded.Expiration);
         }
+
+        [Fact]
+        public void Ping_ExpirationAboveInt64Max_DecodesAsAPastTimestamp()
+        {
+            var endpoint = new Discv4Endpoint { IP = IPAddress.Loopback, UdpPort = 30303, TcpPort = 0 }.Encode();
+            var bytes = RLP.RLP.EncodeList(
+                RLP.RLP.EncodeElement(new byte[] { 4 }),
+                endpoint,
+                endpoint,
+                RLP.RLP.EncodeElement("ffffffff95379423".HexToByteArray()));
+
+            var decoded = Discv4MessageEncoder.DecodePing(bytes);
+
+            Assert.Equal(unchecked((long)0xffffffff95379423UL), decoded.Expiration);
+            Assert.True(decoded.Expiration < System.DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+        }
     }
 }

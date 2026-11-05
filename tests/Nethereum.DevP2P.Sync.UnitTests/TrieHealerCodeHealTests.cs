@@ -22,6 +22,7 @@ using Nethereum.DevP2P.Sync.Snap.Storage;
 using Nethereum.DevP2P.Sync.Snap.Sinks;
 using Nethereum.DevP2P.Sync.Snap.Peers;
 using Nethereum.DevP2P.Sync.Snap.Bootstrap;
+using Nethereum.DevP2P.Sync.Serving;
 
 namespace Nethereum.DevP2P.Sync.UnitTests
 {
@@ -38,7 +39,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var codeStore = new InMemoryStateStore();
             Assert.Null(await codeStore.GetCodeAsync(codeHash));
 
-            var scheduler = new CodeServingScheduler();
+            var scheduler = new CodeServingScheduler { TrieNodes = new PatriciaSnapRequestHandler(storage, new NoBytecodes()) };
             scheduler.Codes[codeHash] = code;
 
             var healer = new TrieHealer(scheduler, storage, NullLogger.Instance, codeStore: codeStore);
@@ -64,7 +65,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var codeHash = new Sha3KeccackHashProvider().ComputeHash(code);
             var codeStore = new InMemoryStateStore();
 
-            var scheduler = new CodeServingScheduler { ServeAfterCalls = 2 };
+            var scheduler = new CodeServingScheduler { ServeAfterCalls = 2, TrieNodes = new PatriciaSnapRequestHandler(storage, new NoBytecodes()) };
             scheduler.Codes[codeHash] = code;
             var healer = new TrieHealer(scheduler, storage, NullLogger.Instance, codeStore: codeStore)
             {
@@ -91,7 +92,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var codeStore = new InMemoryStateStore();
             await codeStore.SaveCodeAsync(codeHash, code);
 
-            var scheduler = new CodeServingScheduler();
+            var scheduler = new CodeServingScheduler { TrieNodes = new PatriciaSnapRequestHandler(storage, new NoBytecodes()) };
             var healer = new TrieHealer(scheduler, storage, NullLogger.Instance, codeStore: codeStore);
 
             var result = await healer.HealAsync(
@@ -111,7 +112,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var codeHash = new Sha3KeccackHashProvider().ComputeHash(code);
             var codeStore = new InMemoryStateStore();
 
-            var scheduler = new CodeServingScheduler();
+            var scheduler = new CodeServingScheduler { TrieNodes = new PatriciaSnapRequestHandler(storage, new NoBytecodes()) };
             var healer = new TrieHealer(scheduler, storage, NullLogger.Instance, codeStore: codeStore)
             {
                 NoPeerFailureBackoff = TimeSpan.FromMilliseconds(1),
@@ -123,6 +124,44 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             Assert.False(result.Matched, "an un-served seeded code cannot converge");
             Assert.Null(await codeStore.GetCodeAsync(codeHash));
+        }
+
+        [Fact]
+        public async Task Given_AContractAccountWhoseCodeNoPeerServes_When_Healing_Then_ItsLeafIsNotWritten()
+        {
+            var code = new byte[] { 0x60, 0x0B, 0xF3 };
+            var codeHash = new Sha3KeccackHashProvider().ComputeHash(code);
+            var server = new InMemoryContentNodeStore();
+            var accountTrie = new PatriciaTrie(server);
+            accountTrie.Put(new Sha3KeccackHashProvider().ComputeHash(new byte[] { 0x0C }), new AccountEncoder().Encode(new Account
+            {
+                Nonce = (EvmUInt256)1,
+                Balance = (EvmUInt256)1,
+                StateRoot = DefaultValues.EMPTY_TRIE_HASH,
+                CodeHash = codeHash,
+            }));
+            accountTrie.SaveNodesToStorage();
+            var rootHash = accountTrie.Root.GetHash();
+
+            var scheduler = new CodeServingScheduler { TrieNodes = new PatriciaSnapRequestHandler(server, new NoBytecodes()) };
+            var follower = new InMemoryContentNodeStore();
+            var healer = new TrieHealer(scheduler, follower, NullLogger.Instance, codeStore: new InMemoryStateStore())
+            {
+                NoPeerFailureBackoff = TimeSpan.FromMilliseconds(1),
+            };
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            var result = await healer.HealAsync(rootHash, ct: cts.Token);
+
+            Assert.False(result.Matched, "a contract leaf whose code was never served cannot converge");
+            Assert.True(scheduler.ByteCodeCalls >= 1, "the heal never asked for the contract's code");
+            Assert.Null(follower.Get(rootHash));
+        }
+
+        private sealed class NoBytecodes : IBytecodeStore
+        {
+            public void Put(byte[] codeHash, byte[] code) { }
+            public byte[] Get(byte[] codeHash) => null;
         }
 
 
@@ -152,9 +191,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 return Task.FromResult(new ByteCodesMessage { RequestId = 1, Codes = codes });
             }
 
+            public PatriciaSnapRequestHandler TrieNodes;
+
             public Task<TrieNodesMessage> FetchTrieNodesAsync(
                 byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct)
             {
+                if (TrieNodes != null)
+                    return TrieNodes.GetTrieNodesAsync(new GetTrieNodesMessage { RequestId = 1, RootHash = stateRoot, Paths = paths, ResponseBytes = responseBytes });
                 var msg = new TrieNodesMessage { RequestId = 1, Nodes = new List<byte[]>() };
                 for (int i = 0; i < paths.Count; i++) msg.Nodes.Add(Array.Empty<byte>());
                 return Task.FromResult(msg);

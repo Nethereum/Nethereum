@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
     public class Discv4GethInteropTests
     {
         private readonly ITestOutputHelper _output;
@@ -88,6 +89,7 @@ namespace Nethereum.DevP2P.IntegrationTests
         private class GethDiscv4Node : IDisposable
         {
             private Process _process;
+            private readonly System.Collections.Concurrent.ConcurrentQueue<string> _stderr = new System.Collections.Concurrent.ConcurrentQueue<string>();
             private string _dataDir;
 
             public IPEndPoint UdpEndpoint { get; private set; }
@@ -102,6 +104,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 int tcpPort = 30350;
                 int udpPort = 30350;
                 int rpcPort = 8556;
+                int authRpcPort = FreeTcpPort();
 
                 var gethExe = FindGeth();
                 var initArgs = $"--datadir=\"{node._dataDir}\" init \"{Path.Combine(Path.GetDirectoryName(gethExe), "..", "..", "testchain", "clique", "genesis_clique_modern.json")}\"";
@@ -119,6 +122,7 @@ namespace Nethereum.DevP2P.IntegrationTests
 
                 var args = string.Join(" ",
                     $"--datadir=\"{node._dataDir}\"",
+                    "--ipcdisable",
                     "--discovery.v4",
                     $"--port {tcpPort}",
                     $"--discovery.port {udpPort}",
@@ -126,8 +130,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                     $"--http.port {rpcPort}",
                     "--http.api eth,web3,net,admin",
                     "--http.addr 127.0.0.1",
-                    "--mine",
-                    "--miner.etherbase 0x12890d2cce102216644c59daE5baed380d84830c",
+                    $"--authrpc.port {authRpcPort}",
                     "--allow-insecure-unlock",
                     "--verbosity 1");
 
@@ -140,10 +143,11 @@ namespace Nethereum.DevP2P.IntegrationTests
                         RedirectStandardError = true
                     }
                 };
+                node._process.ErrorDataReceived += (_, e) => { if (e.Data != null) { node._stderr.Enqueue(e.Data); while (node._stderr.Count > 20) node._stderr.TryDequeue(out var _); } };
                 node._process.Start();
                 node._process.BeginErrorReadLine();
 
-                await WaitForRpcAsync(rpcPort, ct);
+                await WaitForRpcAsync(node, rpcPort, ct);
 
                 using var http = new System.Net.Http.HttpClient();
                 var infoBody = "{\"jsonrpc\":\"2.0\",\"method\":\"admin_nodeInfo\",\"params\":[],\"id\":1}";
@@ -159,7 +163,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 return node;
             }
 
-            private static async Task WaitForRpcAsync(int rpcPort, CancellationToken ct)
+            private static async Task WaitForRpcAsync(GethDiscv4Node node, int rpcPort, CancellationToken ct)
             {
                 using var http = new System.Net.Http.HttpClient();
                 var body = "{\"jsonrpc\":\"2.0\",\"method\":\"net_version\",\"params\":[],\"id\":1}";
@@ -174,10 +178,20 @@ namespace Nethereum.DevP2P.IntegrationTests
                     catch { }
                     await Task.Delay(500, ct);
                 }
-                throw new TimeoutException("Geth RPC did not come up");
+                var exited = node._process.HasExited ? $"exited with code {node._process.ExitCode}" : "still running";
+                throw new TimeoutException($"Geth RPC did not come up ({exited}); last stderr: {string.Join(" | ", node._stderr)}");
             }
 
             private static string FindGeth() => Helpers.GethToolLocator.FindGethBinary();
+
+            private static int FreeTcpPort()
+            {
+                var listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                listener.Stop();
+                return port;
+            }
 
             public void Dispose()
             {

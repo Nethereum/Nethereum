@@ -49,6 +49,7 @@ namespace Nethereum.Chain.TestData.UnitTests
         public IBlockAccessListStore BlockAccessLists { get; }
         public string SequencerAddress { get; }
         public string Hardfork { get; }
+        public BigInteger BlockGasLimit => _config.BlockGasLimit;
         public BigInteger ChainId => _chainId;
         public Nethereum.AppChain.GenesisOptions Genesis { get; }
         public IReadOnlyList<ProducedBlock> Produced => _produced;
@@ -77,7 +78,7 @@ namespace Nethereum.Chain.TestData.UnitTests
         }
 
         public static async Task<InProcessSequencerDriver> CreateAsync(BigInteger? chainId = null, int generatedAccounts = 0,
-            IEnumerable<string> extraPrefunded = null, string hardfork = "prague")
+            IEnumerable<string> extraPrefunded = null, string hardfork = "prague", BigInteger? blockGasLimit = null)
         {
             var cid = chainId ?? new BigInteger(420420);
             var accounts = new WorkloadAccounts(generatedAccounts);
@@ -95,6 +96,7 @@ namespace Nethereum.Chain.TestData.UnitTests
             var config = Nethereum.AppChain.AppChainConfig.CreateWithName(ChainName, cid);
             config.SequencerAddress = sequencerAddress;
             config.Hardfork = hardfork;
+            if (blockGasLimit.HasValue) config.BlockGasLimit = blockGasLimit.Value;
 
             var appChain = new AppChainCore(config, blocks, txs, receipts, logs, state, trie);
 

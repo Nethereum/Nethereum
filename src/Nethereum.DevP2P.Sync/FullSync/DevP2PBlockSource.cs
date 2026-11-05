@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,10 +8,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Sync;
-using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.DevP2P.Sync.Scheduling;
 using Nethereum.Model;
 using Nethereum.Model.P2P;
-using Nethereum.RLP;
 using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.FullSync
@@ -23,7 +23,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
         private readonly int _headerBatchSize;
         private readonly int _bodyBatchSize;
         private readonly ILogger<DevP2PBlockSource> _logger;
-        private readonly Sha3Keccack _keccak = new();
         private readonly PatriciaBlockRootsProvider _rootsProvider = PatriciaBlockRootsProvider.Instance;
 
         private const int MaxBodyFetchRetries = 2;
@@ -74,135 +73,28 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
             while (!ct.IsCancellationRequested)
             {
-                var headers = await _scheduler.FetchHeadersAsync(cursor, (ulong)_headerBatchSize, ct)
-                    .ConfigureAwait(false);
-                if (headers is null || headers.Count == 0)
-                {
-                    _logger.LogInformation("source exhausted at block {Cursor}", cursor);
-                    yield break;
-                }
+                var headers = await LoadVerifiedHeadersAsync(cursor, ct).ConfigureAwait(false);
+                if (headers is null) yield break;
 
-                var expectedParent = await _parentHashLookup(cursor).ConfigureAwait(false);
-                var precomputedHashes = new byte[headers.Count][];
-                for (int i = 0; i < headers.Count; i++)
-                    precomputedHashes[i] = HashHeader(headers[i]);
-
-                if (expectedParent is not null && headers[0].ParentHash is not null
-                    && !ByteUtil.AreEqual(expectedParent, headers[0].ParentHash))
-                {
-                    _lastChainBreak = new DivergenceSignal(
-                        AtBlock: cursor,
-                        PeerParentHash: headers[0].ParentHash,
-                        OurParentHash: expectedParent,
-                        QuorumPeerCount: 1,
-                        SourceName: _sourceName);
-                    if (_logger.IsEnabled(LogLevel.Warning))
-                    {
-                        string ourHex = expectedParent.ToHex();
-                        string peerHex = headers[0].ParentHash.ToHex();
-                        _logger.LogWarning("chain-break detected: block={Cursor} our_parent=0x{OurParent} peer_parent=0x{PeerParent}",
-                            cursor,
-                            ourHex.Substring(0, Math.Min(16, ourHex.Length)),
-                            peerHex.Substring(0, Math.Min(16, peerHex.Length)));
-                    }
-                    yield break;
-                }
-
-                if (!BlockBatchValidator.ValidateParentChain(headers, precomputedHashes, anchorHash: null, out var brokenAt))
-                {
-                    _logger.LogWarning("intra-batch parent break at block {BlockNumber}; truncating batch to {KeepCount}",
-                        (ulong)headers[brokenAt].BlockNumber, brokenAt);
-                    headers = headers.GetRange(0, brokenAt);
-                }
-
-                if (headers.Count == 0) yield break;
-
+                var passStart = cursor;
                 for (int batchStart = 0; batchStart < headers.Count; batchStart += _bodyBatchSize)
                 {
                     int take = Math.Min(_bodyBatchSize, headers.Count - batchStart);
                     var subHeaders = headers.GetRange(batchStart, take);
-                    var hashes = new List<byte[]>(take);
-                    foreach (var h in subHeaders)
-                        hashes.Add(HashHeader(h));
 
-                    IList<BlockBody> bodies = null;
-                    bool bodyMismatch = false;
-                    int paired = 0;
+                    var fetched = await FetchValidBodiesAsync(subHeaders, HashHeaders(subHeaders), ct).ConfigureAwait(false);
+                    if (fetched is null) yield break;
+                    var (bodies, paired, bodyMismatch) = fetched.Value;
+                    if (bodyMismatch) break;
+
                     int yielded = 0;
-                    var blamedPeers = new HashSet<Guid>();
-                    var peerFailureCounts = new Dictionary<Guid, int>();
-                    for (int attempt = 0; attempt <= MaxBodyFetchRetries; attempt++)
-                    {
-                        var fetchResult = await _scheduler.FetchBodiesAsync(hashes, blamedPeers, ct).ConfigureAwait(false);
-                        bodies = fetchResult?.Bodies;
-                        if (bodies is null) yield break;
-                        paired = Math.Min(subHeaders.Count, bodies.Count);
-                        bodyMismatch = !BlockBatchValidator.ValidateBodies(
-                            subHeaders, bodies, paired, _rootsProvider,
-                            mismatch =>
-                            {
-                                if (!mismatch.TxRootOk)
-                                {
-                                    _logger.LogWarning(
-                                        "body mismatch: block={Block} computed_tx_root=0x{Computed} header_tx_root=0x{Expected}",
-                                        (ulong)mismatch.Header.BlockNumber,
-                                        mismatch.ComputedTxRoot.ToHex().Substring(0, 16),
-                                        mismatch.Header.TransactionsHash != null ? mismatch.Header.TransactionsHash.ToHex().Substring(0, 16) : "<null>");
-                                }
-                                else if (!mismatch.UnclesOk)
-                                {
-                                    _logger.LogWarning(
-                                        "uncles mismatch: block={Block} computed=0x{Computed} header=0x{Expected}",
-                                        (ulong)mismatch.Header.BlockNumber,
-                                        mismatch.ComputedUnclesHash.ToHex().Substring(0, 16),
-                                        mismatch.Header.UnclesHash != null ? mismatch.Header.UnclesHash.ToHex().Substring(0, 16) : "<null>");
-                                }
-                            });
-                        if (!bodyMismatch) break;
-
-                        int newlyBlamed = 0;
-                        foreach (var pid in fetchResult!.ServingPeerIds)
-                        {
-                            peerFailureCounts.TryGetValue(pid, out var prior);
-                            var count = prior + 1;
-                            peerFailureCounts[pid] = count;
-                            if (count > SamePeerRetryTolerance && blamedPeers.Add(pid))
-                                newlyBlamed++;
-                        }
-
-                        if (attempt < MaxBodyFetchRetries)
-                        {
-                            _logger.LogInformation(
-                                "body batch invalid — {Blamed} peer(s) discarded; retrying (attempt {Attempt}/{Max}) for {Count} blocks starting {Start}",
-                                newlyBlamed,
-                                attempt + 2, MaxBodyFetchRetries + 1, take, (ulong)subHeaders[0].BlockNumber);
-                        }
-                    }
-                    if (bodyMismatch)
-                    {
-                        break;
-                    }
                     for (int i = 0; i < paired; i++)
                     {
                         ct.ThrowIfCancellationRequested();
                         var header = subHeaders[i];
-                        var body = bodies[i];
-                        var transactions = body?.Transactions ?? new List<ISignedTransaction>();
-                        var bodyUncles = body?.Uncles ?? new List<BlockHeader>();
-                        var bundle = new BlockBundle(
-                            header,
-                            transactions,
-                            bodyUncles,
-                            body?.Withdrawals,
-                            HeaderHash: HashHeader(header));
-                        yield return bundle;
+                        yield return BundleOf(header, bodies[i]);
                         cursor = (ulong)header.BlockNumber + 1;
                         yielded++;
-                    }
-
-                    if (bodyMismatch)
-                    {
-                        break;
                     }
 
                     if (yielded < subHeaders.Count)
@@ -212,13 +104,152 @@ namespace Nethereum.DevP2P.Sync.FullSync
                         break;
                     }
                 }
+
+                if (cursor == passStart)
+                {
+                    _logger.LogInformation("source exhausted at block {Cursor}: no peer delivered a valid body", cursor);
+                    yield break;
+                }
             }
         }
 
-        private byte[] HashHeader(BlockHeader header)
+        private async Task<List<BlockHeader>> LoadVerifiedHeadersAsync(ulong cursor, CancellationToken ct)
         {
-            var encoded = new BlockHeaderEncoder().Encode(header);
-            return _keccak.CalculateHash(encoded);
+            var headers = await _scheduler.FetchAnnouncedHeadersAsync(cursor, (ulong)_headerBatchSize, ct)
+                .ConfigureAwait(false);
+            if (headers is null || headers.Count == 0)
+            {
+                _logger.LogInformation("source exhausted at block {Cursor}", cursor);
+                return null;
+            }
+
+            var expectedParent = await _parentHashLookup(cursor).ConfigureAwait(false);
+            var precomputedHashes = HashHeaders(headers);
+
+            if (RecordChainBreak(cursor, headers, expectedParent)) return null;
+
+            if (!BlockBatchValidator.ValidateParentChain(headers, precomputedHashes, anchorHash: null, out var brokenAt))
+            {
+                _logger.LogWarning("intra-batch parent break at block {BlockNumber}; truncating batch to {KeepCount}",
+                    (ulong)headers[brokenAt].BlockNumber, brokenAt);
+                headers = headers.GetRange(0, brokenAt);
+            }
+
+            return headers.Count == 0 ? null : headers;
+        }
+
+        private bool RecordChainBreak(ulong cursor, List<BlockHeader> headers, byte[] expectedParent)
+        {
+            if (expectedParent is null || headers[0].ParentHash is null
+                || ByteUtil.AreEqual(expectedParent, headers[0].ParentHash))
+                return false;
+
+            _lastChainBreak = new DivergenceSignal(
+                AtBlock: cursor,
+                PeerParentHash: headers[0].ParentHash,
+                OurParentHash: expectedParent,
+                QuorumPeerCount: 1,
+                SourceName: _sourceName);
+            _logger.LogWarning("chain-break detected: block={Cursor} our_parent=0x{OurParent} peer_parent=0x{PeerParent}",
+                cursor,
+                FetchRequestScheduler.HexShort(expectedParent),
+                FetchRequestScheduler.HexShort(headers[0].ParentHash));
+            return true;
+        }
+
+        private async Task<(IList<BlockBody> Bodies, int Paired, bool BodyMismatch)?> FetchValidBodiesAsync(
+            List<BlockHeader> subHeaders, List<byte[]> hashes, CancellationToken ct)
+        {
+            IList<BlockBody> bodies = null;
+            bool bodyMismatch = false;
+            int paired = 0;
+            var blamedPeers = new HashSet<Guid>();
+            var peerFailureCounts = new Dictionary<Guid, int>();
+            for (int attempt = 0; attempt <= MaxBodyFetchRetries; attempt++)
+            {
+                var fetchResult = await _scheduler.FetchBodiesAsync(
+                    hashes, ExcludingPeersBehind((ulong)subHeaders[subHeaders.Count - 1].BlockNumber, blamedPeers), ct)
+                    .ConfigureAwait(false);
+                bodies = fetchResult?.Bodies;
+                if (bodies is null) return null;
+                paired = Math.Min(subHeaders.Count, bodies.Count);
+                bodyMismatch = !BlockBatchValidator.ValidateBodies(
+                    subHeaders, bodies, paired, _rootsProvider, LogBodyMismatch);
+                if (!bodyMismatch) break;
+
+                int newlyBlamed = BlameServingPeers(fetchResult!.ServingPeerIds, peerFailureCounts, blamedPeers);
+
+                if (attempt < MaxBodyFetchRetries)
+                {
+                    _logger.LogInformation(
+                        "body batch invalid — {Blamed} peer(s) discarded; retrying (attempt {Attempt}/{Max}) for {Count} blocks starting {Start}",
+                        newlyBlamed,
+                        attempt + 2, MaxBodyFetchRetries + 1, subHeaders.Count, (ulong)subHeaders[0].BlockNumber);
+                }
+            }
+            return (bodies, paired, bodyMismatch);
+        }
+
+        private HashSet<Guid> ExcludingPeersBehind(ulong block, HashSet<Guid> blamedPeers)
+        {
+            var excluded = new HashSet<Guid>(blamedPeers);
+            foreach (var peer in _pool.ActivePeers)
+                if (peer.PeerLatestBlock < block) excluded.Add(peer.Id);
+
+            return _pool.ActivePeers.Any(peer => !excluded.Contains(peer.Id)) ? excluded : blamedPeers;
+        }
+
+        private static int BlameServingPeers(
+            IEnumerable<Guid> servingPeerIds, Dictionary<Guid, int> peerFailureCounts, HashSet<Guid> blamedPeers)
+        {
+            int newlyBlamed = 0;
+            foreach (var pid in servingPeerIds)
+            {
+                peerFailureCounts.TryGetValue(pid, out var prior);
+                var count = prior + 1;
+                peerFailureCounts[pid] = count;
+                if (count > SamePeerRetryTolerance && blamedPeers.Add(pid))
+                    newlyBlamed++;
+            }
+            return newlyBlamed;
+        }
+
+        private void LogBodyMismatch(BlockBatchValidator.BodyMismatch mismatch)
+        {
+            if (!mismatch.TxRootOk)
+            {
+                _logger.LogWarning(
+                    "body mismatch: block={Block} computed_tx_root=0x{Computed} header_tx_root=0x{Expected}",
+                    (ulong)mismatch.Header.BlockNumber,
+                    FetchRequestScheduler.HexShort(mismatch.ComputedTxRoot),
+                    mismatch.Header.TransactionsHash != null ? FetchRequestScheduler.HexShort(mismatch.Header.TransactionsHash) : "<null>");
+            }
+            else if (!mismatch.UnclesOk)
+            {
+                _logger.LogWarning(
+                    "uncles mismatch: block={Block} computed=0x{Computed} header=0x{Expected}",
+                    (ulong)mismatch.Header.BlockNumber,
+                    FetchRequestScheduler.HexShort(mismatch.ComputedUnclesHash),
+                    mismatch.Header.UnclesHash != null ? FetchRequestScheduler.HexShort(mismatch.Header.UnclesHash) : "<null>");
+            }
+        }
+
+        private static BlockBundle BundleOf(BlockHeader header, BlockBody body)
+        {
+            return new BlockBundle(
+                header,
+                body?.Transactions ?? new List<ISignedTransaction>(),
+                body?.Uncles ?? new List<BlockHeader>(),
+                body?.Withdrawals,
+                HeaderHash: RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(header));
+        }
+
+        private static List<byte[]> HashHeaders(List<BlockHeader> headers)
+        {
+            var hashes = new List<byte[]>(headers.Count);
+            foreach (var header in headers)
+                hashes.Add(RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(header));
+            return hashes;
         }
 
         public ValueTask DisposeAsync() => default;

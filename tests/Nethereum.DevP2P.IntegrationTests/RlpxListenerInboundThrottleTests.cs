@@ -29,7 +29,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 ClientId = "Nethereum/test",
                 MaxInboundPerIP = cap,
-                HandshakeTimeoutMs = 1500
+                IsLanAddress = _ => false,
+                HandshakeTimeoutMs = 60000
             };
 
             var listener = new RlpxListener(EthECKey.GenerateKey(), config);

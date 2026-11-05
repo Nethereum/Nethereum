@@ -1,5 +1,5 @@
+using System;
 using Nethereum.CoreChain.Sync;
-using Nethereum.DevP2P.Sync.Metrics;
 
 namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 {
@@ -9,7 +9,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 
         public SnapSyncMetrics? Metrics { get; init; }
 
-        public int RootRefreshIntervalMs { get; init; } = 12_000;
+        public int RootRefreshIntervalMs { get; init; } = (int)PivotTiming.PollInterval.TotalMilliseconds;
 
         public ulong PivotStaleDistanceBlocks { get; init; } = SnapSyncOrchestrator.PivotStaleDistanceBlocks;
 
@@ -25,8 +25,10 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
 
         public int? LargeContractConcurrency { get; init; }
 
+        [Obsolete("No longer used: the flat state is always certified; the value is ignored.")]
         public bool EnableFlatReconcile { get; init; }
 
+        [Obsolete("No longer used: the flat state is always certified; the value is ignored.")]
         public bool FinalizeVerify { get; init; } = true;
 
         public HeaderFollowService? HeaderFollow { get; init; }

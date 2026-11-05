@@ -228,7 +228,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Storage_WhaleDrainsAcrossRotation_MixedRootDrain_RecordsDeferredStorageDebt()
+        public async Task Storage_WhaleDrainsAcrossRotation_MixedRootDrain_MarksTheOwnerNeedsHeal()
         {
             const int total = 40;
             const int pageSize = 6;
@@ -267,12 +267,8 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(storageRootB, set.Tasks[0].LargeContracts[owner].StorageRoot, ByteArrayComparer.Current);
             Assert.Contains(owner, set.Tasks[0].StorageCompleted, ByteArrayComparer.Current);
 
+            Assert.Contains(owner, set.AccountsNeedingHeal, ByteArrayComparer.Current);
             Assert.Contains(accountsNeedingHeal, a => ByteArrayComparer.Current.Equals(a.AccountHash, owner));
-            var debt = Assert.Single(deferredStorageDebts.Values,
-                d => ByteArrayComparer.Current.Equals(d.AccountHash, owner));
-            Assert.True(debt.IsOpen);
-            Assert.Equal(DeferredStorageReason.BigAccountChunked, debt.Reason);
-            Assert.Equal(StorageCompleteness.DeferredBigAccount, debt.Status);
         }
 
         [Fact]
@@ -490,8 +486,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Contains(owner, set.Tasks[0].StorageCompleted, ByteArrayComparer.Current);
 
             Assert.DoesNotContain(accountsNeedingHeal, a => ByteArrayComparer.Current.Equals(a.AccountHash, owner));
-            Assert.DoesNotContain(deferredStorageDebts.Values,
-                d => ByteArrayComparer.Current.Equals(d.AccountHash, owner));
+            Assert.Empty(set.AccountsNeedingHeal);
 
             Assert.NotNull(observedScope);
             var drainedScope = (ResumableStorageScope)observedScope;

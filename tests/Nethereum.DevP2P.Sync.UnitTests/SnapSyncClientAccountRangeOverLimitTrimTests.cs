@@ -30,32 +30,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public byte[] Get(byte[] codeHash) => null;
         }
 
-        private sealed class CountingSink : ISnapSyncSink
-        {
-            private readonly ISnapSyncSink _inner;
-            public readonly ConcurrentDictionary<string, int> Writes = new();
-
-            public CountingSink(ISnapSyncSink inner) { _inner = inner; }
-
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => _inner.BeginAsync(targetRoot, ct);
-
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct)
-            {
-                Writes.AddOrUpdate(accountHash.ToHex(), 1, (_, n) => n + 1);
-                return _inner.WriteAccountAsync(accountHash, slimRlp, ct);
-            }
-
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-                => _inner.BeginAccountStorageAsync(accountHash, expectedStorageRoot, ct);
-
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
-                => _inner.WriteBytecodeAsync(codeHash, code, ct);
-
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct) => _inner.FinaliseRootAsync(ct);
-
-            public int WriteCount(byte[] accountHash) => Writes.TryGetValue(accountHash.ToHex(), out var n) ? n : 0;
-        }
-
         private static byte[] Hash(byte first, byte last = 0x00)
         {
             var h = new byte[32];
@@ -68,7 +42,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             public byte[] AccountA;
             public byte[] AccountB;
-            public CountingSink Sink;
+            public RecordingSnapFlatWriter Writes;
             public SnapSyncClient.SyncResult Result;
         }
 
@@ -99,8 +73,8 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             var clientNodeStore = new InMemoryContentNodeStore();
             var clientStateStore = new InMemoryStateStore();
-            var realSink = new TrieSnapSyncSink(clientNodeStore, clientStateStore, flatWriter: null);
-            var sink = new CountingSink(realSink);
+            var writes = new RecordingSnapFlatWriter();
+            var sink = new TrieSnapSyncSink(clientNodeStore, clientStateStore, writes);
 
             var client = new SnapSyncClient(peer, sink)
             {
@@ -114,7 +88,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             {
                 AccountA = accountA,
                 AccountB = accountB,
-                Sink = sink,
+                Writes = writes,
                 Result = result,
             };
         }
@@ -124,7 +98,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var s = await RunAsync();
 
-            Assert.Equal(1, s.Sink.WriteCount(s.AccountB));
+            Assert.Equal(1, s.Writes.AccountWriteCount(s.AccountB));
 
             Assert.True(s.Result.RootMatchesTarget);
         }
@@ -134,7 +108,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var s = await RunAsync();
 
-            Assert.Equal(1, s.Sink.WriteCount(s.AccountA));
+            Assert.Equal(1, s.Writes.AccountWriteCount(s.AccountA));
             Assert.True(s.Result.RootMatchesTarget);
         }
     }

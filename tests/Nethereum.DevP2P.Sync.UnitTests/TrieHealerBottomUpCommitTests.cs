@@ -64,35 +64,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task SeededHeal_MatchingRootButMissingChildren_DescendsAndCompletes()
-        {
-            var remote = BuildRemoteTrie(out var rootHash, out var blobs, out var hashes);
-            var local = new InMemoryContentNodeStore();
-            var owner = Hash32(0xFA);
-
-            local.Put(rootHash, blobs["R"]);
-            var script = new FakeScriptScheduler(new[]
-            {
-                new[] { blobs["R"] },
-                new[] { blobs["C"], blobs["L3"] },
-                new[] { blobs["A"], blobs["B"] },
-            });
-            var healer = new TrieHealer(script, local, NullLogger.Instance);
-
-            var result = await healer.HealAsync(
-                Hash32(0x99),
-                seedStorageHeal: new[] { (owner, rootHash) },
-                ct: CancellationToken.None);
-
-            Assert.True(result.Matched, "seeded heal must not treat root presence as deep completion");
-            Assert.NotNull(local.Get(hashes["A"]));
-            Assert.NotNull(local.Get(hashes["B"]));
-            Assert.NotNull(local.Get(hashes["C"]));
-            Assert.NotNull(local.Get(hashes["L3"]));
-            Assert.NotNull(local.Get(hashes["R"]));
-            Assert.True(script.FetchCalls > 0, "matching root still requires a forced-deep fetch walk");
-        }
-        [Fact]
         public async Task FetchFailures_BackOffAndReachStallExit_NotMaxRounds()
         {
             var local = new InMemoryContentNodeStore();

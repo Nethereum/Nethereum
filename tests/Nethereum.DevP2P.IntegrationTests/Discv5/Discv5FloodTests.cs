@@ -20,7 +20,7 @@ namespace Nethereum.DevP2P.IntegrationTests.Discv5
         public async Task Given_OneSourceIp_When_FloodedWithGarbagePackets_Then_BucketCapDropsExcess()
         {
             var listenerKey = EthECKey.GenerateKey();
-            await using var listener = new Discv5Listener(listenerKey);
+            await using var listener = new Discv5Listener(listenerKey) { EnableInboundPacketFilter = true };
             listener.Start(IPAddress.Loopback, port: 0);
             var listenerEndpoint = new IPEndPoint(IPAddress.Loopback, listener.Port);
 
@@ -47,7 +47,7 @@ namespace Nethereum.DevP2P.IntegrationTests.Discv5
         public async Task Given_DistinctSourceIps_When_BurstFromEach_Then_AllAcceptedPerIp()
         {
             var listenerKey = EthECKey.GenerateKey();
-            await using var listener = new Discv5Listener(listenerKey);
+            await using var listener = new Discv5Listener(listenerKey) { EnableInboundPacketFilter = true };
             listener.Start(IPAddress.Parse("127.0.0.1"), port: 0);
             var listenerEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), listener.Port);
 
@@ -79,7 +79,7 @@ namespace Nethereum.DevP2P.IntegrationTests.Discv5
         public async Task Given_AlreadyBannedIp_When_AdditionalPacketsArrive_Then_DroppedWithoutBucketRefresh()
         {
             var listenerKey = EthECKey.GenerateKey();
-            await using var listener = new Discv5Listener(listenerKey);
+            await using var listener = new Discv5Listener(listenerKey) { EnableInboundPacketFilter = true };
             listener.Start(IPAddress.Loopback, port: 0);
             var listenerEndpoint = new IPEndPoint(IPAddress.Loopback, listener.Port);
 
@@ -90,17 +90,19 @@ namespace Nethereum.DevP2P.IntegrationTests.Discv5
             {
                 await attacker.SendAsync(garbage, garbage.Length, listenerEndpoint).ConfigureAwait(false);
             }
-            await Task.Delay(200).ConfigureAwait(false);
-            Assert.True(listener.IsBanned(IPAddress.Loopback));
+            await Helpers.Wait.UntilAsync(
+                () => listener.IsBanned(IPAddress.Loopback),
+                TimeSpan.FromSeconds(10),
+                "the source was not banned after exceeding its burst");
             var droppedAfterBan = listener.DroppedInboundCount;
 
             for (int i = 0; i < 20; i++)
             {
                 await attacker.SendAsync(garbage, garbage.Length, listenerEndpoint).ConfigureAwait(false);
             }
-            await Task.Delay(200).ConfigureAwait(false);
-
-            Assert.True(listener.DroppedInboundCount > droppedAfterBan,
+            await Helpers.Wait.UntilAsync(
+                () => listener.DroppedInboundCount > droppedAfterBan,
+                TimeSpan.FromSeconds(10),
                 "post-ban packets must be counted as drops");
         }
 

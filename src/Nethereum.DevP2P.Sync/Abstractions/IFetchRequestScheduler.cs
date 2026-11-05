@@ -12,11 +12,19 @@ namespace Nethereum.DevP2P.Sync.Abstractions
     {
         void OnTargetRootChanged() { }
 
+        void ClearStatelessMarks() { }
+
         Task<List<BlockHeader>> FetchHeadersAsync(
             ulong startBlock,
             ulong limit,
             CancellationToken ct,
             bool reverse = false);
+
+        Task<List<BlockHeader>> FetchAnnouncedHeadersAsync(
+            ulong startBlock,
+            ulong limit,
+            CancellationToken ct)
+            => FetchHeadersAsync(startBlock, limit, ct);
 
         async Task<(List<BlockHeader> Headers, Guid PeerId)> FetchHeadersWithPeerAsync(
             ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
@@ -56,19 +64,6 @@ namespace Nethereum.DevP2P.Sync.Abstractions
             byte[] startingHash, byte[] limitHash,
             ulong responseBytes, CancellationToken ct);
 
-        /// <summary>
-        /// Account-range fetch with per-peer accountability (ERC-4337-audit D2/2.16). Identical to the
-        /// delegate-less overload above, except <paramref name="verifyResponse"/> is invoked on the raw
-        /// response INSIDE the scheduler's per-peer worker — the one place the serving peer identity is in
-        /// scope. Returning <c>false</c> flags a Merkle-proof-verification failure: the serving peer is
-        /// quarantined (like the wholly-empty-response bench already applied here) and the request rotates
-        /// to another snap peer. This mirrors go-ethereum, which DISCONNECTS a peer whose account-range
-        /// proof fails — <c>OnAccounts</c> returns the verify error
-        /// (eth/protocols/snap/sync.go:2573-2578, "Account range failed proof") and <c>Handle</c> drops the
-        /// peer on any handler error (eth/protocols/snap/handler.go:113-120, "When this function terminates,
-        /// the peer is disconnected"). Default implementation ignores the delegate (single-peer schedulers
-        /// cannot rotate), so existing implementers need no change.
-        /// </summary>
         Task<AccountRangeMessage> FetchAccountRangeAsync(
             byte[] stateRoot, byte[] startingHash, byte[] limitHash,
             ulong responseBytes, Func<AccountRangeMessage, bool> verifyResponse, CancellationToken ct)
@@ -97,6 +92,14 @@ namespace Nethereum.DevP2P.Sync.Abstractions
             => FetchTrieNodesAsync(stateRoot, paths, responseBytes, ct);
 
         bool IsSnapStateServing(IEthPeer peer) => true;
+
+        bool RegisterTimeoutForQuarantine(Guid peerId, Scheduling.TimeoutStreakKind kind, bool isTrusted, out int triggeredAtCount)
+        {
+            triggeredAtCount = 0;
+            return false;
+        }
+
+        void RegisterSuccessForQuarantine(Guid peerId, Scheduling.TimeoutStreakKind kind) { }
     }
 
     public interface IPeerRequestWorker
@@ -114,6 +117,10 @@ namespace Nethereum.DevP2P.Sync.Abstractions
 
         Task<List<List<Receipt>>> GetReceiptsAsync(
             IEthPeer peer, IReadOnlyList<byte[]> blockHashes, CancellationToken ct);
+
+        Task<List<List<Receipt>>> GetReceiptsAsync(
+            IEthPeer peer, IReadOnlyList<byte[]> blockHashes, IReadOnlyList<ulong> gasUsedByBlock, CancellationToken ct)
+            => GetReceiptsAsync(peer, blockHashes, ct);
 
         Task<AccountRangeMessage> GetAccountRangeAsync(
             IEthPeer peer, byte[] stateRoot, byte[] startingHash, byte[] limitHash,

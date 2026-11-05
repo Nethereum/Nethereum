@@ -16,8 +16,10 @@ namespace Nethereum.DevP2P.IntegrationTests
 {
     public class PeerPoolE2ETests
     {
+        private static readonly TimeSpan PoolWait = TimeSpan.FromSeconds(30);
+
         private static string MakeEnode(int index) =>
-            $"enode://{new string('a', 128)}@127.0.0.1:{30000 + index}";
+            $"enode://{index.ToString("x128")}@127.0.0.1:{30000 + index}";
 
         [Fact]
         public async Task PoolReachesTarget_FromBootnodeSeed()
@@ -33,7 +35,7 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             await pool.StartAsync(CancellationToken.None);
 
-            await WaitForCountAsync(pool, 3, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 3, PoolWait);
 
             Assert.Equal(3, pool.ActivePeers.Count);
             foreach (var enode in enodes)
@@ -59,12 +61,12 @@ namespace Nethereum.DevP2P.IntegrationTests
                 bootnodes: enodes);
 
             await pool.StartAsync(CancellationToken.None);
-            await WaitForCountAsync(pool, 3, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 3, PoolWait);
 
             var victim = pool.ActivePeers.First();
             worker.SimulateDisconnect(victim.Enode);
 
-            await WaitForReplacementAsync(pool, victim.Id, TimeSpan.FromSeconds(2));
+            await WaitForReplacementAsync(pool, victim.Id, PoolWait);
 
             Assert.Equal(3, pool.ActivePeers.Count);
             Assert.DoesNotContain(pool.ActivePeers, p => p.Id == victim.Id);
@@ -92,7 +94,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 bootnodes: allBootnodes);
 
             await pool.StartAsync(CancellationToken.None);
-            await WaitForCountAsync(pool, 2, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 2, PoolWait);
 
             Assert.Equal(2, pool.ActivePeers.Count);
             foreach (var e in healthy)
@@ -115,11 +117,12 @@ namespace Nethereum.DevP2P.IntegrationTests
                 new PeerPoolOptions(
                     TargetPeerCount: 2,
                     MaxConcurrentDials: 2,
-                    DialCooldown: TimeSpan.FromMilliseconds(1)),
+                    DialCooldown: TimeSpan.FromMilliseconds(1),
+                    MinDialIntervalPerHost: TimeSpan.FromMilliseconds(1)),
                 bootnodes: enodes);
 
             await pool.StartAsync(CancellationToken.None);
-            await WaitForCountAsync(pool, 2, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 2, PoolWait);
             Assert.Equal(2, worker.TotalHandshakes);
 
             await pool.BanAndDropAsync(enodes[0], "test ban", CancellationToken.None);
@@ -131,7 +134,7 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             await pool.ClearAllBansAsync();
             pool.EnqueueCandidate(enodes[0]);
-            await WaitForCountAsync(pool, 2, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 2, PoolWait);
             Assert.Equal(3, worker.TotalHandshakes);
         }
 
@@ -153,7 +156,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                     peerCache: cache);
 
                 await pool.StartAsync(CancellationToken.None);
-                await WaitForCountAsync(pool, 1, TimeSpan.FromSeconds(2));
+                await WaitForCountAsync(pool, 1, PoolWait);
 
                 var score = pool.GetScore(enode);
                 Assert.False(score.IsUnknown);
@@ -223,7 +226,7 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             Assert.True(pool.EnqueueCandidate(late));
 
-            await WaitForCountAsync(pool, 1, TimeSpan.FromSeconds(2));
+            await WaitForCountAsync(pool, 1, PoolWait);
             Assert.Equal(1, pool.ActivePeers.Count);
             Assert.Equal(late, pool.ActivePeers.First().Enode);
             Assert.Equal(1, worker.TotalHandshakes);
@@ -232,27 +235,30 @@ namespace Nethereum.DevP2P.IntegrationTests
         private static async Task WaitForCountAsync(IPeerPool pool, int target, TimeSpan timeout)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (sw.Elapsed < timeout)
+            while (true)
             {
-                if (pool.ActivePeers.Count >= target) return;
+                var observed = pool.ActivePeers.Count;
+                if (observed >= target) return;
+                if (sw.Elapsed >= timeout)
+                    throw new TimeoutException(
+                        $"Pool did not reach {target} peers within {timeout.TotalSeconds:F1}s (last poll saw {observed}).");
                 await Task.Delay(25);
             }
-            throw new TimeoutException(
-                $"Pool did not reach {target} peers within {timeout.TotalSeconds:F1}s (got {pool.ActivePeers.Count}).");
         }
 
         private static async Task WaitForReplacementAsync(IPeerPool pool, Guid victimId, TimeSpan timeout)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (sw.Elapsed < timeout)
+            while (true)
             {
-                if (pool.ActivePeers.Count >= pool.TargetPeerCount
-                    && !pool.ActivePeers.Any(p => p.Id == victimId))
-                    return;
+                var active = pool.ActivePeers;
+                var victimStillActive = active.Any(p => p.Id == victimId);
+                if (active.Count >= pool.TargetPeerCount && !victimStillActive) return;
+                if (sw.Elapsed >= timeout)
+                    throw new TimeoutException(
+                        $"Pool did not replace victim peer within {timeout.TotalSeconds:F1}s (last poll saw {active.Count} peers, victim still active: {victimStillActive}).");
                 await Task.Delay(25);
             }
-            throw new TimeoutException(
-                $"Pool did not replace victim peer within {timeout.TotalSeconds:F1}s.");
         }
 
         private sealed class ControlledHandshakeWorker : IPeerHandshakeWorker

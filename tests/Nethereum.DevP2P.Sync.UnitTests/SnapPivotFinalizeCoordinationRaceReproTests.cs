@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -52,49 +53,43 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             return stateTrie.Root.GetHash();
         }
 
-        private sealed class RaceForcingSink : ISnapSyncSink
+        private sealed class RaceForcingNodeStore : InMemoryContentNodeStore, ITrieNodeStore
         {
-            private readonly ISnapSyncSink _inner;
             private readonly TaskCompletionSource<bool> _driverGate;
             private readonly SnapBootstrapper.RollingPivot _rollingPivot;
             private readonly byte[] _expectedRacedRoot;
 
             public bool ObservedRaceLandedBeforeFinalise { get; private set; }
 
-            public RaceForcingSink(
-                ISnapSyncSink inner,
+            public RaceForcingNodeStore(
                 TaskCompletionSource<bool> driverGate,
                 SnapBootstrapper.RollingPivot rollingPivot,
                 byte[] expectedRacedRoot)
             {
-                _inner = inner;
                 _driverGate = driverGate;
                 _rollingPivot = rollingPivot;
                 _expectedRacedRoot = expectedRacedRoot;
             }
 
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => _inner.BeginAsync(targetRoot, ct);
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct)
-                => _inner.WriteAccountAsync(accountHash, slimRlp, ct);
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-                => _inner.BeginAccountStorageAsync(accountHash, expectedStorageRoot, ct);
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
-                => _inner.WriteBytecodeAsync(codeHash, code, ct);
+            private static bool IsInsideFinaliseRoot()
+                => new System.Diagnostics.StackTrace().GetFrames().Any(f =>
+                    f.GetMethod() is { Name: "FinaliseRootAsync", DeclaringType.Name: nameof(TrieSnapSyncSink) });
 
-            public async ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct)
+            public new void Flush()
             {
-                _driverGate.TrySetResult(true);
-
-                var deadline = DateTime.UtcNow.AddSeconds(10);
-                while (!ByteUtil.AreEqual(_rollingPivot.Current.Header.StateRoot, _expectedRacedRoot))
+                if (IsInsideFinaliseRoot())
                 {
-                    if (DateTime.UtcNow > deadline)
-                        throw new TimeoutException("driver never adopted the raced pivot — harness assumption broken");
-                    await Task.Delay(5, CancellationToken.None).ConfigureAwait(false);
+                    _driverGate.TrySetResult(true);
+                    var deadline = DateTime.UtcNow.AddSeconds(10);
+                    while (!ByteUtil.AreEqual(_rollingPivot.Current.Header.StateRoot, _expectedRacedRoot))
+                    {
+                        if (DateTime.UtcNow > deadline)
+                            throw new TimeoutException("driver never adopted the raced pivot - harness assumption broken");
+                        Thread.Sleep(5);
+                    }
+                    ObservedRaceLandedBeforeFinalise = true;
                 }
-                ObservedRaceLandedBeforeFinalise = true;
-
-                return await _inner.FinaliseRootAsync(ct).ConfigureAwait(false);
+                base.Flush();
             }
         }
 
@@ -133,12 +128,11 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var clientPivotRefresher = SnapBootstrapper.BuildClientPivotRefresher(
                 rawPivotRefresher, rollingPivot, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
 
-            var clientNodeStore = new InMemoryContentNodeStore();
+            var clientNodeStore = new RaceForcingNodeStore(driverGate, rollingPivot, rootB);
             var clientStateStore = new InMemoryStateStore();
             var realSink = new TrieSnapSyncSink(clientNodeStore, clientStateStore, flatWriter: null);
-            var raceSink = new RaceForcingSink(realSink, driverGate, rollingPivot, rootB);
 
-            var client = new SnapSyncClient(peer, raceSink)
+            var client = new SnapSyncClient(peer, realSink)
             {
                 AccountConcurrency = 1,
                 RootRefreshIntervalMs = 10,
@@ -152,7 +146,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.True(result.RootMatchesTarget);
             Assert.Equal(rootA, result.ComputedRoot, ByteArrayComparer.Current);
             Assert.Equal(rootA, result.FinalTargetRoot, ByteArrayComparer.Current);
-            Assert.True(raceSink.ObservedRaceLandedBeforeFinalise);
+            Assert.True(clientNodeStore.ObservedRaceLandedBeforeFinalise);
             Assert.True(refresherCalls >= 1);
 
             Assert.Equal(rootB, rollingPivot.Current.Header.StateRoot, ByteArrayComparer.Current);

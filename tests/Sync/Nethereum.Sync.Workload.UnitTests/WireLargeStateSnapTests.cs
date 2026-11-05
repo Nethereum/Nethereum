@@ -103,12 +103,11 @@ namespace Nethereum.Chain.TestData.UnitTests
                         await server.Bundle.Blocks.GetHashByNumberAsync(n),
                         await bundle.Blocks.GetHashByNumberAsync(n));
 
-                var recovered = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot);
                 var serverAtPivot = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, server.Bundle.TrieNodes);
                 var accountDecoder = new AccountEncoder();
                 foreach (var account in sequencer.Accounts.All.Take(24))
                 {
-                    var synced = await recovered.GetAccountAsync(account.Address);
+                    var synced = await FollowerStateAtPivot.ReadAsync(bundle, pivotHeader.StateRoot, account.Address);
                     Assert.NotNull(synced);
                     var expectedLeaf = serverAtPivot.Get(Sha3Keccack.Current.CalculateHash(account.Address.HexToByteArray()));
                     Assert.NotNull(expectedLeaf);

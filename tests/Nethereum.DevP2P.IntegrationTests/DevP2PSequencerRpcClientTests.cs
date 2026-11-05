@@ -13,6 +13,7 @@ using Nethereum.DevP2P.Sync.Sequencer;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class DevP2PSequencerRpcClientTests
     {
         private readonly DevP2PGethFixture _fixture;

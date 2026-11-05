@@ -112,6 +112,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
             var pending = await _node.TxPool.GetPendingAsync(256);
             if ((pending == null || pending.Count == 0) && !allowEmpty) return null;
 
+            var parent = await _node.Bundle.Blocks.GetLatestAsync();
             var result = await _producer.ProduceBlockAsync(
                 pending ?? new List<ISignedTransaction>(),
                 new BlockProductionOptions
@@ -119,10 +120,10 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                     Coinbase = _chainConfig.Coinbase,
                     BlockGasLimit = _chainConfig.BlockGasLimit,
                     BaseFee = BigInteger.Zero,
-                    Difficulty = BigInteger.One,
+                    Difficulty = BigInteger.Zero,
                     ChainId = _node.ChainId,
                     ExtraData = Array.Empty<byte>(),
-                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                    Timestamp = Math.Max(DateTimeOffset.UtcNow.ToUnixTimeSeconds(), parent.Timestamp + 1)
                 });
 
             if (result?.Header == null) return result;
@@ -132,25 +133,8 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                 await _node.TxPool.RemoveBatchAsync(pending.Select(t => t.Hash).ToList());
             }
 
-            await PublishAsync(result);
+            _node.AnnounceHead();
             return result;
-        }
-
-        private async Task PublishAsync(BlockProductionResult result)
-        {
-            var transactions = await _node.Bundle.Transactions.GetByBlockHashAsync(result.BlockHash)
-                               ?? new List<ISignedTransaction>();
-
-            var payload = NewBlockMessageEncoder.Encode(new NewBlockMessage
-            {
-                Header = result.Header,
-                Transactions = transactions,
-                Uncles = new List<BlockHeader>(),
-                Withdrawals = new List<Withdrawal>(),
-                TotalDifficulty = result.Header.Difficulty
-            });
-
-            await _node.BroadcastPool.BroadcastAsync(Eth68MessageIds.NewBlock, payload);
         }
     }
 }

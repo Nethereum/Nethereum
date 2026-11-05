@@ -101,7 +101,7 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             var scheduler = new FetchRequestScheduler(
                 pool, worker,
-                new FetchRequestSchedulerOptions(MaxRetriesPerRequest: 3, MaxInFlightPerPeer: 1));
+                new FetchRequestSchedulerOptions(MaxRetriesPerRequest: 2, MaxInFlightPerPeer: 1));
 
             await Assert.ThrowsAsync<FetchRequestFailedException>(() =>
                 scheduler.FetchHeadersAsync(100, 1, CancellationToken.None));

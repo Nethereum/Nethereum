@@ -20,7 +20,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         public BlockProductionAndFailoverE2ETests(ITestOutputHelper output) => _output = output;
 
         [Fact]
-        public async Task Given_ASealingNodeWithAConnectedPeer_When_ItProducesABlock_Then_ThePeerReceivesIt()
+        public async Task Given_ASealingNodeWithAConnectedPeer_When_ItProducesABlock_Then_ThePeerIsAnnouncedTheNewHead()
         {
             var (producerNode, peer) = await DevChainNetwork.TwoConnectedNodesAsync();
             try
@@ -33,10 +33,10 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 Assert.Equal(new BigInteger(1), (BigInteger)sealed1.Header.BlockNumber);
 
                 var received = await DevChainNetwork.WaitUntilAsync(
-                    () => peer.ObservedBlocks.Any(b => (BigInteger)b.Header.BlockNumber == 1),
+                    () => peer.ObservedHeads.Any(h => h.LatestBlock == 1),
                     TimeSpan.FromSeconds(15));
 
-                Assert.True(received, "the peer never received the sealed block");
+                Assert.True(received, "the peer was never announced the sealed block");
                 _output.WriteLine($"peer received block 1 0x{sealed1.BlockHash.ToHex()}");
             }
             finally
@@ -47,7 +47,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_AFundedSender_When_ItsTransactionIsSealedIntoABlock_Then_ThePeerReceivesTheBlockCarryingIt()
+        public async Task Given_AFundedSender_When_ItsTransactionIsSealedIntoABlock_Then_ThePeerPullsTheBlockCarryingIt()
         {
             var (producerNode, peer) = await DevChainNetwork.TwoConnectedNodesAsync();
             try
@@ -62,14 +62,19 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 var sealedBlock = await producer.ProduceAsync();
                 Assert.NotNull(sealedBlock?.Header);
 
-                var carried = await DevChainNetwork.WaitUntilAsync(
-                    () => peer.ObservedBlocks.Any(b =>
-                        b.Transactions != null &&
-                        b.Transactions.Any(t => ByteUtil.AreEqual(t.Hash, submitted.TransactionHash))),
-                    TimeSpan.FromSeconds(15));
+                await peer.FundAccountAsync(DevChainTransactions.AddressOf(SenderKey), TenEther);
+                await using var peerFollower = await DevChainFollower.AttachAsync(peer);
+                await peerFollower.StartAsync();
 
-                Assert.True(carried, "the peer never received a block carrying the submitted transaction");
-                _output.WriteLine("peer received the block carrying the submitted transaction");
+                var carried = await DevChainNetwork.WaitUntilAsync(async () =>
+                {
+                    var transactions = await peer.Bundle.Transactions.GetByBlockHashAsync(sealedBlock.BlockHash);
+                    return transactions != null &&
+                           transactions.Any(t => ByteUtil.AreEqual(t.Hash, submitted.TransactionHash));
+                }, TimeSpan.FromSeconds(30));
+
+                Assert.True(carried, "the peer never pulled a block carrying the submitted transaction");
+                _output.WriteLine("peer pulled the block carrying the submitted transaction");
             }
             finally
             {
@@ -79,7 +84,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_ThePrimarySealerStops_When_TheSecondSealerProduces_Then_ThePeerKeepsReceivingBlocks()
+        public async Task Given_ThePrimarySealerStops_When_TheSecondSealerProduces_Then_ThePeerKeepsBeingAnnouncedNewHeads()
         {
             var primary = DevChainNode.Create();
             var secondary = DevChainNode.Create();
@@ -98,17 +103,17 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
 
                 await primaryProducer.ProduceAsync();
                 var sawPrimary = await DevChainNetwork.WaitUntilAsync(
-                    () => observer.ObservedBlocks.Count >= 1, TimeSpan.FromSeconds(15));
+                    () => observer.ObservedHeads.Count >= 1, TimeSpan.FromSeconds(15));
                 Assert.True(sawPrimary, "the observer never saw the primary's block");
 
-                var afterPrimary = observer.ObservedBlocks.Count;
+                var afterPrimary = observer.ObservedHeads.Count;
                 await secondaryProducer.ProduceAsync();
 
                 var sawSecondary = await DevChainNetwork.WaitUntilAsync(
-                    () => observer.ObservedBlocks.Count > afterPrimary, TimeSpan.FromSeconds(15));
+                    () => observer.ObservedHeads.Count > afterPrimary, TimeSpan.FromSeconds(15));
 
-                Assert.True(sawSecondary, "the observer stopped receiving blocks when the primary stopped");
-                _output.WriteLine($"observer kept receiving after failover: {observer.ObservedBlocks.Count} blocks");
+                Assert.True(sawSecondary, "the observer stopped being announced heads when the primary stopped");
+                _output.WriteLine($"observer kept receiving after failover: {observer.ObservedHeads.Count} blocks");
             }
             finally
             {

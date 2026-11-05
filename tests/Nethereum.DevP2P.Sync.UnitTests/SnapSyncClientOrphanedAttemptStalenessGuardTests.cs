@@ -133,7 +133,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(0, peer.StorageRangeCalls);
 
             Assert.Empty(accountsNeedingHeal);
-            Assert.Empty(deferredStorageDebts);
+            Assert.Empty(set.AccountsNeedingHeal);
 
             var release = set.LeaseNext();
             Assert.NotNull(release);

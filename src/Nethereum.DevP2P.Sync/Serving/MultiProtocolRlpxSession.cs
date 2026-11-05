@@ -37,11 +37,9 @@ namespace Nethereum.DevP2P.Sync.Serving
                 int msgId; byte[] payload;
                 if (idleTimeout > TimeSpan.Zero)
                 {
-                    using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    idleCts.CancelAfter(idleTimeout);
                     try
                     {
-                        (msgId, payload) = await _connection.ReceiveMessageAsync(idleCts.Token);
+                        (msgId, payload) = await _connection.ReceiveMessageAsync(idleTimeout, ct);
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
@@ -51,12 +49,15 @@ namespace Nethereum.DevP2P.Sync.Serving
                 }
                 else
                 {
-                    (msgId, payload) = await _connection.ReceiveMessageAsync(ct);
+                    (msgId, payload) = await _connection.ReceiveMessageAsync(_connection.FrameReadTimeout, ct);
                 }
+                using var lease = await _connection.AcquireDecodeLeaseAsync(payload.Length, ct);
                 if (msgId >= _ethOffset && msgId < _ethEndExclusive)
-                    await _eth.HandleEthMessageAsync(msgId - _ethOffset, payload, ct);
+                    await _eth.HandleEthMessageAsync(msgId - _ethOffset, payload, lease, ct);
                 else if (msgId >= _snapOffset && msgId < _snapEndExclusive)
-                    await _snap.HandleSnapMessageAsync(msgId - _snapOffset, payload, ct);
+                    await _snap.HandleSnapMessageAsync(msgId - _snapOffset, payload, lease, ct);
+                else
+                    try { await _connection.DisconnectAsync(Nethereum.Model.P2P.DisconnectReason.ProtocolBreach); } catch { }
             }
         }
     }

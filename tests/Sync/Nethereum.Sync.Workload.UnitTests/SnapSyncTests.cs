@@ -63,10 +63,9 @@ namespace Nethereum.Chain.TestData.UnitTests
                 Assert.Equal(pivotStateRoot.ToHex(), result.PivotStateRoot.ToHex());
                 Assert.True(result.AccountCount > 100, $"only {result.AccountCount} accounts synced");
 
-                var follower = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotStateRoot);
                 foreach (var kv in sequencerAccounts)
                 {
-                    var synced = await follower.GetAccountAsync(kv.Key);
+                    var synced = await FollowerStateAtPivot.ReadAsync(bundle, pivotStateRoot, kv.Key);
                     Assert.NotNull(synced);
                     Assert.Equal(kv.Value.Balance, synced.Balance);
                     Assert.Equal(kv.Value.Nonce, synced.Nonce);

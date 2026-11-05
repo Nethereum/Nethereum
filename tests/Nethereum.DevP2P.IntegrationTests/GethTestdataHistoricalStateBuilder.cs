@@ -63,6 +63,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             var chainBytes = await File.ReadAllBytesAsync(Path.Combine(testdata, "chain.rlp"));
             var calculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
             var blockStore = new InMemoryBlockStore();
+            var genesisStateRoot = await GethTestdataGenesisHeader.SeedAsync(testdata, blockStore, stateStore, trieNodeStore);
             var activations = HiveTestdataChainActivations.Instance;
             var engine = new BlockExecutor(
                 stateStore, blockStore, activations,
@@ -132,6 +133,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 pos += consumed;
             }
 
+            if (!System.Linq.Enumerable.SequenceEqual(genesisStateRoot, finalRoot)) trieNodeStore.Delete(genesisStateRoot);
             return new Result
             {
                 TrieStorage = trieNodeStore,

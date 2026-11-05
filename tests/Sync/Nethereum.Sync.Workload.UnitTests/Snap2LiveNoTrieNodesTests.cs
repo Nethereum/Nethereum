@@ -37,7 +37,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                 var run = Follower(bundle, server.Sequencer, log, pool, scheduler)
                     .RunSnapBootstrapAsync(new LiveAdvancingTipSource(server.Node), Snap2Options(metrics), cts.Token);
 
-                while (!run.IsCompleted && await server.HeightAsync() < 400)
+                while (!run.IsCompleted && (await server.HeightAsync() < 400 || scheduler.WhaleRoots.Count < 2))
                 {
                     await server.SealAsync(10);
                     await Task.WhenAny(run, Task.Delay(TimeSpan.FromMilliseconds(TestRootRefreshIntervalMs * 3)));
@@ -49,7 +49,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                 Assert.True(log.Count("pivot_move.bal_healed") >= 1, "no pivot move was caught up");
                 Assert.Equal(0, scheduler.TrieNodeRequests);
                 Assert.Equal(0L, metrics.Phase3NodesHealedTotal);
-                Assert.Equal(0, log.Count("snap.phase2.bigaccount.deferred"));
+                Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
                 var pivotHeader = await server.Node.Bundle.Blocks.GetByNumberAsync(result.PivotBlockNumber);
                 Assert.Equal(pivotHeader.StateRoot.ToHex(), result.PivotStateRoot.ToHex());
                 Assert.Equal(result.PivotStateRoot.ToHex(), GeneratedRoot(log));

@@ -1,3 +1,4 @@
+#pragma warning disable CS0618
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Phase2
         private long _bytecodeBytes;
         private long _bytesSinceLastCheckpoint;
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public ConcurrentDictionary<string, DeferredStorageDebt> DeferredStorageDebts { get; }
 
         public ConcurrentDictionary<byte[], byte> CodeHashesNeedingHeal { get; }
@@ -86,6 +88,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Phase2
         public long ExchangeResetCheckpointBytes()
             => Interlocked.Exchange(ref _bytesSinceLastCheckpoint, 0);
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public IReadOnlyList<DeferredStorageDebt> SnapshotDeferredStorageDebts()
         {
             if (DeferredStorageDebts.IsEmpty) return Array.Empty<DeferredStorageDebt>();

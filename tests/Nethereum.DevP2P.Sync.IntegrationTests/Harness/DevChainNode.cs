@@ -62,12 +62,6 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
 
         public IChainStoreBundle Bundle { get; private set; }
 
-        private async Task<ulong> CommittedHeight()
-        {
-            var height = await Bundle.Blocks.GetHeightAsync().ConfigureAwait(false);
-            return (ulong)(System.Numerics.BigInteger)height;
-        }
-
         public TxPool TxPool { get; private set; }
 
         public SyncNode Node { get; private set; }
@@ -120,7 +114,6 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
             _advertiseSnap2 = advertiseSnap2;
             _snapSoftResponseLimit = snapSoftResponseLimit;
             _pathKeyedState = pathKeyedState;
-            PushedBlocks = new PushedBlockSource(committedHeight: CommittedHeight);
         }
 
         private Nethereum.ChainNode.Hosting.Configuration.ChainNodeConfig BuildConfig()
@@ -220,7 +213,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                     TrustedTransactionsReceived = AdmitTrustedTransactions,
                     PooledTransactionHashesReceived = RecordAnnouncement,
                     TransactionsReceived = RecordRemoteTransactions,
-                    NewBlockReceived = RecordRemoteBlock,
+                    BlockRangeUpdateReceived = RecordRemoteHead,
                 },
                 _lifetime.Token).ConfigureAwait(false);
 
@@ -229,6 +222,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
             Serving = _composed.Listener;
             _broadcastPool = _composed.Mempool.BroadcastPool;
             _dialPool = _composed.Sync.Pool;
+            _composed.BlockRangeAnnouncer.AnnounceInterval = 1;
 
             _dialPool.PeerAdded += OnDialPeerAdded;
 
@@ -267,20 +261,19 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                 address.ToLowerInvariant(),
                 new Account { Balance = (EvmUInt256)balance, Nonce = (EvmUInt256)nonce });
 
-        private readonly List<NewBlockMessage> _observedBlocks = new();
+        private readonly List<BlockRangeUpdateMessage> _observedHeads = new();
 
-        public IReadOnlyList<NewBlockMessage> ObservedBlocks
+        public IReadOnlyList<BlockRangeUpdateMessage> ObservedHeads
         {
-            get { lock (_observeLock) return _observedBlocks.ToList(); }
+            get { lock (_observeLock) return _observedHeads.ToList(); }
         }
 
-        public PushedBlockSource PushedBlocks { get; } = new PushedBlockSource();
+        public void AnnounceHead() => _composed.BlockRangeAnnouncer.Signal();
 
-        private void RecordRemoteBlock(NewBlockMessage msg)
+        private void RecordRemoteHead(BlockRangeUpdateMessage msg)
         {
-            if (msg?.Header == null) return;
-            lock (_observeLock) _observedBlocks.Add(msg);
-            PushedBlocks.OnNewBlock(msg);
+            if (msg == null) return;
+            lock (_observeLock) _observedHeads.Add(msg);
         }
 
         private void RecordAnnouncement(NewPooledTransactionHashesMessage msg)
@@ -302,7 +295,11 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
         private void OnDialPeerAdded(object sender, IEthPeer peer)
         {
             if (peer is SyncPeerSession outbound)
-                outbound.NewBlockReceived += (_, msg) => RecordRemoteBlock(msg);
+                outbound.HeadAdvanced += (_, session) => RecordRemoteHead(new BlockRangeUpdateMessage
+                {
+                    LatestBlock = session.PeerLatestBlock,
+                    LatestBlockHash = session.PeerLatestBlockHash
+                });
         }
 
         public async ValueTask DisposeAsync()

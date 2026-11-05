@@ -12,14 +12,12 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevP2P.Sync.Snap.Sinks
 {
-    public sealed class TrieSnapSyncSink : ISnapSyncSink
+    public sealed class TrieSnapSyncSink : ISnapSyncSink, IStorageRootSource
     {
         private readonly object _stateLock = new();
-        private readonly ITrieNodeStore _nodeStore;
         internal readonly ITrieNodeStore NodeStore;
-        internal ISnapFlatStateWriter FlatWriter => _flatWriter;
+        internal readonly ISnapFlatStateWriter FlatWriter;
         private readonly IStateStore _stateStore;
-        private readonly ISnapFlatStateWriter _flatWriter;
         private readonly ILogger _logger;
 
         private readonly PatriciaTrie _stateTrie;
@@ -35,12 +33,22 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
 
         public TrieSnapSyncSink(ITrieNodeStore stateTrieStore, IStateStore stateStore, ISnapFlatStateWriter flatWriter, ILogger logger = null)
         {
-            _nodeStore = stateTrieStore ?? throw new ArgumentNullException(nameof(stateTrieStore));
-            NodeStore = _nodeStore;
-            _stateTrie = new PatriciaTrie(NodeStore);
+            NodeStore = stateTrieStore ?? throw new ArgumentNullException(nameof(stateTrieStore));
+            _stateTrie = NewPhase2Trie(NodeStore, owner: null);
             _stateStore = stateStore ?? throw new ArgumentNullException(nameof(stateStore));
-            _flatWriter = flatWriter;
+            FlatWriter = flatWriter;
             _logger = logger ?? NullLogger.Instance;
+        }
+
+        private static PatriciaTrie NewPhase2Trie(ITrieNodeStore store, byte[] owner)
+            => new PatriciaTrie(store, owner) { ClearExtensionSpansOnSave = store is IRawNodeReader };
+
+        private Action<byte[], byte[], byte[]> _onStorageRootCompleted;
+
+        Action<byte[], byte[], byte[]> IStorageRootSource.OnStorageRootCompleted
+        {
+            get => _onStorageRootCompleted;
+            set => _onStorageRootCompleted = value;
         }
 
         public int AccountCount => _accountCount;
@@ -63,10 +71,10 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
                     _accountsSinceCollapse = 0;
                 }
             }
-            if (_flatWriter != null)
+            if (FlatWriter != null)
             {
                 var account = new AccountEncoder().Decode(canonical);
-                await _flatWriter.SaveAccountByHashAsync(accountHash, account).ConfigureAwait(false);
+                await FlatWriter.SaveAccountByHashAsync(accountHash, account).ConfigureAwait(false);
             }
         }
 
@@ -103,7 +111,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
         {
             try
             {
-                _nodeStore.Flush();
+                NodeStore.Flush();
             }
             catch (TransientFlushUnavailableException ex)
             {
@@ -128,13 +136,13 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
                 _sink = sink;
                 _accountHash = accountHash;
                 _expectedRoot = expectedRoot;
-                _trie = new PatriciaTrie(sink.NodeStore, accountHash);
+                _trie = NewPhase2Trie(sink.NodeStore, accountHash);
             }
 
             public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct)
             {
                 ct.ThrowIfCancellationRequested();
-                var rawValue = _sink._flatWriter == null
+                var rawValue = _sink.FlatWriter == null
                     ? null
                     : Nethereum.RLP.RLP.Decode(valueRlp).RLPData;
                 lock (_slotLock)
@@ -152,23 +160,22 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
             {
                 ct.ThrowIfCancellationRequested();
                 List<(byte[] SlotHash, byte[] RawValue)> flatSlots;
+                byte[] completedRoot;
                 lock (_slotLock)
                 {
-                    if (_wroteSlots && _expectedRoot != null && _expectedRoot.Length == 32
-                        && !ByteUtil.AreEqual(_trie.Root.GetHash(), _expectedRoot))
-                        throw new InvalidOperationException(
-                            "Snap storage-root mismatch: the completed storage trie does not match the account's expected storage root.");
+                    completedRoot = _wroteSlots ? _trie.Root.GetHash() : null;
                     _trie.SaveDirtyNodesToStorage();
                     flatSlots = new List<(byte[] SlotHash, byte[] RawValue)>(_flatSlots);
                     _flatSlots.Clear();
                 }
+                _sink._onStorageRootCompleted?.Invoke(_accountHash, completedRoot, _expectedRoot);
 
-                if (_sink._flatWriter != null)
+                if (_sink.FlatWriter != null)
                 {
                     foreach (var slot in flatSlots)
                     {
                         ct.ThrowIfCancellationRequested();
-                        await _sink._flatWriter.SaveStorageByHashAsync(
+                        await _sink.FlatWriter.SaveStorageByHashAsync(
                             _accountHash, slot.SlotHash, slot.RawValue).ConfigureAwait(false);
                     }
                 }
@@ -176,5 +183,13 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
 
             public ValueTask AbortAsync(CancellationToken ct) => default;
         }
+    }
+}
+
+namespace Nethereum.DevP2P.Sync.Snap.Sinks
+{
+    internal interface IStorageRootSource
+    {
+        Action<byte[], byte[], byte[]> OnStorageRootCompleted { get; set; }
     }
 }

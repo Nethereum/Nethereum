@@ -163,7 +163,7 @@ namespace Nethereum.Chain.TestData.UnitTests
             return await handler.HandleAsync(request, context);
         }
 
-        public async Task<string> StartWire()
+        public async Task<string> StartWire(Func<ISnapRequestHandler, ISnapRequestHandler> wrapSnapHandler = null)
         {
             GenesisHash = await Bundle.Blocks.GetHashByNumberAsync(0);
             var bestHash = await Bundle.Blocks.GetHashByNumberAsync(Head);
@@ -190,7 +190,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                 ClientId = "Nethereum.Sync.PathKeyedWireServer/1.0",
             };
             _wireKey = EthECKey.GenerateKey();
-            _listener = new PeerListener(_wireKey, Bundle, options, status, SnapHandler);
+            _listener = new PeerListener(_wireKey, Bundle, options, status, wrapSnapHandler == null ? SnapHandler : wrapSnapHandler(SnapHandler));
             await _listener.StartAsync();
             Enode = $"enode://{_wireKey.GetPubKeyNoPrefix().ToHex()}@127.0.0.1:{_listener.Port}";
             return Enode;

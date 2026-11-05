@@ -1,8 +1,8 @@
+using Nethereum.DevP2P.IntegrationTests.Helpers;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Geth;
@@ -10,6 +10,7 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Hex.HexTypes;
 using Nethereum.JsonRpc.Client;
 using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Testing;
 using Nethereum.Web3.Accounts;
 using Xunit;
 
@@ -21,18 +22,23 @@ namespace Nethereum.DevP2P.IntegrationTests
 
         public const string SealerAddress = "0x12890d2cce102216644c59daE5baed380d84830c";
         public const string SealerPrivateKey = "0xb5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7";
-        public const int P2PPort = 30330;
-        public const int RpcPort = 8555;
         public static readonly BigInteger ChainId = 1337;
 
-        private const string GethRelativePath =
-            @"..\..\..\..\..\geth-tools\geth-windows-amd64-1.13.15-c5ba367e\geth.exe";
-        private const string GenesisRelativePath =
-            @"..\..\..\..\..\testchain\clique\genesis_clique_modern.json";
-        private const string KeystoreSourceRelative =
-            @"..\..\..\..\..\testchain\clique\devChain\keystore";
-        private const string PasswordRelative =
-            @"..\..\..\..\..\testchain\clique\pass.txt";
+        private static readonly TimeSpan RpcReadyTimeout = TimeSpan.FromSeconds(60);
+
+        public int P2PPort { get; } = FreeTcpPort();
+        public int RpcPort { get; } = FreeTcpPort();
+
+        private static int FreeTcpPort()
+        {
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
+        }
+
+        private static readonly string CliqueDir = Path.Combine(TestEnvironment.RepoRoot, "testchain", "clique");
 
         private Process _process;
         private string _dataDir;
@@ -65,7 +71,23 @@ namespace Nethereum.DevP2P.IntegrationTests
             };
 
             var txHash = await web3.Eth.TransactionManager.SendTransactionAsync(input);
-            return await PollForReceiptAsync(web3, txHash, TimeSpan.FromSeconds(15));
+            var receipt = await PollForReceiptAsync(web3, txHash, TimeSpan.FromSeconds(15));
+            await WaitForCanonicalHeadAsync(web3, receipt.BlockNumber.Value, TimeSpan.FromSeconds(15));
+            return receipt;
+        }
+
+        private static async Task WaitForCanonicalHeadAsync(
+            Nethereum.Web3.Web3 web3, BigInteger blockNumber, TimeSpan timeout)
+        {
+            var deadline = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < deadline)
+            {
+                var head = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+                if (head.Value >= blockNumber) return;
+                await Task.Delay(100);
+            }
+            throw new TimeoutException(
+                $"Geth's canonical head did not reach block {blockNumber} within {timeout.TotalSeconds}s");
         }
 
         private static async Task<TransactionReceipt> PollForReceiptAsync(
@@ -117,24 +139,16 @@ namespace Nethereum.DevP2P.IntegrationTests
 
         private void ResolvePaths()
         {
-            var assemblyDir = Path.GetDirectoryName(
-                typeof(DevP2PGethFixture).GetTypeInfo().Assembly.Location);
-            GethBinaryPath = Path.GetFullPath(Path.Combine(assemblyDir, GethRelativePath));
-
-            if (!File.Exists(GethBinaryPath))
-                throw new FileNotFoundException(
-                    $"Geth 1.13.15 binary not found at {GethBinaryPath}. " +
-                    "Run the DevP2P setup to download it.");
+            GethBinaryPath = GethToolLocator.FindGethBinary();
 
             _dataDir = Path.Combine(
                 Path.GetTempPath(),
                 $"nethereum-devp2p-{P2PPort}-{Guid.NewGuid():N}");
             Directory.CreateDirectory(_dataDir);
 
-            var assemblyDirInfo = new DirectoryInfo(assemblyDir);
-            var genesisPath = Path.GetFullPath(Path.Combine(assemblyDir, GenesisRelativePath));
-            var keystoreSource = Path.GetFullPath(Path.Combine(assemblyDir, KeystoreSourceRelative));
-            var passwordSource = Path.GetFullPath(Path.Combine(assemblyDir, PasswordRelative));
+            var genesisPath = Path.Combine(CliqueDir, "genesis_clique_modern.json");
+            var keystoreSource = Path.Combine(CliqueDir, "devChain", "keystore");
+            var passwordSource = Path.Combine(CliqueDir, "pass.txt");
 
             RunGeth($"--datadir=\"{_dataDir}\" init \"{genesisPath}\"");
 
@@ -168,6 +182,7 @@ namespace Nethereum.DevP2P.IntegrationTests
         {
             var args = string.Join(" ",
                 "--nodiscover",
+                "--ipcdisable",
                 "--port", P2PPort.ToString(),
                 "--http",
                 "--http.port", RpcPort.ToString(),
@@ -195,7 +210,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             _process.Start();
             _process.BeginErrorReadLine();
 
-            await WaitForRpcReadyAsync(TimeSpan.FromSeconds(20));
+            await WaitForRpcReadyAsync(RpcReadyTimeout);
         }
 
         private async Task WaitForRpcReadyAsync(TimeSpan timeout)

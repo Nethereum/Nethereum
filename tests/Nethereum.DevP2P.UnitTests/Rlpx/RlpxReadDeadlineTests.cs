@@ -82,10 +82,10 @@ namespace Nethereum.DevP2P.UnitTests.Rlpx
                 var receiveTask = serverConn.ReceiveMessageAsync();
 
                 await Task.Delay(200);
-                await clientConn.SendMessageAsync(0x42, new byte[] { 0xc0 });
+                await clientConn.SendMessageAsync(0x10, new byte[] { 0xc0 });
 
                 var (msgId, payload) = await receiveTask.WaitAsync(TimeSpan.FromSeconds(5));
-                Assert.Equal(0x42, msgId);
+                Assert.Equal(0x10, msgId);
                 Assert.Equal(new byte[] { 0xc0 }, payload);
             }
             finally

@@ -158,6 +158,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                     InProcessSequencerDriver.ChainName, _sequencer.ChainId);
                 config.SequencerAddress = _sequencer.SequencerAddress;
                 config.Hardfork = _sequencer.Hardfork;
+                config.BlockGasLimit = _sequencer.BlockGasLimit;
 
                 var appChain = new AppChainCore(
                     config, bundle.Blocks, bundle.Transactions, bundle.Receipts,

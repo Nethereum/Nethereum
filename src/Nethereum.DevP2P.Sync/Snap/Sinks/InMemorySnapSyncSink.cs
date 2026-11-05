@@ -1,17 +1,13 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
-using Nethereum.Model;
-using Nethereum.Model.P2P.Snap;
-using Nethereum.Util;
 using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevP2P.Sync.Snap.Sinks
 {
-    public sealed class InMemorySnapSyncSink : ISnapSyncSink
+    public sealed class InMemorySnapSyncSink : ISnapSyncSink, IStorageRootSource
     {
         private readonly object _lock = new();
         private readonly InMemoryContentNodeStore _storage = new();
@@ -23,6 +19,16 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
         }
         private readonly Dictionary<string, byte[]> _bytecodes = new();
         private int _accountCount;
+
+        private System.Action<byte[], byte[], byte[]> _onStorageRootCompleted;
+
+        System.Action<byte[], byte[], byte[]> IStorageRootSource.OnStorageRootCompleted
+        {
+            get => _onStorageRootCompleted;
+            set => _onStorageRootCompleted = value;
+        }
+
+        internal InMemoryContentNodeStore NodeStore => _storage;
 
         public InMemoryContentNodeStore TrieStorage => _storage;
         public PatriciaTrie StateTrie => _stateTrie;
@@ -44,7 +50,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
 
         public ValueTask<IStorageScope> BeginAccountStorageAsync(
             byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-            => new ValueTask<IStorageScope>(new StorageScope(this, expectedStorageRoot));
+            => new ValueTask<IStorageScope>(new StorageScope(this, accountHash, expectedStorageRoot));
 
         public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
         {
@@ -67,13 +73,15 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
         private sealed class StorageScope : IStorageScope
         {
             private readonly InMemorySnapSyncSink _sink;
+            private readonly byte[] _accountHash;
             private readonly byte[] _expectedRoot;
             private readonly PatriciaTrie _trie;
             private bool _wroteSlots;
 
-            public StorageScope(InMemorySnapSyncSink sink, byte[] expectedRoot)
+            public StorageScope(InMemorySnapSyncSink sink, byte[] accountHash, byte[] expectedRoot)
             {
                 _sink = sink;
+                _accountHash = accountHash;
                 _expectedRoot = expectedRoot;
                 _trie = new PatriciaTrie(sink._storage);
             }
@@ -90,14 +98,13 @@ namespace Nethereum.DevP2P.Sync.Snap.Sinks
 
             public ValueTask EndAsync(CancellationToken ct)
             {
+                byte[] completedRoot;
                 lock (_sink._lock)
                 {
-                    if (_wroteSlots && _expectedRoot != null && _expectedRoot.Length == 32
-                        && !ByteUtil.AreEqual(_trie.Root.GetHash(), _expectedRoot))
-                        throw new InvalidOperationException(
-                            "Snap storage-root mismatch: the completed storage trie does not match the account's expected storage root.");
+                    completedRoot = _wroteSlots ? _trie.Root.GetHash() : null;
                     _trie.SaveDirtyNodesToStorage();
                 }
+                _sink._onStorageRootCompleted?.Invoke(_accountHash, completedRoot, _expectedRoot);
                 return default;
             }
 

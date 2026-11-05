@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,27 +11,48 @@ namespace Nethereum.DevP2P.Rlpx
         private readonly Stream _stream;
         private readonly RlpxFrameWriter _writer;
         private readonly RlpxFrameReader _reader;
+        private readonly int _writeTimeoutMs;
         private readonly SemaphoreSlim _writeLock = new(1, 1);
         private readonly SemaphoreSlim _readLock = new(1, 1);
+        private int _maxFrameSize = RlpxFrameReader.BaseProtocolMaxMsgSize + 16;
 
-        public RlpxFrameChannel(Stream stream, RlpxFrameWriter writer, RlpxFrameReader reader)
+        public RlpxFrameChannel(Stream stream, RlpxFrameWriter writer, RlpxFrameReader reader, int writeTimeoutMs)
         {
             _stream = stream;
             _writer = writer;
             _reader = reader;
+            _writeTimeoutMs = writeTimeoutMs;
         }
+
+        public void LiftHandshakeFrameLimit()
+            => Volatile.Write(ref _maxFrameSize, RlpxFrameReader.MaxFrameSize);
 
         public async Task SendFrameAsync(int msgId, byte[] payload, CancellationToken ct = default)
         {
-            await _writeLock.WaitAsync(ct);
+            using var writeCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (_writeTimeoutMs > 0) writeCts.CancelAfter(_writeTimeoutMs);
+            var frameBegun = false;
             try
             {
-                var frame = _writer.WriteFrame(msgId, payload);
-                await _stream.WriteAsync(frame, ct);
+                await _writeLock.WaitAsync(writeCts.Token).ConfigureAwait(false);
+                try
+                {
+                    frameBegun = true;
+                    var frame = _writer.WriteFrame(msgId, payload);
+                    await _stream.WriteAsync(frame, writeCts.Token).ConfigureAwait(false);
+                }
+                finally
+                {
+                    ReleaseQuietly(_writeLock);
+                }
             }
-            finally
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                _writeLock.Release();
+                throw new TimeoutException($"RLPx frame write exceeded {_writeTimeoutMs} ms");
+            }
+            catch (OperationCanceledException ex) when (frameBegun)
+            {
+                throw new IOException("RLPx frame write cancelled after the frame began; the stream can no longer be framed", ex);
             }
         }
 
@@ -43,6 +65,10 @@ namespace Nethereum.DevP2P.Rlpx
                 await RlpxStreamReader.ReadExactlyAsync(_stream, headerBlock, ct);
 
                 var frameSize = _reader.ReadHeader(headerBlock);
+                var limit = Volatile.Read(ref _maxFrameSize);
+                if (frameSize > limit)
+                    throw new CryptographicException(
+                        $"Frame size {frameSize} exceeds the {limit} byte limit before the Hello is complete");
                 var framePaddedSize = RlpxFrameFormat.PaddedSize(frameSize);
 
                 var bodyBlock = new byte[framePaddedSize + 16];
@@ -52,8 +78,14 @@ namespace Nethereum.DevP2P.Rlpx
             }
             finally
             {
-                _readLock.Release();
+                ReleaseQuietly(_readLock);
             }
+        }
+
+        private static void ReleaseQuietly(SemaphoreSlim semaphore)
+        {
+            try { semaphore.Release(); }
+            catch (ObjectDisposedException) { }
         }
 
         public void Dispose()

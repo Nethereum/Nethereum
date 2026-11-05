@@ -72,12 +72,61 @@ namespace Nethereum.DevP2P.UnitTests.Discv4
         }
 
         [Fact]
+        public void Given_APubKeyOf128NonHexChars_When_TryParsed_Then_ItReturnsFalseInsteadOfThrowing()
+        {
+            var enode = $"enode://{new string('z', 128)}@10.3.58.6:30303";
+
+            var parsed = EnodeUrl.TryParse(enode, out var result);
+
+            Assert.False(parsed);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void Given_APubKeyOf128HexChars_When_TryParsed_Then_ItReturnsTrue()
+        {
+            var parsed = EnodeUrl.TryParse($"enode://{PubKeyHex}@10.3.58.6:30303", out var result);
+
+            Assert.True(parsed);
+            Assert.Equal(64, result.PublicKey.Length);
+        }
+
+        [Fact]
         public void Given_TwoEnodesJoinedByAComma_When_ParsedAsOneEnode_Then_ItIsRejected()
         {
             var joined = $"enode://{PubKeyHex}@127.0.0.1:30307,enode://{PubKeyHex}@112.154.155.200:20001";
 
             Assert.False(EnodeUrl.TryParse(joined, out _));
             Assert.Throws<System.ArgumentException>(() => EnodeUrl.Parse(joined));
+        }
+
+        [Theory]
+        [InlineData(',')]
+        [InlineData('@')]
+        [InlineData('/')]
+        [InlineData(' ')]
+        [InlineData('\t')]
+        [InlineData('\r')]
+        [InlineData('\n')]
+        public void Given_AHostContainingACharacterNoHostCanHold_When_Parsed_Then_ItIsRejected(char invalid)
+        {
+            var enode = $"enode://{PubKeyHex}@10.0.0{invalid}1:30303";
+
+            Assert.False(EnodeUrl.TryParse(enode, out _));
+        }
+
+        [Theory]
+        [InlineData("[::1]:30303", "[::1]", 30303, 30303)]
+        [InlineData("[2001:db8::1]:30303?discport=30301", "[2001:db8::1]", 30303, 30301)]
+        [InlineData("node.example.org:30303", "node.example.org", 30303, 30303)]
+        public void Given_AnIPv6OrDnsHost_When_Parsed_Then_ItIsStillAccepted(
+            string hostPort, string expectedHost, int expectedPort, int expectedDiscoveryPort)
+        {
+            var parsed = EnodeUrl.Parse($"enode://{PubKeyHex}@{hostPort}");
+
+            Assert.Equal(expectedHost, parsed.Host);
+            Assert.Equal(expectedPort, parsed.Port);
+            Assert.Equal(expectedDiscoveryPort, parsed.DiscoveryPort);
         }
 
         [Fact]

@@ -10,6 +10,7 @@ using Nethereum.Util;
 using Nethereum.Merkle.Patricia.Storage;
 using Nethereum.Merkle.Patricia.Proofs;
 using Nethereum.CoreChain.Storage;
+using Nethereum.DevP2P.Sync.Snap.Storage;
 
 namespace Nethereum.DevP2P.Sync.Serving
 {
@@ -19,9 +20,11 @@ namespace Nethereum.DevP2P.Sync.Serving
 
         public const int MaxCodeLookups = 1024;
 
-        public const int MaxTrieNodeLookups = 1024;
+        public const int MaxTrieNodeLookups = SnapServingLimits.MaxTrieNodeLookups;
 
         public const int MaxBlockAccessListLookups = 1024;
+
+        public const int MaxStorageRangeAccountLookups = 2 * MaxTrieNodeLookups;
 
         public static readonly TimeSpan MaxTrieNodeTimeSpent = TimeSpan.FromSeconds(5);
 
@@ -122,7 +125,7 @@ namespace Nethereum.DevP2P.Sync.Serving
             var store = _selector != null ? (await _selector.ResolveForRootAsync(req.RootHash, ct)) ?? _nodeStore : _nodeStore;
             var response = new StorageRangesMessage { RequestId = req.RequestId };
             var initialOrigin = req.StartingHash.Length == 0 ? new byte[32] : req.StartingHash;
-            var initialLimit = req.LimitHash.Length == 0 ? FilledHash(0xff) : req.LimitHash;
+            var initialLimit = req.LimitHash.Length == 0 ? SnapHashRanges.MaxHash() : req.LimitHash;
 
             var effectiveBytes = Math.Min((ulong)_softResponseLimit, req.ResponseBytes);
             var hardLimit = (ulong)(effectiveBytes * (1.0 + StateLookupSlack));
@@ -130,87 +133,80 @@ namespace Nethereum.DevP2P.Sync.Serving
             ulong size = 0;
             bool firstAccount = true;
             byte[] lastReturnedKey = null;
-            byte[] storageRootForProof = null;
-            byte[] accountHashForProof = null;
-            byte[] startKeyForProof = null;
-            byte[] lastKeyForProof = null;
+            (byte[] StorageRoot, byte[] AccountHash, byte[] StartKey, byte[] LastKey)? proofTarget = null;
 
+            var sw = Stopwatch.StartNew();
+            var lookups = 0;
             foreach (var accountHash in req.AccountHashes)
             {
                 ct.ThrowIfCancellationRequested();
                 if (size >= effectiveBytes) break;
+                if (lookups++ >= MaxStorageRangeAccountLookups) break;
+                if (sw.Elapsed > MaxTrieNodeTimeSpent) break;
 
                 var origin = firstAccount ? initialOrigin : new byte[32];
-                var limit = firstAccount ? initialLimit : FilledHash(0xff);
+                var limit = firstAccount ? initialLimit : SnapHashRanges.MaxHash();
                 firstAccount = false;
 
-                var storageRoot = ResolveStorageRoot(req.RootHash, accountHash, store);
-                if (storageRoot == null || IsEmptyStorageRoot(storageRoot))
-                {
-                    response.Slots.Add(new List<StorageRangesMessage.SlotEntry>());
-                    continue;
-                }
-
-                var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, store, accountHash);
-                var perAccount = new List<StorageRangesMessage.SlotEntry>();
-                bool brokeFromLimit = false;
-                bool brokeFromBudget = false;
-
-                foreach (var entry in PatriciaRangeIterator.EnumerateRange(storageTrie.Root, store, origin))
-                {
-                    ct.ThrowIfCancellationRequested();
-                    perAccount.Add(new StorageRangesMessage.SlotEntry
-                    {
-                        Hash = entry.KeyBytes,
-                        Data = entry.Value
-                    });
-                    lastReturnedKey = entry.KeyBytes;
-                    size += (ulong)(32 + entry.Value.Length);
-
-                    if (ByteArrayComparer.Current.Compare(entry.KeyBytes, limit) >= 0)
-                    {
-                        brokeFromLimit = true;
-                        break;
-                    }
-                    if (size > hardLimit)
-                    {
-                        brokeFromBudget = true;
-                        break;
-                    }
-                }
-
-                response.Slots.Add(perAccount);
-
-                var needsProof = !ByteUtil.IsZero(origin) || brokeFromLimit || brokeFromBudget;
-                if (needsProof)
-                {
-                    storageRootForProof = storageRoot;
-                    accountHashForProof = accountHash;
-                    startKeyForProof = origin;
-                    lastKeyForProof = perAccount.Count > 0 ? lastReturnedKey : null;
-                    break;
-                }
+                var (slots, storageRoot, needsProof) = ServeAccountSlots(
+                    req.RootHash, accountHash, store, origin, limit, hardLimit, ref size, ref lastReturnedKey, ct);
+                if (slots.Count > 0) response.Slots.Add(slots);
+                if (!needsProof) continue;
+                proofTarget = (storageRoot, accountHash, origin, slots.Count > 0 ? lastReturnedKey : null);
+                break;
             }
 
-            if (storageRootForProof != null)
-            {
-                var proofRoot = PatriciaTrie.LoadFromStorage(storageRootForProof, store, accountHashForProof).Root;
-                response.Proof = lastKeyForProof != null
-                    ? PatriciaRangeProofGenerator.GenerateProof(proofRoot, store, startKeyForProof, lastKeyForProof)
-                    : PatriciaRangeProofGenerator.GenerateProof(proofRoot, store, startKeyForProof);
-            }
-            else
-            {
-                response.Proof = new List<byte[]>();
-            }
+            response.Proof = proofTarget.HasValue
+                ? BuildStorageProof(proofTarget.Value, store)
+                : new List<byte[]>();
             return response;
         }
 
-        private static byte[] FilledHash(byte b)
+        private (List<StorageRangesMessage.SlotEntry> Slots, byte[] StorageRoot, bool NeedsProof) ServeAccountSlots(
+            byte[] stateRoot, byte[] accountHash, ITrieNodeStore store, byte[] origin, byte[] limit, ulong hardLimit,
+            ref ulong size, ref byte[] lastReturnedKey, CancellationToken ct)
         {
-            var h = new byte[32];
-            for (int i = 0; i < 32; i++) h[i] = b;
-            return h;
+            var storageRoot = ResolveStorageRoot(stateRoot, accountHash, store);
+            if (storageRoot == null || IsEmptyStorageRoot(storageRoot))
+                return (new List<StorageRangesMessage.SlotEntry>(), storageRoot, false);
+
+            var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, store, accountHash);
+            var perAccount = new List<StorageRangesMessage.SlotEntry>();
+            var (brokeFromLimit, brokeFromBudget) = CollectSlots(
+                storageTrie, store, origin, limit, hardLimit, perAccount, ref size, ref lastReturnedKey, ct);
+            var needsProof = !ByteUtil.IsZero(origin) || brokeFromLimit || brokeFromBudget;
+            return (perAccount, storageRoot, needsProof);
+        }
+
+        private static (bool BrokeFromLimit, bool BrokeFromBudget) CollectSlots(
+            PatriciaTrie storageTrie, ITrieNodeStore store, byte[] origin, byte[] limit, ulong hardLimit,
+            List<StorageRangesMessage.SlotEntry> perAccount, ref ulong size, ref byte[] lastReturnedKey,
+            CancellationToken ct)
+        {
+            foreach (var entry in PatriciaRangeIterator.EnumerateRange(storageTrie.Root, store, origin))
+            {
+                ct.ThrowIfCancellationRequested();
+                perAccount.Add(new StorageRangesMessage.SlotEntry
+                {
+                    Hash = entry.KeyBytes,
+                    Data = entry.Value
+                });
+                lastReturnedKey = entry.KeyBytes;
+                size += (ulong)(32 + entry.Value.Length);
+
+                if (ByteArrayComparer.Current.Compare(entry.KeyBytes, limit) >= 0) return (true, false);
+                if (size > hardLimit) return (false, true);
+            }
+            return (false, false);
+        }
+
+        private static List<byte[]> BuildStorageProof(
+            (byte[] StorageRoot, byte[] AccountHash, byte[] StartKey, byte[] LastKey) target, ITrieNodeStore store)
+        {
+            var proofRoot = PatriciaTrie.LoadFromStorage(target.StorageRoot, store, target.AccountHash).Root;
+            return target.LastKey != null
+                ? PatriciaRangeProofGenerator.GenerateProof(proofRoot, store, target.StartKey, target.LastKey)
+                : PatriciaRangeProofGenerator.GenerateProof(proofRoot, store, target.StartKey);
         }
 
         public Task<ByteCodesMessage> GetByteCodesAsync(GetByteCodesMessage req, CancellationToken ct = default)
@@ -271,44 +267,50 @@ namespace Nethereum.DevP2P.Sync.Serving
 
             int attempts = 0;
 
-            foreach (var pathset in req.Paths)
+            try
             {
-                ct.ThrowIfCancellationRequested();
-                if (attempts >= MaxTrieNodeLookups) break;
-                if (sw.Elapsed > MaxTrieNodeTimeSpent) break;
-
-                if (pathset.Count == 1)
-                {
-                    attempts++;
-                    var nibbles = PatriciaPathWalker.CompactToNibbles(pathset[0]);
-                    var blob = PatriciaPathWalker.WalkPath(accountTrie.Root, store, nibbles);
-                    response.Nodes.Add(blob);
-                    bytes += (ulong)blob.Length;
-                    if (bytes > effectiveBytes) break;
-                    continue;
-                }
-
-                var accountHash = pathset[0];
-                if (accountHash.Length != 32) continue;
-                attempts++;
-                var storageRoot = ResolveStorageRoot(req.RootHash, accountHash, store);
-                if (storageRoot == null || IsEmptyStorageRoot(storageRoot)) continue;
-                var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, store, accountHash);
-                bool stop = false;
-                for (int i = 1; i < pathset.Count; i++)
+                foreach (var pathset in req.Paths)
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (attempts >= MaxTrieNodeLookups) { stop = true; break; }
-                    if (sw.Elapsed > MaxTrieNodeTimeSpent) { stop = true; break; }
+                    if (attempts >= MaxTrieNodeLookups) break;
+                    if (sw.Elapsed > MaxTrieNodeTimeSpent) break;
+
+                    if (pathset.Count == 1)
+                    {
+                        attempts++;
+                        var nibbles = PatriciaPathWalker.CompactToNibbles(pathset[0]);
+                        var blob = PatriciaPathWalker.WalkPath(accountTrie.Root, store, nibbles);
+                        response.Nodes.Add(blob);
+                        bytes += (ulong)blob.Length;
+                        if (bytes > effectiveBytes) break;
+                        continue;
+                    }
+
+                    var accountHash = pathset[0];
+                    if (accountHash.Length != 32) continue;
                     attempts++;
-                    var nibbles = PatriciaPathWalker.CompactToNibbles(pathset[i]);
-                    var blob = PatriciaPathWalker.WalkPath(storageTrie.Root, store, nibbles);
-                    response.Nodes.Add(blob);
-                    bytes += (ulong)blob.Length;
-                    if (bytes > effectiveBytes) { stop = true; break; }
+                    var storageRoot = ResolveStorageRoot(req.RootHash, accountHash, store);
+                    if (storageRoot == null || IsEmptyStorageRoot(storageRoot)) continue;
+                    var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, store, accountHash);
+                    bool stop = false;
+                    for (int i = 1; i < pathset.Count; i++)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (attempts >= MaxTrieNodeLookups) { stop = true; break; }
+                        if (sw.Elapsed > MaxTrieNodeTimeSpent) { stop = true; break; }
+                        attempts++;
+                        var nibbles = PatriciaPathWalker.CompactToNibbles(pathset[i]);
+                        var blob = PatriciaPathWalker.WalkPath(storageTrie.Root, store, nibbles);
+                        response.Nodes.Add(blob);
+                        bytes += (ulong)blob.Length;
+                        if (bytes > effectiveBytes) { stop = true; break; }
+                    }
+                    if (stop) break;
+                    if (bytes > effectiveBytes) break;
                 }
-                if (stop) break;
-                if (bytes > effectiveBytes) break;
+            }
+            catch (MissingTrieNodeException)
+            {
             }
             return response;
         }

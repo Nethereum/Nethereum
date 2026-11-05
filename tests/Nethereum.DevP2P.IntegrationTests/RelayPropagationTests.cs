@@ -15,6 +15,7 @@ using Nethereum.Model.P2P;
 using Nethereum.Signer;
 using Nethereum.Util;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
@@ -38,6 +39,14 @@ namespace Nethereum.DevP2P.IntegrationTests
             RequestTimeoutMs = 10000
         };
 
+        private readonly ITestOutputHelper _output;
+        private readonly Helpers.PeerWork _peerWork = new Helpers.PeerWork();
+
+        public RelayPropagationTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         private RlpxListener _listener;
         private readonly Eth68PeerPool _pool = new Eth68PeerPool();
         private readonly List<Guid> _registered = new List<Guid>();
@@ -47,7 +56,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             for (int i = 0; i < 32; i++) _genesisHash[i] = (byte)i;
 
             _listener = new RlpxListener(_serverKey, _config);
-            _listener.PeerAccepted += async (_, conn) =>
+            _listener.PeerAccepted += _peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 var ethOffset = conn.GetCapabilityOffset("eth");
                 await conn.SendMessageAsync(
@@ -55,7 +64,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 var (_, payload) = await conn.ReceiveMessageAsync();
                 var session = _pool.Add(conn, ethOffset, Eth68StatusMessageEncoder.Decode(payload));
                 lock (_registered) _registered.Add(session.Id);
-            };
+            });
             _listener.Start(port: 0, bindAddress: IPAddress.Loopback);
             return Task.CompletedTask;
         }
@@ -63,6 +72,7 @@ namespace Nethereum.DevP2P.IntegrationTests
         public async Task DisposeAsync()
         {
             if (_listener != null) await _listener.StopAsync();
+            await _peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
         }
 
         [Fact]

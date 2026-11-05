@@ -32,22 +32,34 @@ namespace Nethereum.DevP2P.SpecTests.Discv4
 
             byte[] pingHashFromB = null;
             var pingTcs = new TaskCompletionSource<bool>();
-            nodeB.PingReceived += async (_, e) =>
+            async Task RespondWithPongAsync(Discv4PingReceivedEventArgs e)
+            {
+                try
+                {
+                    var pong = new Discv4PongMessage
+                    {
+                        To = new Discv4Endpoint
+                        {
+                            IP = e.Sender.Address,
+                            UdpPort = (ushort)e.Sender.Port,
+                            TcpPort = 0
+                        },
+                        PingHash = e.PingHash,
+                        Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds()
+                    };
+                    await nodeB.SendPongAsync(e.Sender, pong);
+                    pingTcs.TrySetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    pingTcs.TrySetException(ex);
+                }
+            }
+
+            nodeB.PingReceived += (_, e) =>
             {
                 pingHashFromB = e.PingHash;
-                var pong = new Discv4PongMessage
-                {
-                    To = new Discv4Endpoint
-                    {
-                        IP = e.Sender.Address,
-                        UdpPort = (ushort)e.Sender.Port,
-                        TcpPort = 0
-                    },
-                    PingHash = e.PingHash,
-                    Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds()
-                };
-                await nodeB.SendPongAsync(e.Sender, pong);
-                pingTcs.TrySetResult(true);
+                _ = RespondWithPongAsync(e);
             };
 
             var ping = new Discv4PingMessage
@@ -68,6 +80,9 @@ namespace Nethereum.DevP2P.SpecTests.Discv4
             Assert.Same(pongTcs.Task, pongGot);
 
             Assert.True(tableA.Count >= 1, "Node A should have learned about Node B from the pong");
+            var bondDeadline = DateTime.UtcNow.AddSeconds(3);
+            while (tableB.Count < 1 && DateTime.UtcNow < bondDeadline)
+                await Task.Delay(25);
             Assert.True(tableB.Count >= 1, "Node B should have learned about Node A from the ping");
 
             await nodeA.StopAsync();

@@ -32,6 +32,7 @@ using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection("GethTestdataPathKeyedProof")]
+    [Trait("Requires", "Externals")]
     public class GethTestdataPathKeyedProofE2ETests : IClassFixture<GethPathKeyedReplayFixture>
     {
         private readonly GethPathKeyedReplayFixture _fx;
@@ -89,12 +90,12 @@ namespace Nethereum.DevP2P.IntegrationTests
         }
 
         [Theory]
-        [InlineData(400)]
-        [InlineData(450)]
-        [InlineData(490)]
-        public async Task GetProof_TipX_Historical_VerifiesAgainstBlockNRoot(int nInt)
+        [InlineData(100)]
+        [InlineData(50)]
+        [InlineData(10)]
+        public async Task GetProof_TipX_Historical_VerifiesAgainstBlockNRoot(int blocksBelowHead)
         {
-            ulong n = (ulong)nInt;
+            ulong n = _fx.Head - (ulong)blocksBelowHead;
             var rootN = _fx.Roots[(int)n];
             var beacon = Eip4788Constants.BeaconRootsAddress;
 

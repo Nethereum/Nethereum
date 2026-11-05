@@ -46,7 +46,8 @@ namespace Nethereum.DevP2P.Rlpx
 
         public InboundReservation TryReserve(IPAddress remoteIp)
         {
-            if (!ConcurrentCounter.TryReserve(_inboundByIp, remoteIp, _config.MaxInboundPerIP))
+            int perIpLimit = _config.IsLanAddress(remoteIp) ? int.MaxValue : _config.MaxInboundPerIP;
+            if (!ConcurrentCounter.TryReserve(_inboundByIp, remoteIp, perIpLimit))
                 return new InboundReservation(false, null, InboundRejectReason.PerIpCap);
 
             string? subnetKey = GetSubnetKey(remoteIp);

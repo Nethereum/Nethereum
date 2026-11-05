@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.CatchUp
 {
@@ -34,8 +35,8 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
         {
             for (var i = 0; i < _tasks.Count; i++)
             {
-                if (Compare(accountHash, _tasks[i].Last) <= 0)
-                    return Compare(accountHash, _tasks[i].Next) < 0;
+                if (ByteArrayComparer.Current.Compare(accountHash, _tasks[i].Last) <= 0)
+                    return ByteArrayComparer.Current.Compare(accountHash, _tasks[i].Next) < 0;
             }
             return true;
         }
@@ -44,29 +45,19 @@ namespace Nethereum.DevP2P.Sync.Snap.CatchUp
         {
             for (var i = 0; i < _tasks.Count; i++)
             {
-                if (Compare(accountHash, _tasks[i].Last) > 0) continue;
-                if (Compare(accountHash, _tasks[i].Next) < 0) return true;
+                if (ByteArrayComparer.Current.Compare(accountHash, _tasks[i].Last) > 0) continue;
+                if (ByteArrayComparer.Current.Compare(accountHash, _tasks[i].Next) < 0) return true;
                 if (_storageCompleted[i].Contains(accountHash.ToHex())) return true;
                 if (!_subTasks[i].TryGetValue(accountHash.ToHex(), out var subtasks)) return false;
 
                 foreach (var sub in subtasks)
                 {
-                    if (Compare(slotHash, sub.Last) <= 0)
-                        return Compare(slotHash, sub.Next) < 0;
+                    if (ByteArrayComparer.Current.Compare(slotHash, sub.Last) <= 0)
+                        return ByteArrayComparer.Current.Compare(slotHash, sub.Next) < 0;
                 }
                 return true;
             }
             return true;
-        }
-
-        private static int Compare(byte[] left, byte[] right)
-        {
-            var length = Math.Min(left.Length, right.Length);
-            for (var i = 0; i < length; i++)
-            {
-                if (left[i] != right[i]) return left[i] < right[i] ? -1 : 1;
-            }
-            return left.Length.CompareTo(right.Length);
         }
     }
 }

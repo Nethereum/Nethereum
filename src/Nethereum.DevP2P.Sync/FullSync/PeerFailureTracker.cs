@@ -12,6 +12,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
         Dispose
     }
 
+    [Obsolete("Peer failures are counted once, by the scheduler quarantine (IFetchRequestScheduler.RegisterTimeoutForQuarantine); nothing in the library uses this type.")]
     public sealed class PeerFailureTracker
     {
         private readonly int _dropThreshold;

@@ -12,17 +12,32 @@ namespace Nethereum.DevP2P.Sync.Abstractions
         Task<ByteCodesMessage> GetByteCodesAsync(GetByteCodesMessage request, CancellationToken ct = default);
         Task<TrieNodesMessage> GetTrieNodesAsync(GetTrieNodesMessage request, CancellationToken ct = default);
 
-        Task<AccountRangeMessage> GetAccountRangeAsync(
+        async Task<AccountRangeMessage> GetAccountRangeAsync(
             GetAccountRangeMessage request, Func<AccountRangeMessage, bool> verifyResponse, CancellationToken ct = default)
-            => GetAccountRangeAsync(request, ct);
+        {
+            var reply = await GetAccountRangeAsync(request, ct).ConfigureAwait(false);
+            if (verifyResponse != null && !verifyResponse(reply))
+                throw new Nethereum.DevP2P.Sync.Scheduling.FetchRequestFailedException("account range reply failed verification", null);
+            return reply;
+        }
 
-        Task<StorageRangesMessage> GetStorageRangesAsync(
+        async Task<StorageRangesMessage> GetStorageRangesAsync(
             GetStorageRangesMessage request, Func<StorageRangesMessage, bool> verifyResponse, CancellationToken ct = default)
-            => GetStorageRangesAsync(request, ct);
+        {
+            var reply = await GetStorageRangesAsync(request, ct).ConfigureAwait(false);
+            if (verifyResponse != null && !verifyResponse(reply))
+                throw new Nethereum.DevP2P.Sync.Scheduling.FetchRequestFailedException("storage range reply failed verification", null);
+            return reply;
+        }
 
-        Task<ByteCodesMessage> GetByteCodesAsync(
+        async Task<ByteCodesMessage> GetByteCodesAsync(
             GetByteCodesMessage request, Func<ByteCodesMessage, bool> verifyResponse, CancellationToken ct = default)
-            => GetByteCodesAsync(request, ct);
+        {
+            var reply = await GetByteCodesAsync(request, ct).ConfigureAwait(false);
+            if (verifyResponse != null && !verifyResponse(reply))
+                throw new Nethereum.DevP2P.Sync.Scheduling.FetchRequestFailedException("bytecode reply failed verification", null);
+            return reply;
+        }
     }
 
     public class InProcessSnapPeer : ISnapPeer

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain;
 using Nethereum.Model;
+using Nethereum.Model.P2P;
 using Nethereum.RLP;
 
 namespace Nethereum.Node.HarnessServer
@@ -15,6 +16,7 @@ namespace Nethereum.Node.HarnessServer
         public static readonly RlpBlockImportSummary Empty = new RlpBlockImportSummary();
         public int Imported { get; init; }
         public int Rejected { get; init; }
+        public IReadOnlyList<string> Rejections { get; init; } = Array.Empty<string>();
         public bool AnyBlocksPresent => Imported + Rejected > 0;
     }
 
@@ -31,38 +33,39 @@ namespace Nethereum.Node.HarnessServer
             string chainRlpPath, string blocksDirectory, CancellationToken ct = default)
         {
             var imported = 0;
-            var rejected = 0;
+            var rejections = new List<string>();
 
             foreach (var block in ReadBlocksInImportOrder(chainRlpPath, blocksDirectory))
             {
-                if (await TryImportBlockAsync(block, ct).ConfigureAwait(false)) imported++;
-                else rejected++;
+                var rejection = await TryImportBlockAsync(block, ct).ConfigureAwait(false);
+                if (rejection == null) imported++;
+                else rejections.Add(rejection);
             }
 
-            return new RlpBlockImportSummary { Imported = imported, Rejected = rejected };
+            return new RlpBlockImportSummary { Imported = imported, Rejected = rejections.Count, Rejections = rejections };
         }
 
-        private static IEnumerable<RLPCollection> ReadBlocksInImportOrder(
+        private static IEnumerable<byte[]> ReadBlocksInImportOrder(
             string chainRlpPath, string blocksDirectory)
         {
             if (File.Exists(chainRlpPath))
-                foreach (var block in DecodeConsecutiveBlocks(File.ReadAllBytes(chainRlpPath)))
+                foreach (var block in SplitConsecutiveBlocks(File.ReadAllBytes(chainRlpPath)))
                     yield return block;
 
             if (Directory.Exists(blocksDirectory))
                 foreach (var file in EnumerateBlockFilesInNumericOrder(blocksDirectory))
-                    yield return DecodeSingleBlock(File.ReadAllBytes(file));
+                    yield return File.ReadAllBytes(file);
         }
 
-        private static IEnumerable<RLPCollection> DecodeConsecutiveBlocks(byte[] bytes)
+        private static IEnumerable<byte[]> SplitConsecutiveBlocks(byte[] bytes)
         {
-            if (!(Nethereum.RLP.RLP.DecodeCollection(bytes) is RLPCollection stream)) yield break;
-            foreach (var element in stream)
-                if (element is RLPCollection block) yield return block;
+            var reader = new RlpReader(bytes);
+            while (!reader.IsAtEnd())
+            {
+                if (reader.PeekKind() == RlpKind.List) yield return reader.ReadRaw();
+                else reader.Skip();
+            }
         }
-
-        private static RLPCollection DecodeSingleBlock(byte[] bytes) =>
-            (RLPCollection)Nethereum.RLP.RLP.Decode(bytes);
 
         private static IEnumerable<string> EnumerateBlockFilesInNumericOrder(string directory) =>
             Directory.EnumerateFiles(directory, "*.rlp")
@@ -74,72 +77,29 @@ namespace Nethereum.Node.HarnessServer
             return digits.Length == 0 ? long.MaxValue : long.Parse(digits);
         }
 
-        private async Task<bool> TryImportBlockAsync(RLPCollection block, CancellationToken ct)
+        private async Task<string> TryImportBlockAsync(byte[] blockBytes, CancellationToken ct)
         {
+            BlockHeader header = null;
             try
             {
-                var header = BlockHeaderEncoder.Current.Decode(block[0].RLPData);
+                var block = NewBlockMessageEncoder.DecodeBlock(blockBytes);
+                header = block.Header;
+                if (block.Withdrawals == null && header.WithdrawalsRoot != null)
+                    throw new InvalidOperationException("The block header declares a withdrawalsRoot but the block carries no withdrawals list.");
                 var result = await _importer.ImportAsync(
                     header,
-                    DecodeTransactions(block),
-                    DecodeUncles(block),
-                    DecodeWithdrawals(block),
+                    block.Transactions,
+                    block.Uncles.Count == 0 ? null : block.Uncles,
+                    block.Withdrawals,
                     ct).ConfigureAwait(false);
-                return result.BlockHash != null;
+                return result.BlockHash != null
+                    ? null
+                    : $"block {header.BlockNumber}: {result.DescribeRejection()}";
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return $"block {(header != null ? header.BlockNumber.ToString() : "?")}: {ex.GetType().Name}: {ex.Message}";
             }
-        }
-
-        private static IList<ISignedTransaction> DecodeTransactions(RLPCollection block)
-        {
-            var result = new List<ISignedTransaction>();
-            if (block.Count < 2 || !(block[1] is RLPCollection txList)) return result;
-
-            foreach (var txItem in txList)
-            {
-                var txBytes = txItem.RLPData;
-                if ((txBytes == null || txBytes.Length == 0) && txItem is RLPCollection legacyFields)
-                    txBytes = ReEncodeLegacyFields(legacyFields);
-
-                if (txBytes != null && txBytes.Length > 0)
-                    result.Add(TransactionFactory.CreateTransaction(txBytes));
-            }
-
-            return result;
-        }
-
-        private static byte[] ReEncodeLegacyFields(RLPCollection fields)
-        {
-            var encoded = new byte[fields.Count][];
-            for (var i = 0; i < fields.Count; i++)
-                encoded[i] = Nethereum.RLP.RLP.EncodeElement(fields[i].RLPData);
-            return Nethereum.RLP.RLP.EncodeList(encoded);
-        }
-
-        private static IList<BlockHeader> DecodeUncles(RLPCollection block)
-        {
-            if (block.Count < 3 || !(block[2] is RLPCollection uncleList) || uncleList.Count == 0)
-                return null;
-
-            var result = new List<BlockHeader>(uncleList.Count);
-            foreach (var uncle in uncleList)
-                result.Add(BlockHeaderEncoder.Current.Decode(uncle.RLPData));
-            return result;
-        }
-
-        private static IList<Withdrawal> DecodeWithdrawals(RLPCollection block)
-        {
-            if (block.Count < 4 || !(block[3] is RLPCollection withdrawalList))
-                return null;
-
-            var withdrawals = new List<Withdrawal>(withdrawalList.Count);
-            foreach (var withdrawal in withdrawalList)
-                withdrawals.Add(WithdrawalEncoder.Current.Decode(withdrawal.RLPData));
-
-            return withdrawals;
         }
     }
 }

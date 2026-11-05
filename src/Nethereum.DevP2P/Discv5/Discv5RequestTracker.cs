@@ -3,8 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Net;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.Enr;
+using Nethereum.Signer.Enr;
 
 namespace Nethereum.DevP2P.Discv5
 {
@@ -13,6 +17,8 @@ namespace Nethereum.DevP2P.Discv5
         public const int MaxNodesEnrsPerRequest = 64;
 
         public const int MaxNodesChunksPerRequest = 16;
+
+        private const int MinNodeUdpPort = 1024;
 
         private abstract class PendingEntry
         {
@@ -36,6 +42,10 @@ namespace Nethereum.DevP2P.Discv5
             public ulong ExpectedTotal;
             public int Received;
             public List<EnrRecord> Accum;
+            public byte[] RemoteNodeId;
+            public HashSet<uint> Distances;
+            public IPAddress SenderAddress;
+            public HashSet<string> Seen = new HashSet<string>(StringComparer.Ordinal);
             public override void Cancel() => Tcs.TrySetCanceled();
             public override void Fail(Exception ex) => Tcs.TrySetException(ex);
         }
@@ -61,7 +71,8 @@ namespace Nethereum.DevP2P.Discv5
 
         public Task<List<EnrRecord>> RegisterFindNode(
             byte[] remoteNodeId, byte[] requestId, ulong expectedTotalHint,
-            TimeSpan timeout, CancellationToken ct)
+            TimeSpan timeout, CancellationToken ct,
+            IEnumerable<uint> requestedDistances = null, IPAddress senderAddress = null)
         {
             var key = MakeKey(remoteNodeId, requestId);
             var tcs = new TaskCompletionSource<List<EnrRecord>>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -71,7 +82,10 @@ namespace Nethereum.DevP2P.Discv5
                 Tcs = tcs,
                 ExpectedTotal = expectedTotalHint == 0 ? 1 : expectedTotalHint,
                 Received = 0,
-                Accum = new List<EnrRecord>()
+                Accum = new List<EnrRecord>(),
+                RemoteNodeId = remoteNodeId,
+                Distances = requestedDistances == null ? null : new HashSet<uint>(requestedDistances),
+                SenderAddress = senderAddress
             };
             return RegisterPending(remoteNodeId, requestId, key, entry, tcs, timeout, ct);
         }
@@ -115,7 +129,11 @@ namespace Nethereum.DevP2P.Discv5
         }
 
         public bool CompleteNodesChunk(byte[] remoteNodeId, Discv5NodesMessage nodes)
+            => CompleteNodesChunk(remoteNodeId, nodes, out _);
+
+        public bool CompleteNodesChunk(byte[] remoteNodeId, Discv5NodesMessage nodes, out List<EnrRecord> accepted)
         {
+            accepted = new List<EnrRecord>();
             if (nodes == null) return false;
             var key = MakeKey(remoteNodeId, nodes.RequestId);
             if (!_pending.TryGetValue(key, out var entry)) return false;
@@ -137,10 +155,9 @@ namespace Nethereum.DevP2P.Discv5
                     {
                         if (find.Accum.Count >= MaxNodesEnrsPerRequest) break;
                         if (encoded == null || encoded.Length == 0) continue;
-                        EnrRecord enr;
-                        try { enr = EnrRecordEncoder.Decode(encoded); }
-                        catch (Exception) { continue; }
+                        if (!TryAcceptNodeRecord(find, encoded, out var enr)) continue;
                         find.Accum.Add(enr);
+                        accepted.Add(enr);
                     }
                 }
 
@@ -157,6 +174,30 @@ namespace Nethereum.DevP2P.Discv5
                 }
             }
             return true;
+        }
+
+        private static bool TryAcceptNodeRecord(FindNodeEntry find, byte[] encoded, out EnrRecord enr)
+        {
+            enr = null;
+            try { enr = EnrRecordEncoder.Decode(encoded); }
+            catch (Exception) { return false; }
+            if (!EnrRecordSigner.Verify(enr)) return false;
+
+            if (find.SenderAddress != null && !HasRelayableEndpoint(enr, find.SenderAddress)) return false;
+
+            var nodeId = Discv5Crypto.ComputeNodeId(enr.Secp256k1);
+            if (find.Distances != null
+                && !find.Distances.Contains(Discv5RoutingTable.LogDistance(find.RemoteNodeId, nodeId)))
+                return false;
+            return find.Seen.Add(nodeId.ToHex());
+        }
+
+        private static bool HasRelayableEndpoint(EnrRecord enr, IPAddress sender)
+        {
+            var ip = enr.IP4 ?? enr.IP6;
+            var udpPort = enr.IP4 != null ? enr.UdpPort : enr.UdpPort6 ?? enr.UdpPort;
+            if (ip == null || udpPort == null || udpPort.Value <= MinNodeUdpPort) return false;
+            return ip.IsValidRelayTarget(sender);
         }
 
         public bool CompleteTalkResp(byte[] remoteNodeId, Discv5TalkRespMessage resp)

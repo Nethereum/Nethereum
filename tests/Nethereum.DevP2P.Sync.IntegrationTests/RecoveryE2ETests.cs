@@ -29,7 +29,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 for (var i = 0; i < 2; i++) await producer.ProduceAsync();
 
                 var first = await DevChainFollower.AttachAsync(followerNode);
-                await first.StartCatchUpAsync();
+                await first.StartAsync();
 
                 var reached = await DevChainNetwork.WaitUntilAsync(
                     async () => await first.HeightAsync() >= new BigInteger(2),
@@ -48,7 +48,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 {
                     Assert.Equal(heightAtStop, await restarted.HeightAsync());
 
-                    await restarted.StartCatchUpAsync();
+                    await restarted.StartAsync();
 
                     var caughtUp = await DevChainNetwork.WaitUntilAsync(
                         async () => await restarted.HeightAsync() >= producerHeight,

@@ -16,7 +16,11 @@ namespace Nethereum.DevP2P.Rlpx
 
         public const int MaxFrameSize = 16 * 1024 * 1024 - 1;
 
-        public const int MaxDecompressedFrameSize = 32 * 1024 * 1024;
+        public const int MaxDecompressedFrameSize = MaxFrameSize;
+
+        public const int BaseProtocolMaxMsgSize = 2048;
+
+        private const int BaseProtocolMessageCount = 0x10;
 
         private readonly SicBlockCipher _decStream;
         private readonly RlpxMac _mac;
@@ -98,7 +102,19 @@ namespace Nethereum.DevP2P.Rlpx
 
         private (int msgId, byte[] payload) ExtractMessage(byte[] frameData, int frameSize)
         {
-            var (msgId, msgIdLen) = RlpxMessageId.Decode(frameData);
+            if (frameSize == 0)
+                throw new CryptographicException("Zero-size frame");
+
+            int msgId;
+            int msgIdLen;
+            try
+            {
+                (msgId, msgIdLen) = RlpxMessageId.Decode(frameData);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new CryptographicException(ex.Message);
+            }
 
             if (frameSize < msgIdLen)
                 throw new CryptographicException("Frame size smaller than message ID encoding");
@@ -106,21 +122,31 @@ namespace Nethereum.DevP2P.Rlpx
             var bodyLen = frameSize - msgIdLen;
             var body = frameData.Slice(msgIdLen, msgIdLen + bodyLen);
 
-            if (msgId != P2PMessageIds.Hello && bodyLen > 0)
+            var maxDecompressed = msgId < BaseProtocolMessageCount
+                ? BaseProtocolMaxMsgSize
+                : MaxDecompressedFrameSize;
+
+            if (msgId == P2PMessageIds.Hello)
+            {
+                if (bodyLen > BaseProtocolMaxMsgSize)
+                    throw new CryptographicException(
+                        $"Hello message size {bodyLen} exceeds baseProtocolMaxMsgSize {BaseProtocolMaxMsgSize}");
+            }
+            else if (bodyLen > 0)
             {
                 try
                 {
                     if (TryReadSnappyDecompressedLength(body, out var claimedDecompressedSize) &&
-                        claimedDecompressedSize > MaxDecompressedFrameSize)
+                        claimedDecompressedSize > maxDecompressed)
                     {
                         throw new CryptographicException(
-                            $"Snappy frame header claims decompressed size {claimedDecompressedSize} > {MaxDecompressedFrameSize}");
+                            $"Snappy frame header claims decompressed size {claimedDecompressedSize} > {maxDecompressed}");
                     }
 
                     body = IronSnappy.Snappy.Decode(body);
-                    if (body.Length > MaxDecompressedFrameSize)
+                    if (body.Length > maxDecompressed)
                         throw new CryptographicException(
-                            $"Snappy-decoded frame ({body.Length} bytes) exceeds {MaxDecompressedFrameSize} cap");
+                            $"Snappy-decoded frame ({body.Length} bytes) exceeds {maxDecompressed} cap");
                 }
                 catch (CryptographicException)
                 {

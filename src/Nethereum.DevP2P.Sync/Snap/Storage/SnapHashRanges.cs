@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.Storage
 {
@@ -33,16 +34,11 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             return padded;
         }
 
-        public static byte[] IncrementHash(byte[] h)
-        {
-            var copy = (byte[])h.Clone();
-            for (int i = copy.Length - 1; i >= 0; i--)
-            {
-                if (copy[i] != 0xff) { copy[i]++; return copy; }
-                copy[i] = 0;
-            }
-            return copy;
-        }
+        public static byte[] IncrementHash(byte[] h) => ByteUtil.PrefixSuccessor(h) ?? new byte[h.Length];
+
+        public static byte[] MaxHash() => FilledHash(0xff);
+
+        public static byte[] MinHash() => new byte[32];
 
         public static byte[] FilledHash(byte b)
         {

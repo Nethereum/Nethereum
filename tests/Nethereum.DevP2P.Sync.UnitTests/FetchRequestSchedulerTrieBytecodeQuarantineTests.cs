@@ -126,7 +126,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     RequestId = request.RequestId,
                     Accounts = new List<AccountRangeMessage.AccountEntry>
                     {
-                        new AccountRangeMessage.AccountEntry { Hash = FilledHash(0x11), Body = new byte[] { 0x00 } },
+                        new AccountRangeMessage.AccountEntry { Hash = FilledHash(0x11), Body = new byte[] { 0xc4, 0x80, 0x80, 0x80, 0x80 } },
                     },
                     Proof = new List<byte[]>(),
                 });
@@ -140,7 +140,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 => throw new NotSupportedException("not exercised by this test");
         }
 
-        private static readonly byte[] GenesisHash = new byte[32];
+        private static readonly byte[] GenesisHash = System.Array.ConvertAll(new byte[32], _ => (byte)1);
         private const ulong NetworkId = 1;
 
         private sealed class DirectHandshakeWorker : IPeerHandshakeWorker
@@ -159,7 +159,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         private static async Task<(PeerListener Listener, string Enode)> StartListenerAsync(ISnapRequestHandler handler)
         {
             var bundle = InMemoryChainStoreBundle.Open();
-            await bundle.Blocks.SaveAsync(new BlockHeader { BlockNumber = 0 }, new byte[32]);
+            await bundle.Blocks.SaveAsync(new BlockHeader { BlockNumber = 0 }, GenesisHash);
             var options = new PeerListenerOptions
             {
                 ListenPort = 0,

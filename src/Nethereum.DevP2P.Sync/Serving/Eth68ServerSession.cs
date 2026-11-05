@@ -11,11 +11,10 @@ namespace Nethereum.DevP2P.Sync.Serving
 {
     public class Eth68ServerSession
     {
-        public const int MaxHeadersPerRequest = 192;
+        public const int MaxHeadersPerRequest = 1024;
         public const int MaxBodiesPerRequest = 1024;
-        public const int MaxReceiptsPerRequest = 256;
-        public const int MaxPooledTransactionsPerRequest = 256;
-        public const int MaxBlockAccessListsPerRequest = 256;
+        public const int MaxReceiptsPerRequest = 1024;
+        public const int MaxBlockAccessListsPerRequest = 1024;
 
         public const ulong Eth70ReceiptsResponseSoftCapBytes = 2 * 1024 * 1024;
 
@@ -28,7 +27,6 @@ namespace Nethereum.DevP2P.Sync.Serving
         public int EthOffset { get; private set; }
         public Eth68StatusMessage? RemoteStatus { get; private set; }
 
-        public event EventHandler<NewBlockMessage>? NewBlockReceived;
         public event EventHandler<NewBlockHashesMessage>? NewBlockHashesReceived;
         public event EventHandler<TransactionsMessage>? TransactionsReceived;
         public event EventHandler<NewPooledTransactionHashesMessage>? NewPooledTransactionHashesReceived;
@@ -67,7 +65,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                 Eth68StatusMessageEncoder.Encode(_localStatus),
                 cancellationToken);
 
-            var (msgId, payload) = await _connection.ReceiveMessageAsync(cancellationToken);
+            var (msgId, payload) = await _connection.ReceiveStatusAsync(cancellationToken);
             if (msgId != EthOffset + Eth68MessageIds.Status)
                 throw new InvalidOperationException($"Expected Status, got 0x{msgId:x2}");
 
@@ -81,11 +79,9 @@ namespace Nethereum.DevP2P.Sync.Serving
                 int msgId; byte[] payload;
                 if (idleTimeout > TimeSpan.Zero)
                 {
-                    using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    idleCts.CancelAfter(idleTimeout);
                     try
                     {
-                        (msgId, payload) = await _connection.ReceiveMessageAsync(idleCts.Token);
+                        (msgId, payload) = await _connection.ReceiveMessageAsync(idleTimeout, cancellationToken);
                     }
                     catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                     {
@@ -95,27 +91,31 @@ namespace Nethereum.DevP2P.Sync.Serving
                 }
                 else
                 {
-                    (msgId, payload) = await _connection.ReceiveMessageAsync(cancellationToken);
+                    (msgId, payload) = await _connection.ReceiveMessageAsync(_connection.FrameReadTimeout, cancellationToken);
                 }
-                await HandleEthMessageAsync(msgId - EthOffset, payload, cancellationToken);
+                using var lease = await _connection.AcquireDecodeLeaseAsync(payload.Length, cancellationToken);
+                await HandleEthMessageAsync(msgId - EthOffset, payload, lease, cancellationToken);
             }
         }
 
-        public async Task HandleEthMessageAsync(int localId, byte[] payload, CancellationToken cancellationToken = default)
+        public Task HandleEthMessageAsync(int localId, byte[] payload, CancellationToken cancellationToken = default)
+            => HandleEthMessageAsync(localId, payload, null, cancellationToken);
+
+        public async Task HandleEthMessageAsync(int localId, byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken = default)
         {
             switch (localId)
             {
                 case EthMessageIds.GetBlockHeaders:
-                    await HandleGetHeadersAsync(payload, cancellationToken);
+                    await HandleGetHeadersAsync(payload, lease, cancellationToken);
                     break;
                 case EthMessageIds.GetBlockBodies:
-                    await HandleGetBodiesAsync(payload, cancellationToken);
+                    await HandleGetBodiesAsync(payload, lease, cancellationToken);
                     break;
                 case EthMessageIds.GetReceipts:
-                    await HandleGetReceiptsAsync(payload, cancellationToken);
+                    await HandleGetReceiptsAsync(payload, lease, cancellationToken);
                     break;
                 case EthMessageIds.GetPooledTransactions:
-                    await HandleGetPooledTransactionsAsync(payload, cancellationToken);
+                    await HandleGetPooledTransactionsAsync(payload, lease, cancellationToken);
                     break;
                 case EthMessageIds.GetBlockAccessLists:
                     if (RemoteStatus == null || RemoteStatus.ProtocolVersion < 71)
@@ -123,16 +123,26 @@ namespace Nethereum.DevP2P.Sync.Serving
                         await ProtocolBreachAsync(localId, "GetBlockAccessLists received on eth/<71 (only valid on eth/71+)");
                         return;
                     }
-                    await HandleGetBlockAccessListsAsync(payload, cancellationToken);
+                    await HandleGetBlockAccessListsAsync(payload, lease, cancellationToken);
                     break;
                 case EthMessageIds.NewBlock:
+                    if (NegotiatedEthVersion() >= 69)
+                    {
+                        await ProtocolBreachAsync(localId, "NewBlock received on eth/69+ (only valid on eth/68)");
+                        return;
+                    }
                     await HandlePushAsync<NewBlockMessage>(
                         localId, payload,
                         static p => NewBlockMessageEncoder.Decode(p),
                         static (_, _) => true,
-                        NewBlockReceived);
+                        null);
                     break;
                 case EthMessageIds.NewBlockHashes:
+                    if (NegotiatedEthVersion() >= 69)
+                    {
+                        await ProtocolBreachAsync(localId, "NewBlockHashes received on eth/69+ (only valid on eth/68)");
+                        return;
+                    }
                     await HandlePushAsync<NewBlockHashesMessage>(
                         localId, payload,
                         static p => NewBlockHashesMessageEncoder.Decode(p),
@@ -143,7 +153,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                     await HandlePushAsync<TransactionsMessage>(
                         localId, payload,
                         static p => TransactionsMessageEncoder.Decode(p),
-                        static (m, _) => m.Transactions != null && m.Transactions.Count > 0,
+                        static (m, _) => m.Transactions != null,
                         TransactionsReceived);
                     break;
                 case EthMessageIds.NewPooledTransactionHashes:
@@ -165,13 +175,17 @@ namespace Nethereum.DevP2P.Sync.Serving
                     await HandlePushAsync<BlockRangeUpdateMessage>(
                         localId, payload,
                         static p => BlockRangeUpdateMessageEncoder.Decode(p),
-                        static (m, _) => m.EarliestBlock <= m.LatestBlock,
+                        static (m, _) => BlockRangeValidator.Violation(m.EarliestBlock, m.LatestBlock, m.LatestBlockHash) == null,
                         BlockRangeUpdateReceived);
                     break;
                 default:
-                    break;
+                    await ProtocolBreachAsync(localId, "message code not handled by the negotiated eth version or a response without a matching request");
+                    return;
             }
         }
+
+        private int NegotiatedEthVersion()
+            => RemoteStatus?.ProtocolVersion ?? _connection.SharedCapabilities?.Find(c => c.Name == "eth")?.Version ?? 68;
 
         private async Task HandlePushAsync<T>(
             int localId,
@@ -216,6 +230,14 @@ namespace Nethereum.DevP2P.Sync.Serving
             }
         }
 
+        private static byte[][] Clamp(byte[][] hashes, int max)
+        {
+            if (hashes.Length <= max) return hashes;
+            var clamped = new byte[max][];
+            Array.Copy(hashes, clamped, max);
+            return clamped;
+        }
+
         private async Task ProtocolBreachAsync(int localId, string reason)
         {
             _peerCache?.RecordFailure(_connection.RemoteEndpoint ?? string.Empty);
@@ -229,14 +251,12 @@ namespace Nethereum.DevP2P.Sync.Serving
             catch { }
         }
 
-        private async Task HandleGetHeadersAsync(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetHeadersAsync(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var request = GetBlockHeadersMessageEncoder.Decode(payload);
+            lease?.Dispose();
             if (request.Limit > (ulong)MaxHeadersPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
+                request.Limit = MaxHeadersPerRequest;
             var headers = await _handler.GetHeadersAsync(request, cancellationToken);
             var response = new BlockHeadersMessage
             {
@@ -249,15 +269,11 @@ namespace Nethereum.DevP2P.Sync.Serving
                 cancellationToken);
         }
 
-        private async Task HandleGetBodiesAsync(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetBodiesAsync(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var request = GetBlockBodiesMessageEncoder.Decode(payload);
-            if (request.BlockHashes.Length > MaxBodiesPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
-            var bodies = await _handler.GetBodiesAsync(request.BlockHashes, cancellationToken);
+            lease?.Dispose();
+            var bodies = await _handler.GetBodiesAsync(Clamp(request.BlockHashes, MaxBodiesPerRequest), cancellationToken);
             var response = new BlockBodiesMessage
             {
                 RequestId = request.RequestId,
@@ -269,22 +285,18 @@ namespace Nethereum.DevP2P.Sync.Serving
                 cancellationToken);
         }
 
-        private async Task HandleGetReceiptsAsync(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetReceiptsAsync(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var ethVersion = _connection.SharedCapabilities?.Find(c => c.Name == "eth")?.Version ?? 68;
             if (ethVersion >= 70)
             {
-                await HandleGetReceipts70Async(payload, cancellationToken);
+                await HandleGetReceipts70Async(payload, lease, cancellationToken);
                 return;
             }
 
             var request = GetReceiptsMessageEncoder.Decode(payload);
-            if (request.BlockHashes.Length > MaxReceiptsPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
-            var receipts = await _handler.GetReceiptsAsync(request.BlockHashes, cancellationToken);
+            lease?.Dispose();
+            var receipts = await _handler.GetReceiptsAsync(Clamp(request.BlockHashes, MaxReceiptsPerRequest), cancellationToken);
             var response = new ReceiptsMessage
             {
                 RequestId = request.RequestId,
@@ -299,16 +311,12 @@ namespace Nethereum.DevP2P.Sync.Serving
                 cancellationToken);
         }
 
-        private async Task HandleGetReceipts70Async(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetReceipts70Async(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var request = GetReceiptsMessage70Encoder.Decode(payload);
-            if (request.BlockHashes.Length > MaxReceiptsPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
+            lease?.Dispose();
             var served = await _handler.GetReceipts70Async(
-                request.BlockHashes, request.FirstBlockReceiptIndex, Eth70ReceiptsResponseSoftCapBytes, cancellationToken);
+                Clamp(request.BlockHashes, MaxReceiptsPerRequest), request.FirstBlockReceiptIndex, Eth70ReceiptsResponseSoftCapBytes, cancellationToken);
             var response = new ReceiptsMessage70
             {
                 RequestId = request.RequestId,
@@ -321,15 +329,11 @@ namespace Nethereum.DevP2P.Sync.Serving
                 cancellationToken);
         }
 
-        private async Task HandleGetBlockAccessListsAsync(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetBlockAccessListsAsync(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var request = GetBlockAccessListsMessageEncoder.Decode(payload);
-            if (request.BlockHashes.Length > MaxBlockAccessListsPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
-            var bals = await _handler.GetBlockAccessListsAsync(request.BlockHashes, cancellationToken);
+            lease?.Dispose();
+            var bals = await _handler.GetBlockAccessListsAsync(Clamp(request.BlockHashes, MaxBlockAccessListsPerRequest), cancellationToken);
             var response = new BlockAccessListsMessage
             {
                 RequestId = request.RequestId,
@@ -341,15 +345,12 @@ namespace Nethereum.DevP2P.Sync.Serving
                 cancellationToken);
         }
 
-        private async Task HandleGetPooledTransactionsAsync(byte[] payload, CancellationToken cancellationToken)
+        private async Task HandleGetPooledTransactionsAsync(byte[] payload, InFlightDecodeLease? lease, CancellationToken cancellationToken)
         {
             var request = GetPooledTransactionsMessageEncoder.Decode(payload);
-            if (request.Hashes.Count > MaxPooledTransactionsPerRequest)
-            {
-                await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
-                return;
-            }
-            var txs = await _handler.GetPooledTransactionsAsync(request.Hashes.ToArray(), cancellationToken);
+            lease?.Dispose();
+            var txs = await _handler.GetPooledTransactionsAsync(
+                request.Hashes.ToArray(), cancellationToken);
             var response = new PooledTransactionsMessage
             {
                 RequestId = request.RequestId,

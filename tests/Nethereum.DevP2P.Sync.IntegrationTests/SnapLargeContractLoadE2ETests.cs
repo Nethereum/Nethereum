@@ -88,7 +88,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                         "pivot state root does not match the producer's");
 
                     var producerHeight = await producerNode.Bundle.Blocks.GetHeightAsync();
-                    await follower.StartCatchUpAsync();
+                    await follower.StartAsync();
                     var caughtUp = await DevChainNetwork.WaitUntilAsync(
                         () => follower.ExecutedHeight >= producerHeight,
                         TimeSpan.FromMinutes(2));

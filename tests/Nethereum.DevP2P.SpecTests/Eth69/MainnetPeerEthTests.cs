@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.SpecTests.Eth69
 {
+    [Trait("Category", "LivePeer")]
     public class MainnetPeerEthTests : MainnetPeerTestBase
     {
         private const ulong AnchorBlock = 19_500_000UL;

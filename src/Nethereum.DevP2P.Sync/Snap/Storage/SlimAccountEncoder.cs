@@ -24,13 +24,16 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
 
         public static byte[] FromSlim(byte[] slimAccountBody)
         {
-            var items = (Nethereum.RLP.RLPCollection)Nethereum.RLP.RLP.Decode(slimAccountBody);
-            var nonceBytes = items[0].RLPData ?? new byte[0];
-            var balanceBytes = items[1].RLPData ?? new byte[0];
-            var storageRoot = items[2].RLPData;
-            var codeHash = items[3].RLPData;
-            if (storageRoot == null || storageRoot.Length == 0) storageRoot = DefaultValues.EMPTY_TRIE_HASH;
-            if (codeHash == null || codeHash.Length == 0) codeHash = DefaultValues.EMPTY_DATA_HASH;
+            var reader = new RlpReader(slimAccountBody);
+            var scope = reader.ReadListHeader();
+            var nonceBytes = reader.ReadBytes();
+            var balanceBytes = reader.ReadBytes();
+            var storageRoot = reader.ReadBytes();
+            var codeHash = reader.ReadBytes();
+            reader.EnsureEnd(scope);
+            reader.EnsureEnd();
+            if (storageRoot.Length == 0) storageRoot = DefaultValues.EMPTY_TRIE_HASH;
+            if (codeHash.Length == 0) codeHash = DefaultValues.EMPTY_DATA_HASH;
             return RLP.RLP.EncodeList(
                 RLP.RLP.EncodeElement(nonceBytes),
                 RLP.RLP.EncodeElement(balanceBytes),

@@ -79,10 +79,9 @@ namespace Nethereum.Chain.TestData.UnitTests
                 await result.StateCompaction.ConfigureAwait(false);
                 Assert.True(result.AccountCount > 50, $"only {result.AccountCount} accounts synced from the path-keyed server");
 
-                var recovered = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot);
                 foreach (var kv in await server.Bundle.State.GetAllAccountsAsync())
                 {
-                    var synced = await recovered.GetAccountAsync(kv.Key);
+                    var synced = await FollowerStateAtPivot.ReadAsync(bundle, pivotHeader.StateRoot, kv.Key);
                     Assert.NotNull(synced);
                     Assert.Equal(kv.Value.Balance, synced.Balance);
                     Assert.Equal(kv.Value.Nonce, synced.Nonce);
@@ -191,8 +190,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                 Assert.True(result.Ran, result.SkipReason);
                 await result.StateCompaction.ConfigureAwait(false);
 
-                var recovered = new TrieFallbackStateStore(bundle.State, (Nethereum.Merkle.Patricia.Storage.INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot);
-                var acct = await recovered.GetAccountAsync(contract);
+                var acct = await FollowerStateAtPivot.ReadAsync(bundle, pivotHeader.StateRoot, contract);
                 Assert.NotNull(acct);
                 Assert.False(Nethereum.Util.ByteUtil.AreEqual(acct.StateRoot, Nethereum.Model.DefaultValues.EMPTY_TRIE_HASH),
                     "deployed contract must have a non-empty storage root");

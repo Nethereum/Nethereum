@@ -15,6 +15,7 @@ using Nethereum.Util;
 using Xunit;
 using Nethereum.DevP2P.Sync.Abstractions;
 using Nethereum.DevP2P.Sync.FullSync;
+using Nethereum.DevP2P.Sync.Scheduling;
 
 namespace Nethereum.DevP2P.Sync.UnitTests
 {
@@ -26,7 +27,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray();
 
         [Fact]
-        public async Task DeadPeer_IsCooledDown_NotSpinned_AndHealthyPeerCompletesTheFill()
+        public async Task DeadPeer_IsDroppedByTheQuarantine_NotSpinned_AndHealthyPeerCompletesTheFill()
         {
             var chain = BuildChain(blockCount: 10, txBlocks: new HashSet<long> { 3, 4, 5, 6, 7 });
             using var bundle = InMemoryChainStoreBundle.Open();
@@ -37,7 +38,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var healthyPeer = new FakeEthPeer();
             var pool = new TwoPeerPool(deadPeer, healthyPeer);
             var worker = new DeadAndServingWorker(chain, deadPeerId: deadPeer.Id);
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, worker, bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, worker, new FetchRequestSchedulerOptions()), pool, worker, bundle);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var result = await backfiller.BackfillAsync(3, 7, headersFromStore: true, cts.Token);
@@ -47,7 +48,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(5UL, result.TransactionsWritten);
 
             Assert.True(worker.DeadPeerCalls < 50,
-                $"dead peer was dispatched {worker.DeadPeerCalls} times — failure cooldown is not gating the fetcher loop");
+                $"dead peer was dispatched {worker.DeadPeerCalls} times — the scheduler quarantine is not dropping the dead peer");
             Assert.Contains(healthyPeer.Id, pool.ReportSuccessCalls);
         }
 
@@ -65,7 +66,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var worker = new HangingThenServingWorker(chain, hangPeerId: vanishingPeer.Id);
             var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, worker, bundle);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             var fillTask = backfiller.BackfillAsync(3, 7, headersFromStore: true, cts.Token);
 
             await worker.FirstHang.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -78,6 +79,131 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Equal(5UL, result.TransactionsWritten);
         }
 
+        private const int DispatchAttemptsBoundPerSecond = 20;
+
+        [Fact]
+        public async Task Given_ActivePeerWhoseBodyRequestsThrowSynchronously_When_BackfillRunsForOneSecond_Then_DispatchAttemptsAreBoundedByThePoll()
+        {
+            var chain = BuildChain(blockCount: 10, txBlocks: new HashSet<long> { 3, 4, 5, 6, 7 });
+            using var bundle = InMemoryChainStoreBundle.Open();
+            for (int n = 0; n < 10; n++)
+                await bundle.Blocks.SaveAsync(chain.Headers[n], chain.Hashes[n]);
+
+            var failingPeer = new FakeEthPeer();
+            var pool = new TwoPeerPool(failingPeer);
+            var worker = new SynchronouslyFailingWorker(chain, failingPeer.Id, failBodies: true, failReceipts: false);
+            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, worker, bundle);
+
+            await RunForAsync(backfiller, TimeSpan.FromSeconds(1));
+
+            Assert.InRange(worker.FailingPeerBodyCalls, 1, DispatchAttemptsBoundPerSecond);
+        }
+
+        [Fact]
+        public async Task Given_ActivePeerWhoseReceiptRequestsThrowSynchronously_When_BackfillRunsForOneSecond_Then_DispatchAttemptsAreBoundedByThePoll()
+        {
+            var chain = BuildChain(blockCount: 10, txBlocks: new HashSet<long> { 3, 4, 5, 6, 7 });
+            using var bundle = InMemoryChainStoreBundle.Open();
+            for (int n = 0; n < 10; n++)
+                await bundle.Blocks.SaveAsync(chain.Headers[n], chain.Hashes[n]);
+
+            var failingPeer = new FakeEthPeer();
+            var pool = new TwoPeerPool(failingPeer);
+            var worker = new SynchronouslyFailingWorker(chain, failingPeer.Id, failBodies: false, failReceipts: true);
+            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, worker, bundle);
+
+            await RunForAsync(backfiller, TimeSpan.FromSeconds(1));
+
+            Assert.InRange(worker.FailingPeerReceiptCalls, 1, DispatchAttemptsBoundPerSecond);
+        }
+
+        [Fact]
+        public async Task Given_FailingPeerReleasesItsBodyAndReceiptWork_When_AHealthyPeerIsActive_Then_TheReleasedWorkIsStillFetchedAndDelivered()
+        {
+            var chain = BuildChain(blockCount: 10, txBlocks: new HashSet<long> { 3, 4, 5, 6, 7 });
+            using var bundle = InMemoryChainStoreBundle.Open();
+            for (int n = 0; n < 10; n++)
+                await bundle.Blocks.SaveAsync(chain.Headers[n], chain.Hashes[n]);
+
+            var failingPeer = new FakeEthPeer();
+            var healthyPeer = new FakeEthPeer();
+            var pool = new TwoPeerPool(failingPeer, healthyPeer);
+            var worker = new SynchronouslyFailingWorker(chain, failingPeer.Id, failBodies: true, failReceipts: true);
+            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, worker, bundle);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var result = await backfiller.BackfillAsync(3, 7, headersFromStore: true, cts.Token);
+
+            Assert.True(result.Ran);
+            Assert.Equal(5UL, result.BlocksWritten);
+            Assert.Equal(5UL, result.TransactionsWritten);
+            Assert.True(worker.FailingPeerBodyCalls >= 1);
+        }
+
+        private static async Task RunForAsync(ParallelBlockBackfiller backfiller, TimeSpan duration)
+        {
+            using var cts = new CancellationTokenSource(duration);
+            try { await backfiller.BackfillAsync(3, 7, headersFromStore: true, cts.Token); }
+            catch (OperationCanceledException) { }
+        }
+
+        private sealed class SynchronouslyFailingWorker : IPeerRequestWorker
+        {
+            private readonly Chain _chain;
+            private readonly Guid _failingPeerId;
+            private readonly bool _failBodies;
+            private readonly bool _failReceipts;
+            private int _bodyCalls;
+            private int _receiptCalls;
+
+            public SynchronouslyFailingWorker(Chain chain, Guid failingPeerId, bool failBodies, bool failReceipts)
+            {
+                _chain = chain;
+                _failingPeerId = failingPeerId;
+                _failBodies = failBodies;
+                _failReceipts = failReceipts;
+            }
+
+            public int FailingPeerBodyCalls => Volatile.Read(ref _bodyCalls);
+            public int FailingPeerReceiptCalls => Volatile.Read(ref _receiptCalls);
+
+            public Task<List<BlockBody>> GetBodiesAsync(IEthPeer peer, IReadOnlyList<byte[]> hashes, CancellationToken ct)
+            {
+                if (peer.Id == _failingPeerId && _failBodies)
+                {
+                    Interlocked.Increment(ref _bodyCalls);
+                    throw new ObjectDisposedException("session");
+                }
+                var bodies = new List<BlockBody>(hashes.Count);
+                foreach (var h in hashes)
+                    bodies.Add(_chain.NumberByHash.TryGetValue(h.ToHex(), out var n) ? _chain.Bodies[n] : new BlockBody());
+                return Task.FromResult(bodies);
+            }
+
+            public Task<List<List<Receipt>>> GetReceiptsAsync(IEthPeer peer, IReadOnlyList<byte[]> hashes, CancellationToken ct)
+            {
+                if (peer.Id == _failingPeerId && _failReceipts)
+                {
+                    Interlocked.Increment(ref _receiptCalls);
+                    throw new ObjectDisposedException("session");
+                }
+                var rcpts = new List<List<Receipt>>(hashes.Count);
+                foreach (var h in hashes)
+                    rcpts.Add(_chain.NumberByHash.TryGetValue(h.ToHex(), out var n) ? _chain.Receipts[n] : new List<Receipt>());
+                return Task.FromResult(rcpts);
+            }
+
+            public Task<List<BlockHeader>> GetHeadersAsync(IEthPeer peer, ulong startBlock, ulong limit, bool reverse, CancellationToken ct)
+                => throw new NotImplementedException("headers come from the store in this mode");
+            public Task<AccountRangeMessage> GetAccountRangeAsync(IEthPeer peer, byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
+                => throw new NotImplementedException();
+            public Task<StorageRangesMessage> GetStorageRangesAsync(IEthPeer peer, byte[] stateRoot, List<byte[]> accountHashes, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
+                => throw new NotImplementedException();
+            public Task<ByteCodesMessage> GetByteCodesAsync(IEthPeer peer, List<byte[]> codeHashes, ulong responseBytes, CancellationToken ct)
+                => throw new NotImplementedException();
+            public Task<TrieNodesMessage> GetTrieNodesAsync(IEthPeer peer, byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct)
+                => throw new NotImplementedException();
+        }
 
         private sealed class Chain
         {
@@ -169,7 +295,11 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             }
             public Task StartAsync(CancellationToken ct) => Task.CompletedTask;
             public Task BanAndDropAsync(string enode, string reason, CancellationToken ct) => Task.CompletedTask;
-            public Task DropAsync(Guid peerId, string reason, CancellationToken ct) => Task.CompletedTask;
+            public Task DropAsync(Guid peerId, string reason, CancellationToken ct)
+            {
+                lock (_removed) _removed.Add(peerId);
+                return Task.CompletedTask;
+            }
             public void ReportSuccess(Guid peerId) => ReportSuccessCalls.Add(peerId);
             public Task ClearAllBansAsync() => Task.CompletedTask;
             public ValueTask DisposeAsync() => default;

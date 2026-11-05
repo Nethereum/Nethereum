@@ -23,6 +23,7 @@ using Nethereum.DevP2P.Sync.Sequencer;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class TwoFollowerSyncIntegrationTests
     {
         private static readonly (string Address, string BalanceHex)[] GenesisAlloc = new[]
@@ -91,6 +92,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             var blockStore = new InMemoryBlockStore();
             var trieNodeStore = new InMemoryContentNodeStore();
             var stateRootCalculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+            Assert.Equal(_fixture.GenesisStateRoot.ToHex(), (await stateRootCalculator.ComputeStateRootAsync()).ToHex());
             var activations = new FixedChainActivations(HardforkName.London);
             var engine = new BlockExecutor(
                 stateStore,
@@ -99,8 +101,12 @@ namespace Nethereum.DevP2P.IntegrationTests
                 chainConfigFactory: _ => chainConfig,
                 hardforkConfigFactory: _ => chainConfig.GetHardforkConfig(),
                 stateRootCalculator: stateRootCalculator,
-                rewardPolicy: EthereumProofOfWorkRewardPolicy.Instance,
-                trieNodeStore: trieNodeStore);
+                rewardPolicy: NoRewardPolicy.Instance,
+                trieNodeStore: trieNodeStore,
+                authorResolver: _ => DevP2PGethFixture.SealerAddress,
+                logger: null,
+                blockRootsProvider: null,
+                validation: new BlockValidationOptions { SealedByClique = true });
             var blockImporter = new BlockImporter(engine, blockStore, stateStore);
 
             var devP2PConfig = new DevP2PConfig
@@ -112,6 +118,9 @@ namespace Nethereum.DevP2P.IntegrationTests
             };
             await using var client = new DevP2PSequencerRpcClient(
                 _fixture.Enode, devP2PConfig, _fixture.GenesisHash);
+            var genesisHeader = await client.GetBlockHeaderAsync(BigInteger.Zero);
+            Assert.NotNull(genesisHeader);
+            await blockStore.SaveAsync(genesisHeader!, _fixture.GenesisHash);
 
             byte[] lastRoot = Array.Empty<byte>();
             for (ulong blockNumber = 1; blockNumber <= targetBlock; blockNumber++)

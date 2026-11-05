@@ -31,53 +31,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
     {
         private static readonly Sha3KeccackHashProvider Hash = new();
 
-        private sealed class RecordingSink : ISnapSyncSink
-        {
-            private byte[] _finaliseRoot;
-
-            public List<byte[]> SlotsWritten { get; } = new();
-            public bool ScopeOpen { get; private set; }
-            public int BeginCount { get; private set; }
-            public int EndCount { get; private set; }
-            public int AbortCount { get; private set; }
-
-            public void SetFinaliseRoot(byte[] root) => _finaliseRoot = root;
-
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => default;
-
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct) => default;
-
-            private readonly object _sync = new();
-
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-            {
-                lock (_sync) { ScopeOpen = true; BeginCount++; }
-                return new(new Scope(this));
-            }
-
-            private sealed class Scope : IStorageScope
-            {
-                private readonly RecordingSink _sink;
-                public Scope(RecordingSink sink) => _sink = sink;
-
-                public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct)
-                { lock (_sink._sync) _sink.SlotsWritten.Add(slotHash); return default; }
-
-                public ValueTask EndAsync(CancellationToken ct)
-                { lock (_sink._sync) { _sink.ScopeOpen = false; _sink.EndCount++; } return default; }
-
-                public ValueTask AbortAsync(CancellationToken ct)
-                { lock (_sink._sync) { _sink.ScopeOpen = false; _sink.AbortCount++; } return default; }
-            }
-
-            public List<byte[]> BytecodesWritten { get; } = new();
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
-            { lock (_sync) BytecodesWritten.Add(codeHash); return default; }
-
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct)
-                => new(_finaliseRoot ?? new byte[32]);
-        }
-
         private sealed class ScriptedSnapPeer : ISnapPeer
         {
             private readonly AccountRangeMessage _accountRange;
@@ -213,66 +166,132 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
 
         [Fact]
-        public async Task Given_StorageDebtDiscovered_When_CheckpointPersistsCursor_Then_DebtPersistsInSameBatch()
+        public async Task Given_AChunkedOwnerWhosePagesStraddleAPivotMove_When_SyncStateWithCheckpointAsyncCompletes_Then_TheResultCarriesTheOwnerNeedingHeal()
         {
-            var (range, stateRoot, accountHash, storageRoot) = BuildSingleAccountRange();
-            var peer = new ScriptedSnapPeer(range,
-                (req, idx) => new StorageRangesMessage { RequestId = 1, Slots = new List<List<StorageRangesMessage.SlotEntry>> { new() }, Proof = new() });
+            const int total = 40;
+            var store = new InMemoryContentNodeStore();
+            var owner = Hash.ComputeHash(new byte[] { 0x56 });
+            var (stateRootA, _, _) = BuildOwnerState(store, owner, total, seed: 90);
+            var (stateRootB, _, _) = BuildOwnerState(store, owner, total, seed: 100);
+            var handler = new Nethereum.DevP2P.Sync.Serving.PatriciaSnapRequestHandler(store, new NoCodeStore());
+            var moved = 0;
+            var peer = new MovingRootSnapPeer(new InProcessSnapPeer(handler), () => Volatile.Write(ref moved, 1));
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink, responseBytesBudget: 240UL)
+            {
+                AccountConcurrency = 1,
+                LargeContractConcurrency = 1,
+                RootRefreshIntervalMs = 10,
+                PivotRefresher = _ => Task.FromResult(Volatile.Read(ref moved) == 0 ? stateRootA : stateRootB),
+            };
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
 
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
-            using var bundle = InMemoryChainStoreBundle.Open();
-            var captured = new List<SnapSyncClient.SnapSyncCheckpoint>();
+            var result = await client.SyncStateWithCheckpointAsync(stateRootA, resumeFrom: null, checkpointSink: _ => { }, ct: cts.Token);
 
-            var result = await client.SyncStateWithCheckpointAsync(
-                stateRoot,
-                resumeFrom: null,
-                checkpointSink: checkpoint =>
+            var healed = Assert.Single(result.AccountsNeedingHeal);
+            Assert.Equal(owner, healed.AccountHash);
+            Assert.Equal(stateRootB, result.FinalTargetRoot);
+            Assert.True(result.RootMatchesTarget);
+        }
+
+        private sealed class MovingRootSnapPeer : ISnapPeer
+        {
+            private readonly ISnapPeer _inner;
+            private readonly Action _onMovingStoragePage;
+            private int _storageCalls;
+
+            public MovingRootSnapPeer(ISnapPeer inner, Action onMovingStoragePage)
+            {
+                _inner = inner;
+                _onMovingStoragePage = onMovingStoragePage;
+            }
+
+            public Task<AccountRangeMessage> GetAccountRangeAsync(GetAccountRangeMessage r, CancellationToken ct = default)
+                => _inner.GetAccountRangeAsync(r, ct);
+
+            public async Task<StorageRangesMessage> GetStorageRangesAsync(GetStorageRangesMessage r, CancellationToken ct = default)
+            {
+                if (Interlocked.Increment(ref _storageCalls) == 3)
                 {
-                    captured.Add(checkpoint);
-                    using var batch = bundle.BeginBatch();
-                    foreach (var debt in checkpoint.DeferredStorageDebts)
-                        batch.UpsertDeferredStorageDebt(debt);
-                    batch.SaveSnapSyncState(checkpoint.State);
-                    batch.CommitAsync().GetAwaiter().GetResult();
-                });
+                    _onMovingStoragePage();
+                    await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+                }
+                return await _inner.GetStorageRangesAsync(r, ct).ConfigureAwait(false);
+            }
 
-            Assert.NotEmpty(result.AccountsNeedingHeal);
-            Assert.Contains(captured, checkpoint =>
-                checkpoint.DeferredStorageDebts.Count == 1
-                && ByteUtil.AreEqual(FilledHash(0xff), checkpoint.State.Tasks[0].Next));
+            public Task<ByteCodesMessage> GetByteCodesAsync(GetByteCodesMessage r, CancellationToken ct = default)
+                => _inner.GetByteCodesAsync(r, ct);
 
-            var persistedState = bundle.Metadata.GetSnapSyncState();
-            Assert.NotNull(persistedState);
-            Assert.Equal(FilledHash(0xff), persistedState!.Tasks[0].Next);
+            public Task<TrieNodesMessage> GetTrieNodesAsync(GetTrieNodesMessage r, CancellationToken ct = default)
+                => _inner.GetTrieNodesAsync(r, ct);
+        }
 
-            var persistedDebt = Assert.Single(bundle.Metadata.ListOpenDeferredStorageDebts());
-            Assert.Equal(accountHash, persistedDebt.AccountHash);
-            Assert.Equal(storageRoot, persistedDebt.DiscoveredStorageRoot);
-            Assert.Equal(stateRoot, persistedDebt.FetchStateRoot);
-            Assert.Equal(StorageCompleteness.DeferredUnavailable, persistedDebt.Status);
-            Assert.Equal(DeferredStorageReason.NonEmptyRootReturnedNoSlots, persistedDebt.Reason);
+        private static (byte[] StateRoot, byte[] StorageRoot, List<(byte[] Key, byte[] Value)> Entries) BuildOwnerState(
+            InMemoryContentNodeStore store, byte[] owner, int count, int seed)
+        {
+            var storageTrie = new PatriciaTrie(store, owner);
+            var entries = new List<(byte[] Key, byte[] Value)>();
+            for (int i = 0; i < count; i++)
+            {
+                var key = Hash.ComputeHash(new[] { (byte)((seed >> 8) & 0xff), (byte)(seed & 0xff), (byte)(i >> 8), (byte)(i & 0xff) });
+                var value = Nethereum.RLP.RLP.EncodeElement(new byte[] { (byte)(i & 0xff), (byte)((i >> 4) & 0xff), 0xCD });
+                entries.Add((key, value));
+                storageTrie.Put(key, value);
+            }
+            storageTrie.SaveDirtyNodesToStorage();
+            var storageRoot = storageTrie.Root.GetHash();
+            var stateTrie = new PatriciaTrie(store);
+            stateTrie.Put(owner, new AccountEncoder().Encode(new Account
+            {
+                Nonce = (EvmUInt256)1,
+                Balance = (EvmUInt256)1,
+                StateRoot = storageRoot,
+                CodeHash = DefaultValues.EMPTY_DATA_HASH,
+            }));
+            stateTrie.SaveDirtyNodesToStorage();
+            return (stateTrie.Root.GetHash(), storageRoot, entries);
         }
 
         [Fact]
-        public async Task Storage_DriftsMidFetch_AccountMarkedForHeal()
+        public async Task Storage_DriftingDirectPeer_IsRejectedByTheVerifierThenServed_NothingWrittenForTheRejectedRepliesAndNoNeedHeal()
         {
-            var (range, stateRoot, accountHash, expectedStorageRoot) = BuildSingleAccountRange();
-            var slotHash = Hash.ComputeHash(new byte[] { 0x42 });
+            const int rejectedReplies = 3;
+            const int slotCount = 12;
+            var server = new InMemoryContentNodeStore();
+            var accountHash = Hash.ComputeHash(new byte[] { 0x33 });
+            var storageTrie = new PatriciaTrie(server);
+            for (int i = 0; i < slotCount; i++)
+                storageTrie.Put(Hash.ComputeHash(new byte[] { 0x44, (byte)i }), Nethereum.RLP.RLP.EncodeElement(new byte[] { (byte)(i + 1) }));
+            storageTrie.SaveDirtyNodesToStorage();
+            var stateTrie = new PatriciaTrie(server);
+            stateTrie.Put(accountHash, new AccountEncoder().Encode(new Account
+            {
+                Nonce = (EvmUInt256)0,
+                Balance = (EvmUInt256)0,
+                StateRoot = storageTrie.Root.GetHash(),
+                CodeHash = DefaultValues.EMPTY_DATA_HASH,
+            }));
+            stateTrie.SaveDirtyNodesToStorage();
+            var stateRoot = stateTrie.Root.GetHash();
+            var handler = new Nethereum.DevP2P.Sync.Serving.PatriciaSnapRequestHandler(server, new NoCodeStore());
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var range = await handler.GetAccountRangeAsync(new GetAccountRangeMessage
+            {
+                RequestId = 1, RootHash = stateRoot, StartingHash = new byte[32], LimitHash = FilledHash(0xff), ResponseBytes = 524_288UL,
+            }, cts.Token);
+            var driftedSlot = Hash.ComputeHash(new byte[] { 0x42 });
+            var peer = new ScriptedSnapPeer(range, (req, idx) => idx < rejectedReplies
+                ? UnverifiableSlotsResponse(driftedSlot, new byte[] { 0x01 })
+                : handler.GetStorageRangesAsync(req, cts.Token).GetAwaiter().GetResult());
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
-            var peer = new ScriptedSnapPeer(range,
-                (req, idx) => UnverifiableSlotsResponse(slotHash, new byte[] { 0x01 }));
+            var result = await client.SyncStateAsync(stateRoot, cts.Token);
 
-            var sink = new RecordingSink();
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
-
-            await Assert.ThrowsAsync<SnapSyncClient.SnapRootMismatchException>(
-                () => client.SyncStateAsync(stateRoot));
-
-            Assert.Equal(0, sink.BeginCount);
-            Assert.Equal(0, sink.EndCount);
-            Assert.Empty(sink.SlotsWritten);
+            Assert.True(peer.StorageCallCount > rejectedReplies, $"storage calls={peer.StorageCallCount}");
+            Assert.Equal(slotCount, recorder.Flat.SlotsWritten.Count);
+            Assert.DoesNotContain(recorder.Flat.SlotsWritten, w => ByteUtil.AreEqual(w.Slot, driftedSlot));
+            Assert.Empty(result.AccountsNeedingHeal);
         }
 
         [Fact]
@@ -282,183 +301,59 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var peer = new ScriptedSnapPeer(range,
                 (req, idx) => new StorageRangesMessage { RequestId = 1, Slots = new(), Proof = new() });
 
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
             var result = await client.SyncStateAsync(stateRoot);
 
             Assert.NotNull(result.AccountsNeedingHeal);
             Assert.Empty(result.AccountsNeedingHeal);
-            Assert.Equal(0, sink.AbortCount);
         }
 
         [Fact]
-        public async Task Storage_EmptyResponseForNonEmptyRoot_DefersToHeal_NotSilentlyComplete()
+        public async Task Storage_EmptyResponseForNonEmptyRoot_IsRejectedAndRetriedUntilServed()
         {
-            var (range, stateRoot, accountHash, _) = BuildSingleAccountRange();
-            var peer = new ScriptedSnapPeer(range,
-                (req, idx) => new StorageRangesMessage
-                {
-                    RequestId = 1,
-                    Slots = new List<List<StorageRangesMessage.SlotEntry>> { new() },
-                    Proof = new()
-                });
-
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
-
-            var result = await client.SyncStateAsync(stateRoot);
-
-            Assert.NotEmpty(result.AccountsNeedingHeal);
-        }
-
-        [Fact]
-        public async Task Storage_SubRangeEmptyMidWhale_AbortsAndDefersToHeal_NoIncompleteTrie()
-        {
-            var storage = new InMemoryContentNodeStore();
-            var trie = new PatriciaTrie(storage);
-            var slots = new List<(byte[] Key, byte[] Val)>();
-            for (int i = 1; i <= 4; i++)
-            {
-                var key = new byte[32]; key[0] = (byte)(0x10 * i);
-                var val = Nethereum.RLP.RLP.EncodeElement(new byte[] { (byte)i });
-                trie.Put(key, val);
-                slots.Add((key, val));
-            }
-            trie.SaveDirtyNodesToStorage();
-            var storageRoot = trie.Root.GetHash();
-
-            var accountHash = Hash.ComputeHash(new byte[] { 0x11 });
-            var account = new Account
+            const int emptyReplies = 2;
+            var server = new InMemoryContentNodeStore();
+            var accountHash = Hash.ComputeHash(new byte[] { 0x33 });
+            var storageTrie = new PatriciaTrie(server);
+            var slotCount = 12;
+            for (int i = 0; i < slotCount; i++)
+                storageTrie.Put(Hash.ComputeHash(new byte[] { 0x44, (byte)i }), Nethereum.RLP.RLP.EncodeElement(new byte[] { (byte)(i + 1) }));
+            storageTrie.SaveDirtyNodesToStorage();
+            var stateTrie = new PatriciaTrie(server);
+            stateTrie.Put(accountHash, new AccountEncoder().Encode(new Account
             {
                 Nonce = (EvmUInt256)0,
                 Balance = (EvmUInt256)0,
-                StateRoot = storageRoot,
+                StateRoot = storageTrie.Root.GetHash(),
                 CodeHash = DefaultValues.EMPTY_DATA_HASH,
-            };
-            var canonical = new AccountEncoder().Encode(account);
-            var slim = SlimAccountEncoder.ToSlim(canonical);
-            var stateStorage = new InMemoryContentNodeStore();
-            var stateTrie = new PatriciaTrie(stateStorage);
-            stateTrie.Put(accountHash, canonical);
+            }));
             stateTrie.SaveDirtyNodesToStorage();
             var stateRoot = stateTrie.Root.GetHash();
-            var accountProof = PatriciaRangeProofGenerator.GenerateProof(
-                stateTrie.Root, stateStorage, new byte[32], FilledHash(0xff));
-            var range = new AccountRangeMessage
+            var handler = new Nethereum.DevP2P.Sync.Serving.PatriciaSnapRequestHandler(server, new NoCodeStore());
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            var range = await handler.GetAccountRangeAsync(new GetAccountRangeMessage
             {
-                RequestId = 1,
-                Accounts = new List<AccountRangeMessage.AccountEntry> { new() { Hash = accountHash, Body = slim } },
-                Proof = accountProof,
-            };
+                RequestId = 1, RootHash = stateRoot, StartingHash = new byte[32], LimitHash = FilledHash(0xff), ResponseBytes = 524_288UL,
+            }, cts.Token);
+            var peer = new ScriptedSnapPeer(range, (req, idx) => idx < emptyReplies
+                ? new StorageRangesMessage { RequestId = req.RequestId, Slots = new List<List<StorageRangesMessage.SlotEntry>> { new() }, Proof = new() }
+                : handler.GetStorageRangesAsync(req, cts.Token).GetAwaiter().GetResult());
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
-            var firstPageProof = PatriciaRangeProofGenerator.GenerateProof(
-                trie.Root, storage, new byte[32], slots[1].Key);
-            var peer = new ScriptedSnapPeer(range, (req, idx) =>
-            {
-                if (idx == 0)
-                    return new StorageRangesMessage
-                    {
-                        RequestId = 1,
-                        Slots = new List<List<StorageRangesMessage.SlotEntry>>
-                        {
-                            new()
-                            {
-                                new StorageRangesMessage.SlotEntry { Hash = slots[0].Key, Data = slots[0].Val },
-                                new StorageRangesMessage.SlotEntry { Hash = slots[1].Key, Data = slots[1].Val },
-                            }
-                        },
-                        Proof = firstPageProof,
-                    };
-                return new StorageRangesMessage { RequestId = 1, Slots = new(), Proof = new() };
-            });
+            var result = await client.SyncStateAsync(stateRoot, cts.Token);
 
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
-
-            var result = await client.SyncStateAsync(stateRoot);
-
-            Assert.Equal(0, sink.EndCount);
-            Assert.True(sink.AbortCount >= 1);
-            Assert.NotEmpty(result.AccountsNeedingHeal);
-        }
-
-        [Fact]
-        public async Task Storage_SubRangeEmptyWithAbsenceProof_CompletesNotHealed()
-        {
-            var storage = new InMemoryContentNodeStore();
-            var trie = new PatriciaTrie(storage);
-            var slots = new List<(byte[] Key, byte[] Val)>();
-            foreach (var hi in new byte[] { 0x10, 0x20 })
-            {
-                var key = new byte[32]; key[0] = hi;
-                var val = Nethereum.RLP.RLP.EncodeElement(new byte[] { hi });
-                trie.Put(key, val);
-                slots.Add((key, val));
-            }
-            trie.SaveDirtyNodesToStorage();
-            var storageRoot = trie.Root.GetHash();
-            int Cmp(byte[] a, byte[] b) => ByteArrayComparer.Current.Compare(a, b);
-
-            var accountHash = Hash.ComputeHash(new byte[] { 0x11 });
-            var account = new Account
-            {
-                Nonce = (EvmUInt256)0,
-                Balance = (EvmUInt256)0,
-                StateRoot = storageRoot,
-                CodeHash = DefaultValues.EMPTY_DATA_HASH,
-            };
-            var slim = SlimAccountEncoder.ToSlim(new AccountEncoder().Encode(account));
-            var stateStorage = new InMemoryContentNodeStore();
-            var stateTrie = new PatriciaTrie(stateStorage);
-            stateTrie.Put(accountHash, new AccountEncoder().Encode(account));
-            stateTrie.SaveDirtyNodesToStorage();
-            var stateRoot = stateTrie.Root.GetHash();
-            var range = new AccountRangeMessage
-            {
-                RequestId = 1,
-                Accounts = new List<AccountRangeMessage.AccountEntry> { new() { Hash = accountHash, Body = slim } },
-                Proof = PatriciaRangeProofGenerator.GenerateProof(stateTrie.Root, stateStorage, new byte[32], FilledHash(0xff)),
-            };
-
-            StorageRangesMessage Respond(byte[] start)
-            {
-                bool firstPage = Array.TrueForAll(start, b => b == 0);
-                var inRange = slots.FindAll(s => Cmp(s.Key, start) >= 0);
-                inRange.Sort((a, b) => Cmp(a.Key, b.Key));
-                if (firstPage && inRange.Count > 1) inRange = inRange.GetRange(0, 1);
-                if (inRange.Count == 0)
-                    return new StorageRangesMessage
-                    {
-                        RequestId = 1,
-                        Slots = new List<List<StorageRangesMessage.SlotEntry>> { new() },
-                        Proof = PatriciaRangeProofGenerator.GenerateProof(trie.Root, storage, start),
-                    };
-                var last = inRange[^1].Key;
-                return new StorageRangesMessage
-                {
-                    RequestId = 1,
-                    Slots = new List<List<StorageRangesMessage.SlotEntry>>
-                    {
-                        inRange.ConvertAll(s => new StorageRangesMessage.SlotEntry { Hash = s.Key, Data = s.Val })
-                    },
-                    Proof = PatriciaRangeProofGenerator.GenerateProof(trie.Root, storage, start, last),
-                };
-            }
-
-            var peer = new ScriptedSnapPeer(range, (req, idx) => Respond(req.StartingHash));
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1, LargeContractConcurrency = 2 };
-
-            var result = await client.SyncStateAsync(stateRoot);
-
+            Assert.True(peer.StorageCallCount > emptyReplies, $"storage calls={peer.StorageCallCount}");
+            Assert.Equal(slotCount, recorder.Flat.SlotsWritten.Count);
             Assert.Empty(result.AccountsNeedingHeal);
-            Assert.Equal(0, sink.AbortCount);
-            Assert.Equal(1, sink.EndCount);
+        }
+
+        private sealed class NoCodeStore : IBytecodeStore
+        {
+            public void Put(byte[] codeHash, byte[] code) { }
+            public byte[] Get(byte[] codeHash) => null;
         }
 
         [Fact]
@@ -494,13 +389,12 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     ? new ByteCodesMessage { RequestId = req.RequestId, Codes = new List<byte[]>() }
                     : new ByteCodesMessage { RequestId = req.RequestId, Codes = new List<byte[]> { code } });
 
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
             await client.SyncStateAsync(stateRoot);
 
-            Assert.Contains(sink.BytecodesWritten, h => ByteUtil.AreEqual(h, codeHash));
+            Assert.Equal(code, await recorder.State.GetCodeAsync(codeHash));
             Assert.True(peer.ByteCodeCallCount >= 2, $"truncated code must be retried; calls={peer.ByteCodeCallCount}");
         }
 
@@ -514,15 +408,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 throw new InvalidOperationException("simulated peer disconnect");
             });
 
-            var sink = new RecordingSink();
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => client.SyncStateAsync(stateRoot));
 
-            Assert.Empty(sink.SlotsWritten);
-            Assert.Equal(0, sink.BeginCount);
-            Assert.Equal(0, sink.EndCount);
+            Assert.Empty(recorder.Flat.SlotsWritten);
         }
 
         [Fact]
@@ -532,99 +424,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var peer = new ScriptedSnapPeer(range,
                 (req, idx) => new StorageRangesMessage { RequestId = 1, Slots = new(), Proof = new() });
 
-            var sink = new RecordingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
+            var recorder = new RecordingSnapSink();
+            var client = new SnapSyncClient(peer, recorder.Sink) { AccountConcurrency = 1 };
 
             var result = await client.SyncStateAsync(stateRoot);
 
-            Assert.Equal(0, sink.AbortCount);
             Assert.NotNull(result.AccountsNeedingHeal);
             Assert.Empty(result.AccountsNeedingHeal);
         }
-
-
-        [Fact]
-        public async Task LivePivot_ConcurrentRotation_ReadConsistent()
-        {
-            PivotPair state = new PivotPair(0, new byte[32]);
-
-            var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
-            int inconsistent = 0;
-
-            async Task Reader()
-            {
-                while (!stop.IsCancellationRequested)
-                {
-                    var snap = Volatile.Read(ref state);
-                    if (snap.Hash[31] != (byte)(snap.Block & 0xFF))
-                        Interlocked.Increment(ref inconsistent);
-                    await Task.Yield();
-                }
-            }
-
-            async Task Writer()
-            {
-                ulong i = 0;
-                while (!stop.IsCancellationRequested)
-                {
-                    i++;
-                    var h = new byte[32];
-                    h[31] = (byte)(i & 0xFF);
-                    Interlocked.Exchange(ref state, new PivotPair(i, h));
-                    await Task.Yield();
-                }
-            }
-
-            var tasks = new List<Task>();
-            for (int i = 0; i < 4; i++) tasks.Add(Reader());
-            tasks.Add(Writer());
-            await Task.WhenAll(tasks);
-
-            Assert.Equal(0, inconsistent);
-        }
-
-        [Fact]
-        public async Task Backfill_PivotRotationExtendsTarget()
-        {
-            PivotPair state = new PivotPair(100, MakeHashWithSuffix(100));
-
-            ulong observedMax = 0;
-            var done = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-
-            var rotator = Task.Run(async () =>
-            {
-                ulong block = 100;
-                while (!done.IsCancellationRequested)
-                {
-                    block += 10;
-                    Interlocked.Exchange(ref state, new PivotPair(block, MakeHashWithSuffix(block)));
-                    await Task.Delay(5);
-                }
-            });
-
-            var reader = Task.Run(async () =>
-            {
-                while (!done.IsCancellationRequested)
-                {
-                    var snap = Volatile.Read(ref state);
-                    Assert.Equal((byte)(snap.Block & 0xFF), snap.Hash[31]);
-                    if (snap.Block > observedMax) observedMax = snap.Block;
-                    await Task.Delay(1);
-                }
-            });
-
-            await Task.WhenAll(rotator, reader);
-            Assert.True(observedMax > 100, $"backfill loop never observed rotated pivot (observedMax={observedMax})");
-        }
-
-        private static byte[] MakeHashWithSuffix(ulong block)
-        {
-            var h = new byte[32];
-            h[31] = (byte)(block & 0xFF);
-            return h;
-        }
-
-        private sealed record PivotPair(ulong Block, byte[] Hash);
     }
 }

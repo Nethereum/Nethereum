@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class RlpxHandshakeIntegrationTests
     {
         private readonly DevP2PGethFixture _fixture;

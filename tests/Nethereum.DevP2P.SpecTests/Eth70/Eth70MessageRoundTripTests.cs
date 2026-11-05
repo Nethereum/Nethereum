@@ -22,7 +22,7 @@ namespace Nethereum.DevP2P.SpecTests.Eth70
             return new Receipt
             {
                 TransactionType = txType,
-                PostStateOrStatus = new byte[] { statusSeed },
+                PostStateOrStatus = statusSeed % 2 == 0 ? new byte[0] : new byte[] { 1 },
                 CumulativeGasUsed = new EvmUInt256(21000UL + statusSeed),
                 Bloom = new byte[256],
                 Logs = new List<Log> { log }

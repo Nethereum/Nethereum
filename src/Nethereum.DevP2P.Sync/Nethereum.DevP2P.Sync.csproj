@@ -2,9 +2,12 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Version>$(NethereumVersionPreview)</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Version>$(NethereumVersion)</Version>
+    <AssemblyTitle>Nethereum.DevP2P.Sync</AssemblyTitle>
+    <AssemblyName>Nethereum.DevP2P.Sync</AssemblyName>
+    <PackageId>Nethereum.DevP2P.Sync</PackageId>
     <Description>DevP2P-backed sync over eth/68-71 and snap: peer pool, header and body fetch, snap bootstrap, mempool relay and block push.</Description>
-    <Authors>Juan Blanco</Authors>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -16,6 +19,18 @@
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
     <ProjectReference Include="..\Nethereum.Hex\Nethereum.Hex.csproj" />
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

@@ -87,6 +87,9 @@ namespace Nethereum.DevP2P.IntegrationTests
                 });
 
             await LoadGenesisAsync(bundle.State, testdata);
+            await Helpers.GethTestdataGenesisHeader.SeedAsync(
+                testdata, bundle.Blocks, bundle.State, bundle.StateTrieNodes,
+                emitTombstones: !ReferenceEquals(bundle.StateTrieNodes, bundle.TrieNodes));
 
             var calc = new IncrementalStateRootCalculator(
                 bundle.State, bundle.StateTrieNodes,

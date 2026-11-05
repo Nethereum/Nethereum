@@ -17,9 +17,9 @@ namespace Nethereum.DevP2P.Sync.Serving
 
         public int MaxFrameSize { get; set; } = 16 * 1024 * 1024;
 
-        public int HandshakeTimeoutMs { get; set; } = 10_000;
+        public int HandshakeTimeoutMs { get; set; } = 5_000;
 
-        public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(2);
+        public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         public bool ServeSnap { get; set; } = true;
 
@@ -32,6 +32,10 @@ namespace Nethereum.DevP2P.Sync.Serving
         public string ClientId { get; set; } = "Nethereum.DevP2P.Sync/0.1";
 
         public bool MirrorRemoteStatus { get; set; } = true;
+
+        public ulong[] ForkBlockNumbers { get; set; } = Array.Empty<ulong>();
+
+        public ulong[] ForkTimestamps { get; set; } = Array.Empty<ulong>();
 
         public Action<string> OnInboundPeerAdded { get; set; }
 
@@ -49,6 +53,8 @@ namespace Nethereum.DevP2P.Sync.Serving
 
         public IEthPeerRegistry EthPeerRegistry { get; set; }
 
-        public Action<NewBlockMessage> OnNewBlockReceived { get; set; }
+        public Action<BlockRangeUpdateMessage> OnBlockRangeUpdateReceived { get; set; }
+
+        public Nethereum.DevP2P.Rlpx.InFlightDecodeLimiter DecodeLimiter { get; set; }
     }
 }

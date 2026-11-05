@@ -136,11 +136,11 @@ namespace Nethereum.DevP2P.UnitTests.Common
             var tasks = new Task[parallel];
             for (int i = 0; i < parallel; i++)
             {
-                tasks[i] = Task.Run(() =>
+                tasks[i] = Task.Factory.StartNew(() =>
                 {
                     barrier.SignalAndWait();
                     if (limiter.TryAcquire("hot-key")) Interlocked.Increment(ref successes);
-                });
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
             await Task.WhenAll(tasks);
 

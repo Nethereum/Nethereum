@@ -12,5 +12,6 @@ namespace Nethereum.Node.HarnessServer
         public string ImportChainRlpPath { get; set; } = "/chain.rlp";
         public string ImportBlocksDir { get; set; } = "/blocks";
         public bool Verbose { get; set; }
+        public IReadOnlyDictionary<string, string> HiveEnvironment { get; set; } = new Dictionary<string, string>();
     }
 }

@@ -189,7 +189,6 @@ namespace Nethereum.Chain.TestData.UnitTests
                 var committedHeadAtPivot = bundle.Metadata.GetLastBlock();
 
                 var pivotHeader = await server.Bundle.Blocks.GetByNumberAsync(pivot);
-                var recovered = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot);
                 var serverAtPivot = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, server.Bundle.TrieNodes);
                 var accountDecoder = new AccountEncoder();
                 var checkedCount = 0;
@@ -197,7 +196,7 @@ namespace Nethereum.Chain.TestData.UnitTests
                 foreach (var kv in await server.Bundle.State.GetAllAccountsAsync())
                 {
                     checkedCount++;
-                    var synced = await recovered.GetAccountAsync(kv.Key);
+                    var synced = await FollowerStateAtPivot.ReadAsync(bundle, pivotHeader.StateRoot, kv.Key);
                     if (synced == null) continue;
                     var expectedLeaf = serverAtPivot.Get(Sha3Keccack.Current.CalculateHash(kv.Key.HexToByteArray()));
                     if (expectedLeaf == null) continue;

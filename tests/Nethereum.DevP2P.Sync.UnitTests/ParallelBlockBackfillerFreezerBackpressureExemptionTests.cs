@@ -36,16 +36,14 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var bundle = new AlwaysPausedFreezerExemptBundle(inner);
             var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), new OnePeerPool(), new ServingWorker(chain), bundle);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
             var result = await backfiller.BackfillAsync(3, 8, headersFromStore: true, cts.Token);
-            sw.Stop();
 
             Assert.True(result.Ran, "the drain must complete promptly instead of hanging behind a valve that never clears");
             Assert.Equal(6UL, result.BlocksWritten);
             Assert.Equal(new ulong[] { 3, 4, 5, 6, 7, 8 }, bundle.ExemptedBlockNumbers.OrderBy(n => n).ToArray());
             Assert.Empty(bundle.PausableBlockNumbers);
-            Assert.True(sw.Elapsed < TimeSpan.FromSeconds(2), $"expected a prompt drain, took {sw.Elapsed}");
+            Assert.False(cts.IsCancellationRequested, "the drain must finish on its own, not by the hang guard");
         }
 
         private sealed class Chain

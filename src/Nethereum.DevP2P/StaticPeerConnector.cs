@@ -22,7 +22,15 @@ namespace Nethereum.DevP2P
         {
             var parsed = EnodeUrl.Parse(enode);
             var conn = new RlpxConnection(_localKey, _config);
-            await conn.ConnectAsync(parsed.Host, parsed.Port, parsed.PublicKey, ct);
+            try
+            {
+                await conn.ConnectAsync(parsed.Host, parsed.Port, parsed.PublicKey, ct);
+            }
+            catch
+            {
+                conn.Dispose();
+                throw;
+            }
             return conn;
         }
     }

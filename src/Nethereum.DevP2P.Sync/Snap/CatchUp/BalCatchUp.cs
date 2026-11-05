@@ -5,14 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Nethereum.CoreChain.Storage;
-using Nethereum.DevP2P.Sync.Metrics;
-using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.CatchUp
 {
+    [Nethereum.Documentation.NethereumDocExample(Nethereum.Documentation.DocSection.DevP2P, "devp2p-sync", "SnapSyncResetRequiredException — the snap state must be reset")]
     public sealed class SnapSyncResetRequiredException : InvalidOperationException
     {
         public SnapSyncResetRequiredException(string reason, string message)

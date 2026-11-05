@@ -31,36 +31,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public byte[] Get(byte[] codeHash) => null;
         }
 
-        private sealed class RecordingSink : ISnapSyncSink
-        {
-            public Dictionary<string, byte[]> SlotsWritten { get; } = new();
-            public int BeginCount { get; private set; }
-            public int EndCount { get; private set; }
-            public int AbortCount { get; private set; }
-
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => default;
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct) => default;
-
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-            {
-                BeginCount++;
-                return new(new Scope(this));
-            }
-
-            private sealed class Scope : IStorageScope
-            {
-                private readonly RecordingSink _sink;
-                public Scope(RecordingSink sink) => _sink = sink;
-                public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct)
-                { _sink.SlotsWritten[slotHash.ToHex()] = valueRlp; return default; }
-                public ValueTask EndAsync(CancellationToken ct) { _sink.EndCount++; return default; }
-                public ValueTask AbortAsync(CancellationToken ct) { _sink.AbortCount++; return default; }
-            }
-
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct) => default;
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct) => new(new byte[32]);
-        }
-
         private static (byte[] StateRoot, byte[] StorageRoot, List<(byte[] Key, byte[] Value)> Entries) BuildOwnerState(
             InMemoryContentNodeStore store, byte[] owner, int count, int seed)
         {
@@ -154,7 +124,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var liveRootHolder = new byte[][] { stateRootA };
             var peer = new RotatingOnStaleRootPeer(realPeer, stateRootA, stateRootB, liveRootHolder);
 
-            var recordingSink = new RecordingSink();
+            var recordingSink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, recordingSink, responseBytesBudget: 524_288UL);
 
             var page = new SnapSyncClient.AccountWorkerResult();
@@ -182,12 +152,10 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 "the batch must be re-dispatched at the rotated live root, not abandoned after the stale-root empty response");
 
             Assert.Empty(accountsNeedingHeal);
-            Assert.Empty(deferredStorageDebts);
 
-            Assert.Equal(1, recordingSink.EndCount);
-            Assert.Equal(0, recordingSink.AbortCount);
+            var written = PatriciaTrie.LoadFromStorage(storageRootB, recordingSink.TrieStorage);
             foreach (var (key, value) in entriesB)
-                Assert.Equal(value, recordingSink.SlotsWritten[key.ToHex()]);
+                Assert.Equal(value, written.Get(key));
         }
     }
 }

@@ -68,12 +68,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
             public int Unmatched { get; init; }
         }
 
-        private static readonly byte[] EmptyTrieRoot =
-            "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray();
-
-        private static readonly byte[] EmptyUnclesHash =
-            "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347".HexToByteArray();
-
         private readonly object _lock = new();
         private readonly SortedDictionary<ulong, BlockTask> _tasks = new();
 
@@ -89,8 +83,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
         private readonly int _maxInFlightPerPeer;
 
         private readonly IBlockRootsProvider _rootsProvider;
-        private readonly Sha3Keccack _keccak = new();
-        private readonly IChainActivations? _activations;
         private readonly Func<DateTime> _utcNow;
 
         private ulong _persistCursor;
@@ -114,7 +106,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
         {
             _rootsProvider = rootsProvider ?? throw new ArgumentNullException(nameof(rootsProvider));
             _persistCursor = initialCursor;
-            _activations = activations;
             _maxInFlightPerPeer = maxInFlightPerPeer < 1 ? 1 : maxInFlightPerPeer;
             _utcNow = utcNow ?? (() => DateTime.UtcNow);
         }
@@ -132,7 +123,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             {
                 if (reservation.Headers != null)
                     foreach (var h in reservation.Headers)
-                        book.Remove((ulong)(long)h.BlockNumber.ToBigInteger());
+                        book.Remove(NumberOf(h));
                 if (book.Count == 0) _bodyReservations.Remove(reservation.PeerId);
             }
             DecrementOpen(_bodyOpenCount, reservation.PeerId);
@@ -144,7 +135,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             {
                 if (reservation.Headers != null)
                     foreach (var h in reservation.Headers)
-                        book.Remove((ulong)(long)h.BlockNumber.ToBigInteger());
+                        book.Remove(NumberOf(h));
                 if (book.Count == 0) _receiptReservations.Remove(reservation.PeerId);
             }
             DecrementOpen(_receiptOpenCount, reservation.PeerId);
@@ -165,12 +156,42 @@ namespace Nethereum.DevP2P.Sync.FullSync
         public ChannelReader<bool> PersistableAvailable => _persistWake.Reader;
 
 
+        private static ulong NumberOf(BlockHeader header)
+        {
+            var number = header.BlockNumber;
+            if (!number.FitsInULong)
+                throw new ArgumentException("header block number does not fit in 64 bits", nameof(header));
+            return (ulong)number;
+        }
+
+        public void EnqueueHeaderWithBody(BlockHeader header, byte[] hash, BlockBody body)
+        {
+            if (header is null) throw new ArgumentNullException(nameof(header));
+            if (hash is null || hash.Length != 32) throw new ArgumentException("hash must be 32 bytes", nameof(hash));
+
+            var blockNumber = NumberOf(header);
+            lock (_lock)
+            {
+                if (_tasks.ContainsKey(blockNumber)) return;
+                _tasks[blockNumber] = new BlockTask
+                {
+                    Header = header,
+                    Hash = hash,
+                    BlockNumber = blockNumber,
+                    Body = body,
+                    BodyStage = TaskStage.Delivered
+                };
+                _pendingCount++;
+            }
+            _receiptWake.Writer.TryWrite(true);
+        }
+
         public void EnqueueHeader(BlockHeader header, byte[] hash)
         {
             if (header is null) throw new ArgumentNullException(nameof(header));
             if (hash is null || hash.Length != 32) throw new ArgumentException("hash must be 32 bytes", nameof(hash));
 
-            var blockNumber = (ulong)(long)header.BlockNumber.ToBigInteger();
+            var blockNumber = NumberOf(header);
             lock (_lock)
             {
                 if (_tasks.ContainsKey(blockNumber)) return;
@@ -277,56 +298,16 @@ namespace Nethereum.DevP2P.Sync.FullSync
             if (reservation is null) throw new ArgumentNullException(nameof(reservation));
             if (bodies is null) bodies = Array.Empty<BlockBody>();
 
-            var bag = new Dictionary<string, Queue<BlockBody>>(bodies.Count);
-            foreach (var body in bodies)
-            {
-                var txs = body?.Transactions ?? new List<ISignedTransaction>();
-                var uncles = body?.Uncles ?? new List<BlockHeader>();
-                var txRoot = _rootsProvider.CalculateTransactionsRoot(txs);
-                var unclesHash = uncles.Count == 0 ? EmptyUnclesHash : ComputeUnclesHash(uncles);
-                var key = txRoot.ToHex() + ":" + unclesHash.ToHex();
-                if (!bag.TryGetValue(key, out var q))
-                    bag[key] = q = new Queue<BlockBody>();
-                q.Enqueue(body!);
-            }
+            var bag = BlockBatchValidator.BucketBodiesByContent(bodies, _rootsProvider, includeWithdrawals: true);
 
-            int matched = 0, unmatched = 0;
-            int newlyReady = 0;
-            List<byte[]> unmatchedHashes = null;
+            int matched, unmatched, newlyReady;
 
             lock (_lock)
             {
-                foreach (var header in reservation.Headers)
-                {
-                    var blockNumber = (ulong)(long)header.BlockNumber.ToBigInteger();
-                    if (!_tasks.TryGetValue(blockNumber, out var task)) continue;
-                    if (task.ReservedByBodyPeer != reservation.PeerId) continue;
-
-                    var key = header.TransactionsHash.ToHex() + ":" + header.UnclesHash.ToHex();
-                    if (bag.TryGetValue(key, out var q) && q.Count > 0)
-                    {
-                        task.Body = q.Dequeue();
-                        task.BodyStage = TaskStage.Delivered;
-                        task.ReservedByBodyPeer = null;
-                        matched++;
-                        if (task.IsReady && task.BlockNumber == _persistCursor) newlyReady++;
-                    }
-                    else
-                    {
-                        if (blockNumber == _persistCursor)
-                            DiagnosticLog?.Invoke(
-                                $"cursor BODY unmatched block {blockNumber}: need txRoot:uncles {key}; " +
-                                $"peer served {bag.Count} bodies computing to [{string.Join(" | ", bag.Keys)}]");
-                        task.BodyStage = TaskStage.Pending;
-                        task.ReservedByBodyPeer = null;
-                        (unmatchedHashes ??= new List<byte[]>()).Add(task.Hash);
-                        unmatched++;
-                    }
-                }
-
-                if (matched == 0 && unmatchedHashes != null)
-                    foreach (var h in unmatchedHashes)
-                        MarkLacking(h, reservation.PeerId);
+                (matched, unmatched, newlyReady) = DeliverLocked(
+                    reservation.Headers, reservation.PeerId, task => task.ReservedByBodyPeer,
+                    (BlockTask task, BlockHeader header, ulong blockNumber, int unmatchedSoFar, out bool ready)
+                        => TryAcceptBodyLocked(task, header, blockNumber, bag, out ready));
 
                 ReleaseBodyBookLocked(reservation);
             }
@@ -338,55 +319,99 @@ namespace Nethereum.DevP2P.Sync.FullSync
             return new BodyDeliveryResult { Matched = matched, Unmatched = unmatched };
         }
 
+        private delegate bool TryAcceptLocked(
+            BlockTask task, BlockHeader header, ulong blockNumber, int unmatchedSoFar, out bool newlyReady);
+
+        private (int Matched, int Unmatched, int NewlyReady) DeliverLocked(
+            IReadOnlyList<BlockHeader> headers, Guid peerId, Func<BlockTask, Guid?> reservedBy, TryAcceptLocked accept)
+        {
+            int matched = 0, unmatched = 0, newlyReady = 0;
+            List<byte[]> unmatchedHashes = null;
+
+            foreach (var header in headers)
+            {
+                var blockNumber = NumberOf(header);
+                if (!_tasks.TryGetValue(blockNumber, out var task)) continue;
+                if (reservedBy(task) != peerId) continue;
+
+                if (accept(task, header, blockNumber, unmatched, out var ready))
+                {
+                    matched++;
+                    if (ready) newlyReady++;
+                }
+                else
+                {
+                    (unmatchedHashes ??= new List<byte[]>()).Add(task.Hash);
+                    unmatched++;
+                }
+            }
+
+            if (matched == 0 && unmatchedHashes != null)
+                foreach (var h in unmatchedHashes)
+                    MarkLacking(h, peerId);
+
+            return (matched, unmatched, newlyReady);
+        }
+
+        private int ReleaseLocked(
+            IReadOnlyList<BlockHeader> headers, Func<BlockTask, bool> isReservedBy, Action<BlockTask> unreserve)
+        {
+            int released = 0;
+            foreach (var header in headers)
+            {
+                var blockNumber = NumberOf(header);
+                if (_tasks.TryGetValue(blockNumber, out var task) && isReservedBy(task))
+                {
+                    unreserve(task);
+                    released++;
+                }
+            }
+            return released;
+        }
+
+        private bool TryAcceptBodyLocked(
+            BlockTask task,
+            BlockHeader header,
+            ulong blockNumber,
+            Dictionary<string, Queue<BlockBody>> bag,
+            out bool newlyReady)
+        {
+            newlyReady = false;
+            var key = BlockBatchValidator.ContentKeyOf(header, includeWithdrawals: true);
+            if (bag.TryGetValue(key, out var q) && q.Count > 0)
+            {
+                task.Body = q.Dequeue();
+                task.BodyStage = TaskStage.Delivered;
+                task.ReservedByBodyPeer = null;
+                newlyReady = task.IsReady && task.BlockNumber == _persistCursor;
+                return true;
+            }
+
+            if (blockNumber == _persistCursor)
+                DiagnosticLog?.Invoke(
+                    $"cursor BODY unmatched block {blockNumber}: need txRoot:uncles:withdrawals {key}; " +
+                    $"peer served {bag.Count} bodies computing to [{string.Join(" | ", bag.Keys)}]");
+            task.BodyStage = TaskStage.Pending;
+            task.ReservedByBodyPeer = null;
+            return false;
+        }
+
         public ReceiptDeliveryResult DeliverReceipts(
             ReceiptReservation reservation, IList<List<Receipt>> receipts)
         {
             if (reservation is null) throw new ArgumentNullException(nameof(reservation));
             if (receipts is null) receipts = Array.Empty<List<Receipt>>();
 
-            var bag = BucketByComputedReceiptsRoot(receipts);
+            var bag = BlockBatchValidator.BucketReceiptsByRoot(receipts, _rootsProvider);
 
-            int matched = 0, unmatched = 0, newlyReady = 0;
-            List<byte[]> unmatchedHashes = null;
+            int matched, unmatched, newlyReady;
 
             lock (_lock)
             {
-                foreach (var header in reservation.Headers)
-                {
-                    var blockNumber = (ulong)(long)header.BlockNumber.ToBigInteger();
-                    if (!_tasks.TryGetValue(blockNumber, out var task)) continue;
-                    if (task.ReservedByReceiptPeer != reservation.PeerId) continue;
-
-                    var key = header.ReceiptHash.ToHex();
-                    int matchedIdx = -1;
-                    if (bag.TryGetValue(key, out var q) && q.Count > 0)
-                        matchedIdx = q.Dequeue();
-
-                    if (matchedIdx < 0)
-                    {
-                        if (blockNumber == _persistCursor || unmatched < 3)
-                            DiagnosticLog?.Invoke(
-                                $"RECEIPTS unmatched block {blockNumber}: need {key}; expected_txs=" +
-                                $"{(task.Body?.Transactions != null ? task.Body.Transactions.Count.ToString() : "?")}; " +
-                                $"peer served {receipts.Count} lists counts=[{string.Join(",", System.Linq.Enumerable.Select(receipts, r => r?.Count ?? 0))}] " +
-                                $"roots=[{string.Join(" | ", bag.Keys)}]");
-                        task.ReceiptStage = TaskStage.Pending;
-                        task.ReservedByReceiptPeer = null;
-                        (unmatchedHashes ??= new List<byte[]>()).Add(task.Hash);
-                        unmatched++;
-                        continue;
-                    }
-
-                    task.Receipts = receipts[matchedIdx] ?? new List<Receipt>();
-                    task.ReceiptStage = TaskStage.Delivered;
-                    task.ReservedByReceiptPeer = null;
-                    matched++;
-                    if (task.IsReady && task.BlockNumber == _persistCursor) newlyReady++;
-                }
-
-                if (matched == 0 && unmatchedHashes != null)
-                    foreach (var h in unmatchedHashes)
-                        MarkLacking(h, reservation.PeerId);
+                (matched, unmatched, newlyReady) = DeliverLocked(
+                    reservation.Headers, reservation.PeerId, task => task.ReservedByReceiptPeer,
+                    (BlockTask task, BlockHeader header, ulong blockNumber, int unmatchedSoFar, out bool ready)
+                        => TryAcceptReceiptsLocked(task, header, blockNumber, receipts, bag, unmatchedSoFar, out ready));
 
                 ReleaseReceiptBookLocked(reservation);
             }
@@ -394,28 +419,38 @@ namespace Nethereum.DevP2P.Sync.FullSync
             if (matched > 0 || unmatched > 0) _receiptWake.Writer.TryWrite(true);
             if (newlyReady > 0) _persistWake.Writer.TryWrite(true);
 
-            return new ReceiptDeliveryResult
-            {
-                Matched = matched,
-                Unmatched = unmatched,
-            };
+            return new ReceiptDeliveryResult { Matched = matched, Unmatched = unmatched };
         }
 
-        private Dictionary<string, Queue<int>> BucketByComputedReceiptsRoot(IList<List<Receipt>> receipts)
+        private bool TryAcceptReceiptsLocked(
+            BlockTask task,
+            BlockHeader header,
+            ulong blockNumber,
+            IList<List<Receipt>> receipts,
+            Dictionary<string, Queue<int>> bag,
+            int unmatchedSoFar,
+            out bool newlyReady)
         {
-            var bag = new Dictionary<string, Queue<int>>(receipts.Count);
-
-            for (int j = 0; j < receipts.Count; j++)
+            newlyReady = false;
+            var key = header.ReceiptHash.ToHex();
+            if (bag.TryGetValue(key, out var q) && q.Count > 0)
             {
-                var list = receipts[j] ?? new List<Receipt>();
-                var root = list.Count == 0 ? EmptyTrieRoot : _rootsProvider.CalculateReceiptsRoot(list);
-                var key = root.ToHex();
-                if (!bag.TryGetValue(key, out var q))
-                    bag[key] = q = new Queue<int>();
-                q.Enqueue(j);
+                task.Receipts = receipts[q.Dequeue()] ?? new List<Receipt>();
+                task.ReceiptStage = TaskStage.Delivered;
+                task.ReservedByReceiptPeer = null;
+                newlyReady = task.IsReady && task.BlockNumber == _persistCursor;
+                return true;
             }
 
-            return bag;
+            if (blockNumber == _persistCursor || unmatchedSoFar < 3)
+                DiagnosticLog?.Invoke(
+                    $"RECEIPTS unmatched block {blockNumber}: need {key}; expected_txs=" +
+                    $"{(task.Body?.Transactions != null ? task.Body.Transactions.Count.ToString() : "?")}; " +
+                    $"peer served {receipts.Count} lists counts=[{string.Join(",", System.Linq.Enumerable.Select(receipts, r => r?.Count ?? 0))}] " +
+                    $"roots=[{string.Join(" | ", bag.Keys)}]");
+            task.ReceiptStage = TaskStage.Pending;
+            task.ReservedByReceiptPeer = null;
+            return false;
         }
 
 
@@ -476,47 +511,35 @@ namespace Nethereum.DevP2P.Sync.FullSync
         public void ReleaseBodyReservation(BodyReservation reservation)
         {
             if (reservation?.Headers == null || reservation.Headers.Count == 0) return;
-            int released = 0;
             lock (_lock)
             {
-                foreach (var header in reservation.Headers)
-                {
-                    var blockNumber = (ulong)(long)header.BlockNumber.ToBigInteger();
-                    if (_tasks.TryGetValue(blockNumber, out var task)
-                        && task.BodyStage == TaskStage.Reserved
-                        && task.ReservedByBodyPeer == reservation.PeerId)
+                ReleaseLocked(
+                    reservation.Headers,
+                    task => task.BodyStage == TaskStage.Reserved && task.ReservedByBodyPeer == reservation.PeerId,
+                    task =>
                     {
                         task.BodyStage = TaskStage.Pending;
                         task.ReservedByBodyPeer = null;
-                        released++;
-                    }
-                }
+                    });
                 ReleaseBodyBookLocked(reservation);
             }
-            if (released > 0) _bodyWake.Writer.TryWrite(true);
         }
 
         public void ReleaseReceiptReservation(ReceiptReservation reservation)
         {
             if (reservation?.Headers == null || reservation.Headers.Count == 0) return;
-            int released = 0;
             lock (_lock)
             {
-                foreach (var header in reservation.Headers)
-                {
-                    var blockNumber = (ulong)(long)header.BlockNumber.ToBigInteger();
-                    if (_tasks.TryGetValue(blockNumber, out var task)
-                        && task.ReceiptStage == TaskStage.Reserved
-                        && task.ReservedByReceiptPeer == reservation.PeerId)
+                ReleaseLocked(
+                    reservation.Headers,
+                    task => task.ReceiptStage == TaskStage.Reserved && task.ReservedByReceiptPeer == reservation.PeerId,
+                    task =>
                     {
                         task.ReceiptStage = TaskStage.Pending;
                         task.ReservedByReceiptPeer = null;
-                        released++;
-                    }
-                }
+                    });
                 ReleaseReceiptBookLocked(reservation);
             }
-            if (released > 0) _receiptWake.Writer.TryWrite(true);
         }
 
         public int ReclaimStaleReservations(TimeSpan ttl)
@@ -600,14 +623,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
             if (!_lackingPeers.TryGetValue(key, out var marks))
                 _lackingPeers[key] = marks = new Dictionary<Guid, DateTime>();
             marks[peerId] = _utcNow();
-        }
-
-        private byte[] ComputeUnclesHash(IList<BlockHeader> uncles)
-        {
-            var encoded = new byte[uncles.Count][];
-            for (int i = 0; i < uncles.Count; i++)
-                encoded[i] = BlockHeaderEncoder.Current.Encode(uncles[i]);
-            return _keccak.CalculateHash(Nethereum.RLP.RLP.EncodeList(encoded));
         }
     }
 }

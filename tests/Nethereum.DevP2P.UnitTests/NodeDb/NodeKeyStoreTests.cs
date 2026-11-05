@@ -80,5 +80,22 @@ namespace Nethereum.DevP2P.UnitTests.NodeDb
 
             Assert.NotNull(logged);
         }
+
+        [SkippableFact]
+        public void Given_AStaleWorldReadableTempFile_When_LoadOrCreateGeneratesAKey_Then_TheKeyFileIsOwnerOnly()
+        {
+            Skip.If(OperatingSystem.IsWindows(), "Unix file modes are not observable on Windows");
+            Directory.CreateDirectory(_dir);
+            var path = Path.Combine(_dir, "nodekey");
+            var stale = path + ".tmp";
+            File.WriteAllBytes(stale, new byte[32]);
+            File.SetUnixFileMode(stale, UnixFileMode.UserRead | UnixFileMode.UserWrite
+                | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+
+            NodeKeyStore.LoadOrCreate(path);
+
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+            Assert.False(File.Exists(stale));
+        }
     }
 }

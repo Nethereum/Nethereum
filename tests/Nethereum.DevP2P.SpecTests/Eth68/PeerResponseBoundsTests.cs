@@ -55,26 +55,26 @@ namespace Nethereum.DevP2P.SpecTests.Eth68
         }
 
         [Fact]
-        public void Given_AResponseEndingInAnImplausibleBody_When_Decoded_Then_TheGoodBodiesSurvive()
+        public void Given_AResponseEndingInAnImplausibleBody_When_Decoded_Then_ItIsRefused()
         {
-            var msg = BlockBodiesMessageEncoder.Decode(BodiesMessage(
+            var payload = BodiesMessage(
                 EmptyBody,
                 EmptyBody,
-                BodyWithTransactionCount(PeerResponseBounds.MaxTransactionsPerBlock + 1)));
+                BodyWithTransactionCount(PeerResponseBounds.MaxTransactionsPerBlock + 1));
 
-            Assert.Equal(2, msg.Bodies.Count);
+            Assert.Throws<System.InvalidOperationException>(() => BlockBodiesMessageEncoder.Decode(payload));
         }
 
         [Fact]
-        public void Given_AnImplausibleBodyInTheMiddle_When_Decoded_Then_NothingAfterItIsReturned()
+        public void Given_AnImplausibleBodyInTheMiddle_When_Decoded_Then_ItIsRefused()
         {
-            var msg = BlockBodiesMessageEncoder.Decode(BodiesMessage(
+            var payload = BodiesMessage(
                 EmptyBody,
                 BodyWithTransactionCount(PeerResponseBounds.MaxTransactionsPerBlock + 1),
                 EmptyBody,
-                EmptyBody));
+                EmptyBody);
 
-            Assert.Single(msg.Bodies);
+            Assert.Throws<System.InvalidOperationException>(() => BlockBodiesMessageEncoder.Decode(payload));
         }
 
         [Fact]

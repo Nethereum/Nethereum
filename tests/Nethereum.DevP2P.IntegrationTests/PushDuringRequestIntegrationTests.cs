@@ -45,7 +45,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             var serverConnReadyTcs = new TaskCompletionSource<RlpxConnection>();
 
             var listener = new RlpxListener(serverKey, config);
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 try
                 {
@@ -65,7 +66,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                     serverConnReadyTcs.TrySetResult(conn);
                 }
                 catch { }
-            };
+            });
 
             try
             {
@@ -159,6 +160,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
             }
         }
 

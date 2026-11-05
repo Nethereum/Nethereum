@@ -33,11 +33,18 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             byte[] storageRoot, byte[] startingHash,
             IList<StorageRangesMessage.SlotEntry> slots, IList<byte[]> proof)
         {
+            return VerifyStorageSlots(storageRoot, startingHash, slots, proof).Valid;
+        }
+
+        internal static Nethereum.Merkle.Patricia.ProofVerification.RangeProofResult VerifyStorageSlots(
+            byte[] storageRoot, byte[] startingHash,
+            IList<StorageRangesMessage.SlotEntry> slots, IList<byte[]> proof)
+        {
             proof ??= new List<byte[]>();
             if (slots == null || slots.Count == 0)
             {
                 return ProofVerification.Current.Range.Verify(
-                    storageRoot, startingHash, Array.Empty<byte[]>(), Array.Empty<byte[]>(), proof).Valid;
+                    storageRoot, startingHash, Array.Empty<byte[]>(), Array.Empty<byte[]>(), proof);
             }
             var keys = new List<byte[]>(slots.Count);
             var values = new List<byte[]>(slots.Count);
@@ -47,7 +54,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
                 values.Add(slot.Data);
             }
             return ProofVerification.Current.Range.Verify(
-                storageRoot, startingHash, keys, values, proof).Valid;
+                storageRoot, startingHash, keys, values, proof);
         }
 
         internal static bool VerifyStorageRangeResponse(byte[] storageRoot, byte[] startingHash, StorageRangesMessage resp)
@@ -83,16 +90,21 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
 
         public static bool VerifyByteCodesResponse(IReadOnlyList<byte[]> requestedHashes, ByteCodesMessage resp)
         {
-            if (resp?.Codes == null || resp.Codes.Count == 0) return true;
-            if (requestedHashes == null || requestedHashes.Count == 0) return false;
+            return VerifyHashedBlobs(requestedHashes, resp?.Codes);
+        }
+
+        internal static bool VerifyHashedBlobs(IReadOnlyList<byte[]> requested, IReadOnlyList<byte[]> blobs)
+        {
+            if (blobs == null || blobs.Count == 0) return true;
+            if (requested == null || requested.Count == 0) return false;
             var keccak = Sha3Keccack.Current;
             var wanted = new Dictionary<byte[], int>(ByteArrayComparer.Current);
-            foreach (var h in requestedHashes)
+            foreach (var h in requested)
                 wanted[h] = wanted.TryGetValue(h, out var c) ? c + 1 : 1;
-            foreach (var code in resp.Codes)
+            foreach (var blob in blobs)
             {
-                if (code == null || code.Length == 0) continue;
-                var hash = keccak.CalculateHash(code);
+                if (blob == null || blob.Length == 0) continue;
+                var hash = keccak.CalculateHash(blob);
                 if (wanted.TryGetValue(hash, out var remaining) && remaining > 0)
                     wanted[hash] = remaining - 1;
                 else

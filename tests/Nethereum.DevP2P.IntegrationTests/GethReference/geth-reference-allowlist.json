@@ -1,0 +1,22 @@
+[
+  {
+    "id": "class:C1",
+    "finding": "C1",
+    "reason": "Scalars wider than 256 bits in fields geth decodes as big.Int (value, gas price, fee caps, chain id, v/r/s; header number, difficulty, baseFee). Geth decodes them and rejects them at txpool admission (txpool/validation.go:108), signature recovery or header verification; Nethereum rejects them at decode. An honest geth peer never relays one, so refusing the message costs no honest peer. Signed off 2026-10-28"
+  },
+  {
+    "id": "class:C2",
+    "finding": "C2",
+    "reason": "Headers with 18, 19 or 22 fields. Geth decodes lengths 15 to 23 (optional tags) and fails them at fork validation; Nethereum refuses at decode because no fork has that shape. Same outcome. Signed off 2026-10-28"
+  },
+  {
+    "id": "class:C3",
+    "finding": "C3",
+    "reason": "Legacy transaction with v = 5 and empty r, s: geth decodes it and sender recovery fails later; Nethereum refuses with TransactionFieldFormatException (S1a-GR-08). Signed off 2026-10-28"
+  },
+  {
+    "id": "class:D1",
+    "finding": "D1",
+    "reason": "eth/71 BlockAccessLists entry that is the empty string: geth's server writes it as the unavailable marker (handlers.go:697) but its client Items() rejects it. Nethereum accepts the marker, matching what the geth server emits (geth reference defect). Signed off 2026-10-28"
+  }
+]

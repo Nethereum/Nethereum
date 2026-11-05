@@ -34,7 +34,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         [Fact]
         public async Task Given_TwoConnectedNodes_When_TxnSubmittedToA_Then_QueuesOnA_AndSendsFullBodyToB()
         {
-            var (a, b) = await DevChainNetwork.TwoConnectedNodesAsync();
+            var (a, b) = await DevChainNetwork.TwoNodesWithASingleSessionFromAToBAsync();
             try
             {
                 var sender = DevChainTransactions.AddressOf(SenderKey);

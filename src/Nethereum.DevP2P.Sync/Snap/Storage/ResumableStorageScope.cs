@@ -57,9 +57,12 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             if (store == null && flatWriter == null) throw new ArgumentNullException(nameof(store));
             if (flushIntervalSlots < 1) throw new ArgumentOutOfRangeException(nameof(flushIntervalSlots));
 
-            if (store == null)
-                return new ResumableStorageScope(accountHash, null, resumeCursor, flushIntervalSlots, flatWriter);
+            var trie = store == null ? null : AttachTrie(store, accountHash, resumeCursor);
+            return new ResumableStorageScope(accountHash, trie, resumeCursor, flushIntervalSlots, flatWriter);
+        }
 
+        private static PatriciaTrie AttachTrie(ITrieNodeStore store, byte[] accountHash, byte[] resumeCursor)
+        {
             var trie = store is IRawNodeReader rawReader
                 ? PatriciaTrie.ReattachFromRawRoot(rawReader, store, accountHash)
                 : null;
@@ -69,8 +72,8 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
                     $"Resume cursor asserts prior storage progress for owner {accountHash.ToHex()} but no persisted root was recoverable — refusing to start fresh and silently drop the covered range.");
 
             trie ??= new PatriciaTrie(store, accountHash);
-
-            return new ResumableStorageScope(accountHash, trie, resumeCursor, flushIntervalSlots, flatWriter);
+            trie.ClearExtensionSpansOnSave = store is IRawNodeReader;
+            return trie;
         }
 
         public byte[] AccountHash => _accountHash;

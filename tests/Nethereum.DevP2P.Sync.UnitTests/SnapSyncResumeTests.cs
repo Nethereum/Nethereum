@@ -29,35 +29,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
     {
         private static readonly Sha3KeccackHashProvider Hash = new();
 
-        private sealed class CapturingSink : ISnapSyncSink
-        {
-            private byte[] _finaliseRoot;
-            public List<byte[]> AccountsWritten { get; } = new();
-            public List<byte[]> SlotsWritten { get; } = new();
-            public List<byte[]> BytecodesWritten { get; } = new();
-
-            public void SetFinaliseRoot(byte[] root) => _finaliseRoot = root;
-
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => default;
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct)
-            { AccountsWritten.Add(accountHash); return default; }
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-                => new(new Scope(SlotsWritten));
-            private sealed class Scope : IStorageScope
-            {
-                private readonly List<byte[]> _slots;
-                public Scope(List<byte[]> slots) => _slots = slots;
-                public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct)
-                { lock (_slots) _slots.Add(slotHash); return default; }
-                public ValueTask EndAsync(CancellationToken ct) => default;
-                public ValueTask AbortAsync(CancellationToken ct) => default;
-            }
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
-            { BytecodesWritten.Add(codeHash); return default; }
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct)
-                => new(_finaliseRoot ?? new byte[32]);
-        }
-
         private sealed class CapturingSnapPeer : ISnapPeer
         {
             private readonly List<AccountRangeMessage> _accountResponses;
@@ -187,8 +158,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var (range, stateRoot, _) = BuildOneAccountRange(seedNext, highByteForAccountHash: 0x90);
 
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var resumeState = new SnapSyncState
@@ -317,8 +287,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var startKey = new byte[32];
             var (range, stateRoot, _) = BuildOneAccountRange(startKey, highByteForAccountHash: 0x10);
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
 
             var captured = new List<SnapSyncState>();
@@ -340,8 +309,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var startKey = new byte[32];
             var (range, stateRoot, _) = BuildOneAccountRange(startKey, highByteForAccountHash: 0x10);
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
 
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -360,8 +328,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var startKey = new byte[32];
             var (range, stateRoot, _) = BuildOneAccountRange(startKey, highByteForAccountHash: 0x10);
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
             client.FlushBulkFlatBeforeCheckpoint = () => throw new IOException("simulated: bulk-flat buffer not yet durable");
 
@@ -374,39 +341,12 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task CheckpointPayload_ContainsDeferredStorageDebt_BeforeAdvancedCursor()
-        {
-            var startKey = new byte[32];
-            var (range, stateRoot, accountHash, storageRoot) = BuildOneStorageAccountRange(startKey, highByteForAccountHash: 0x10);
-            var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
-            var client = new SnapSyncClient(peer, sink) { AccountConcurrency = 1 };
-
-            var captured = new List<SnapSyncClient.SnapSyncCheckpoint>();
-            await client.SyncStateWithCheckpointAsync(
-                stateRoot,
-                resumeFrom: null,
-                checkpointSink: checkpoint => captured.Add(checkpoint));
-
-            var checkpoint = Assert.Single(captured.FindAll(c => c.DeferredStorageDebts.Count == 1));
-            Assert.Equal(FilledHash(0xff), checkpoint.State.Tasks[0].Next);
-            var debt = Assert.Single(checkpoint.DeferredStorageDebts);
-            Assert.Equal(accountHash, debt.AccountHash);
-            Assert.Equal(storageRoot, debt.DiscoveredStorageRoot);
-            Assert.Equal(stateRoot, debt.FetchStateRoot);
-            Assert.Equal(StorageCompleteness.DeferredUnavailable, debt.Status);
-            Assert.Equal(DeferredStorageReason.NonEmptyRootReturnedNoSlots, debt.Reason);
-        }
-
-        [Fact]
         public async Task Counters_Accumulate_FromResumeFrom_AcrossSession()
         {
             var startKey = new byte[32];
             var (range, stateRoot, _) = BuildOneAccountRange(startKey, highByteForAccountHash: 0x10);
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var resumeState = new SnapSyncState
@@ -452,8 +392,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var startKey = new byte[32];
             var (range, stateRoot, _) = BuildOneAccountRange(startKey, highByteForAccountHash: 0x10);
             var peer = new CapturingSnapPeer(range);
-            var sink = new CapturingSink();
-            sink.SetFinaliseRoot(stateRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var tasks = new SnapSyncAccountTask[20];

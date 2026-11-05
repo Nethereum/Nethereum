@@ -70,35 +70,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 => Task.FromResult(new TrieNodesMessage { RequestId = r.RequestId, Nodes = new List<byte[]>() });
         }
 
-        private sealed class StubSink : ISnapSyncSink
-        {
-            public List<byte[]> AccountsWritten { get; } = new();
-            public List<byte[]> SlotsWritten { get; } = new();
-            public List<byte[]> BytecodesWritten { get; } = new();
-            private byte[] _finaliseRoot;
-
-            public void SetFinaliseRoot(byte[] root) => _finaliseRoot = root;
-
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => default;
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct)
-            { lock (AccountsWritten) AccountsWritten.Add(accountHash); return default; }
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-                => new(new Scope(SlotsWritten));
-            private sealed class Scope : IStorageScope
-            {
-                private readonly List<byte[]> _slots;
-                public Scope(List<byte[]> slots) => _slots = slots;
-                public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct)
-                { lock (_slots) _slots.Add(slotHash); return default; }
-                public ValueTask EndAsync(CancellationToken ct) => default;
-                public ValueTask AbortAsync(CancellationToken ct) => default;
-            }
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct)
-            { lock (BytecodesWritten) BytecodesWritten.Add(codeHash); return default; }
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct)
-                => new(_finaliseRoot ?? new byte[32]);
-        }
-
         private static byte[] FilledHash(byte b)
         {
             var h = new byte[32];
@@ -124,8 +95,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 await ready.Task.ConfigureAwait(false);
             });
             var targetRoot = DefaultValues.EMPTY_TRIE_HASH;
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(targetRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             await client.SyncStateAsync(targetRoot);
@@ -143,8 +113,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var targetRoot = DefaultValues.EMPTY_TRIE_HASH;
             var peer = new PartitionRecordingPeer();
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(targetRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var seedA = Hash32(0x10);
@@ -193,8 +162,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 rootsObserved.Add(r.RootHash.ToHex());
                 await Task.Yield();
             });
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(originalRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var result = await client.SyncStateAsync(originalRoot);
@@ -229,7 +197,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         public async Task Sync_Cancellation_AllWorkersExitCleanly()
         {
             var peer = new CancellableBlockingPeer();
-            var sink = new StubSink();
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             using var cts = new CancellationTokenSource();
@@ -247,8 +215,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var targetRoot = DefaultValues.EMPTY_TRIE_HASH;
             var peer = new PartitionRecordingPeer();
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(targetRoot);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             var seedCounters = new SnapSyncCounters
@@ -299,8 +266,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         public async Task Sync_StateWriteBackpressure_HoldsRequestsUntilClear_ThenCompletes()
         {
             var targetRoot = DefaultValues.EMPTY_TRIE_HASH;
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(targetRoot);
+            var sink = new InMemorySnapSyncSink();
 
             long released = 0;
             var peer = new PartitionRecordingPeer(_ =>
@@ -331,7 +297,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var taskSet = new SnapTaskSet(1);
             Assert.NotNull(taskSet.LeaseNext());
 
-            var client = new SnapSyncClient(new PartitionRecordingPeer(), new StubSink())
+            var client = new SnapSyncClient(new PartitionRecordingPeer(), new InMemorySnapSyncSink())
             {
                 TaskSetStallTimeout = TimeSpan.FromMilliseconds(10),
                 ActiveLeaseStallTimeout = TimeSpan.FromMinutes(5)
@@ -357,7 +323,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var active = new ConcurrentDictionary<int, SnapSyncClient.ActiveSnapLeaseInfo>();
             active[0] = SnapSyncClient.ActiveSnapLeaseInfo.Create(0, lease);
 
-            var client = new SnapSyncClient(new PartitionRecordingPeer(), new StubSink())
+            var client = new SnapSyncClient(new PartitionRecordingPeer(), new InMemorySnapSyncSink())
             {
                 TaskSetStallTimeout = TimeSpan.FromMinutes(5),
                 ActiveLeaseStallTimeout = TimeSpan.FromMilliseconds(10)

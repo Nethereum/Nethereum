@@ -2,16 +2,18 @@ using System;
 using System.Threading.Tasks;
 using Nethereum.DevP2P.Rlpx;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.DevP2P.UnitTests.Integration
 {
     [Trait("Category", "Integration")]
+    [Trait("Category", "LivePeer")]
     public class GethConnectionTests
     {
         private static string GetEnode()
         {
-            var enode = Environment.GetEnvironmentVariable("GETH_ENODE");
-            Skip.If(enode == null, "Set GETH_ENODE to run integration tests");
+            var enode = TestEnvironment.ServiceOrNull("GethEnode");
+            Skip.If(string.IsNullOrEmpty(enode), "Set Services:GethEnode in appsettings.test.local.json to run integration tests");
             return enode;
         }
 

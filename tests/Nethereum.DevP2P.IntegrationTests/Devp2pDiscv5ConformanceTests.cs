@@ -13,6 +13,8 @@ using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
+    [Collection(ExternalToolConformanceCollection.Name)]
     public class Devp2pDiscv5ConformanceTests
     {
         private readonly ITestOutputHelper _output;

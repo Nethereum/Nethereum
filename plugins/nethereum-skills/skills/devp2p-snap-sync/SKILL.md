@@ -60,8 +60,8 @@ This is what `SyncNode.RunSnapBootstrapAsync` (`devp2p-run-a-node`) delegates to
 | `Phase1First` | `bool` | `false` |
 | `AccountConcurrency` | `int?` | `null` |
 | `LargeContractConcurrency` | `int?` | `null` |
-| `EnableFlatReconcile` | `bool` | `false` |
-| `FinalizeVerify` | `bool` | `true` |
+| `EnableFlatReconcile` | `bool` | obsolete, ignored: the flat state is always certified |
+| `FinalizeVerify` | `bool` | obsolete, ignored |
 | `HeaderFollow` | `HeaderFollowService?` | `null` |
 | `BalHealEnabled` | `bool` | `false` |
 

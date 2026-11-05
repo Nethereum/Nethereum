@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Discv4
@@ -10,9 +11,15 @@ namespace Nethereum.DevP2P.Discv4
     {
         public const int BucketSize = 16;
         public const int BucketCount = 256;
+        public const int MaxReplacements = 10;
+        public const int BucketIpLimit = RoutingIpLimits.BucketLimit;
+        public const int TableIpLimit = RoutingIpLimits.TableLimit;
+        public const int IpLimitSubnetBits = RoutingIpLimits.SubnetBits;
 
         private readonly byte[] _localIdHash;
         private readonly List<Discv4Node>[] _buckets;
+        private readonly List<Discv4Node>[] _replacements;
+        private readonly RoutingIpLimits _ipLimits = new RoutingIpLimits();
         private readonly object _lock = new object();
 
         public Discv4RoutingTable(byte[] localNodeId)
@@ -22,8 +29,12 @@ namespace Nethereum.DevP2P.Discv4
 
             _localIdHash = new Sha3Keccack().CalculateHash(localNodeId);
             _buckets = new List<Discv4Node>[BucketCount];
+            _replacements = new List<Discv4Node>[BucketCount];
             for (int i = 0; i < BucketCount; i++)
+            {
                 _buckets[i] = new List<Discv4Node>(BucketSize);
+                _replacements[i] = new List<Discv4Node>(MaxReplacements);
+            }
         }
 
         public int Count
@@ -50,12 +61,26 @@ namespace Nethereum.DevP2P.Discv4
                 var existingIndex = bucket.FindIndex(n => ByteUtil.AreEqual(n.NodeId, node.NodeId));
                 if (existingIndex >= 0)
                 {
+                    var existing = bucket[existingIndex];
+                    _ipLimits.Remove(bucketIndex, existing.IP);
+                    if (!_ipLimits.TryAdd(bucketIndex, node.IP))
+                    {
+                        _ipLimits.TryAdd(bucketIndex, existing.IP);
+                        return false;
+                    }
                     bucket.RemoveAt(existingIndex);
                     bucket.Insert(0, node);
                     return true;
                 }
 
                 if (bucket.Count >= BucketSize)
+                {
+                    AddReplacement(bucketIndex, node);
+                    return false;
+                }
+
+                RemoveReplacement(bucketIndex, node.NodeId);
+                if (!_ipLimits.TryAdd(bucketIndex, node.IP))
                     return false;
 
                 bucket.Insert(0, node);
@@ -69,12 +94,67 @@ namespace Nethereum.DevP2P.Discv4
             var bucketIndex = BucketFor(nodeId);
             lock (_lock)
             {
+                RemoveReplacement(bucketIndex, nodeId);
                 var bucket = _buckets[bucketIndex];
                 var index = bucket.FindIndex(n => ByteUtil.AreEqual(n.NodeId, nodeId));
                 if (index < 0) return false;
+                _ipLimits.Remove(bucketIndex, bucket[index].IP);
                 bucket.RemoveAt(index);
+                PromoteReplacement(bucketIndex);
                 return true;
             }
+        }
+
+        public Discv4Node NextRevalidationCandidate()
+        {
+            lock (_lock)
+            {
+                var occupied = _buckets.Where(b => b.Count > 0).ToList();
+                if (occupied.Count == 0) return null;
+                var bucket = occupied[System.Security.Cryptography.RandomNumberGenerator.GetInt32(occupied.Count)];
+                return bucket[bucket.Count - 1];
+            }
+        }
+
+        public IList<Discv4Node> ReplacementsFor(byte[] nodeId)
+        {
+            var bucketIndex = BucketFor(nodeId);
+            lock (_lock)
+            {
+                return _replacements[bucketIndex].ToList();
+            }
+        }
+
+        private void AddReplacement(int bucketIndex, Discv4Node node)
+        {
+            var replacements = _replacements[bucketIndex];
+            if (replacements.Exists(n => ByteUtil.AreEqual(n.NodeId, node.NodeId))) return;
+            if (!_ipLimits.TryAdd(bucketIndex, node.IP)) return;
+            replacements.Insert(0, node);
+            if (replacements.Count > MaxReplacements)
+            {
+                _ipLimits.Remove(bucketIndex, replacements[replacements.Count - 1].IP);
+                replacements.RemoveAt(replacements.Count - 1);
+            }
+        }
+
+        private void RemoveReplacement(int bucketIndex, byte[] nodeId)
+        {
+            var replacements = _replacements[bucketIndex];
+            var index = replacements.FindIndex(n => ByteUtil.AreEqual(n.NodeId, nodeId));
+            if (index < 0) return;
+            _ipLimits.Remove(bucketIndex, replacements[index].IP);
+            replacements.RemoveAt(index);
+        }
+
+        private void PromoteReplacement(int bucketIndex)
+        {
+            var replacements = _replacements[bucketIndex];
+            var bucket = _buckets[bucketIndex];
+            if (replacements.Count == 0 || bucket.Count >= BucketSize) return;
+            var index = System.Security.Cryptography.RandomNumberGenerator.GetInt32(replacements.Count);
+            bucket.Add(replacements[index]);
+            replacements.RemoveAt(index);
         }
 
         public IList<Discv4Node> FindClosest(byte[] target, int count = BucketSize)

@@ -72,12 +72,13 @@ namespace Nethereum.DevP2P.Dns
             string domain, IPEndPoint server, TimeSpan timeout, CancellationToken ct)
         {
             var (query, queryId) = BuildTxtQuery(domain);
-            using var udp = new UdpClient();
-            await udp.SendAsync(query, query.Length, server);
+            using var udp = new UdpClient(server.AddressFamily);
+            udp.Connect(server);
+            await udp.SendAsync(query, query.Length);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(timeout);
             var result = await udp.ReceiveAsync().WaitAsync(cts.Token);
-            return ParseTxtResponse(result.Buffer, queryId);
+            return ParseTxtResponse(result.Buffer, query, queryId);
         }
 
         private static (byte[] Query, ushort Id) BuildTxtQuery(string domain)
@@ -105,7 +106,9 @@ namespace Nethereum.DevP2P.Dns
             return (ms.ToArray(), id);
         }
 
-        private static List<string> ParseTxtResponse(byte[] response, ushort expectedId)
+        private const int NxDomain = 3;
+
+        private static List<string> ParseTxtResponse(byte[] response, byte[] query, ushort expectedId)
         {
             if (response == null || response.Length < 12)
                 throw new InvalidOperationException(
@@ -115,12 +118,22 @@ namespace Nethereum.DevP2P.Dns
             if (responseId != expectedId)
                 throw new InvalidOperationException(
                     $"DNS transaction-id mismatch (expected 0x{expectedId:X4}, got 0x{responseId:X4}) - possible spoofed reply");
+            if ((response[2] & 0x80) == 0)
+                throw new InvalidOperationException("DNS message is a query, not a response");
+            if ((response[2] & 0x02) != 0)
+                throw new InvalidOperationException("DNS response is truncated");
+            var rcode = response[3] & 0x0F;
+            if (rcode == NxDomain) return new List<string>();
+            if (rcode != 0)
+                throw new InvalidOperationException($"DNS response code {rcode}");
 
             int offset = 12;
-            offset = SkipName(response, offset);
-            if (offset + 4 > response.Length)
+            var questionEnd = SkipName(response, offset) + 4;
+            if (questionEnd > response.Length)
                 throw new InvalidOperationException("DNS response truncated after question");
-            offset += 4;
+            if (!QuestionMatches(response, questionEnd, query))
+                throw new InvalidOperationException("DNS response answers a different question");
+            offset = questionEnd;
 
             int ancount = (response[6] << 8) | response[7];
             var results = new List<string>();
@@ -156,6 +169,20 @@ namespace Nethereum.DevP2P.Dns
                 }
             }
             return results;
+        }
+
+        private static bool QuestionMatches(byte[] response, int questionEnd, byte[] query)
+        {
+            var length = query.Length - 12;
+            if (questionEnd - 12 != length) return false;
+            for (var i = 0; i < length; i++)
+            {
+                var expected = query[12 + i];
+                var actual = response[12 + i];
+                if (expected == actual) continue;
+                if (char.ToLowerInvariant((char)expected) != char.ToLowerInvariant((char)actual)) return false;
+            }
+            return true;
         }
 
         private static int SkipName(byte[] data, int offset)

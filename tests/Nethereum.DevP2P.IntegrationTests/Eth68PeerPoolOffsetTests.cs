@@ -9,12 +9,20 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.P2P;
 using Nethereum.Signer;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
     public class Eth68PeerPoolOffsetTests
     {
         private const ulong NetworkId = 9977;
+
+        private readonly ITestOutputHelper _output;
+
+        public Eth68PeerPoolOffsetTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         [Fact]
         public async Task Given_TwoPeersRegisteredAtDifferentEthOffsets_When_AMessageIsBroadcast_Then_EachReceivesItAtItsOwnOffset()
@@ -35,7 +43,8 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             var accepted = 0;
             var listener = new RlpxListener(serverKey, config);
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 var ethOffset = conn.GetCapabilityOffset("eth");
                 await conn.SendMessageAsync(
@@ -48,7 +57,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                     ? ethOffset
                     : ethOffset + 18;
                 pool.Add(conn, registeredOffset, remoteStatus);
-            };
+            });
 
             listener.Start(port: 0, bindAddress: IPAddress.Loopback);
             try
@@ -73,6 +82,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             finally
             {
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
             }
         }
 

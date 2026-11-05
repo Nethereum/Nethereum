@@ -38,11 +38,11 @@ public class RlpxListenerSyncNodeWiringTests
         };
     }
 
-    private static Eth69StatusMessage Eth69StatusFor(ulong networkId, byte[] genesis, byte[] latestBlockHash)
+    private static Eth69StatusMessage Eth69StatusFor(RlpxConnection connection, ulong networkId, byte[] genesis, byte[] latestBlockHash)
     {
         return new Eth69StatusMessage
         {
-            ProtocolVersion = 69,
+            ProtocolVersion = connection.SharedCapabilities.Find(c => c.Name == "eth").Version,
             NetworkId = networkId,
             GenesisHash = genesis,
             ForkHash = 0xAABBCCDDu,
@@ -124,7 +124,7 @@ public class RlpxListenerSyncNodeWiringTests
         var ethOffset = connection.GetCapabilityOffset("eth");
         await connection.SendMessageAsync(
             ethOffset + Eth68MessageIds.Status,
-            Eth69StatusMessageEncoder.Encode(Eth69StatusFor(template.NetworkId, genesis, genesis)),
+            Eth69StatusMessageEncoder.Encode(Eth69StatusFor(connection, template.NetworkId, genesis, genesis)),
             ct.Token);
         var (replyId, _) = await connection.ReceiveMessageAsync(ct.Token);
         Assert.Equal(ethOffset + Eth68MessageIds.Status, replyId);
@@ -178,7 +178,7 @@ public class RlpxListenerSyncNodeWiringTests
 
         var clientHead = new byte[32];
         for (int i = 0; i < 32; i++) clientHead[i] = (byte)(0xAB ^ i);
-        var clientStatus = Eth69StatusFor(serverTemplate.NetworkId, clientGenesis, clientHead);
+        var clientStatus = Eth69StatusFor(connection, serverTemplate.NetworkId, clientGenesis, clientHead);
 
         var ethOffset = connection.GetCapabilityOffset("eth");
         await connection.SendMessageAsync(
@@ -234,7 +234,7 @@ public class RlpxListenerSyncNodeWiringTests
 
         var clientHead = new byte[32];
         for (int i = 0; i < 32; i++) clientHead[i] = (byte)(0xAB ^ i);
-        var clientStatus = Eth69StatusFor(serverTemplate.NetworkId, clientGenesis, clientHead);
+        var clientStatus = Eth69StatusFor(connection, serverTemplate.NetworkId, clientGenesis, clientHead);
 
         var ethOffset = connection.GetCapabilityOffset("eth");
         await connection.SendMessageAsync(
@@ -289,7 +289,7 @@ public class RlpxListenerSyncNodeWiringTests
         using var ct = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         await connection.ConnectAsync("127.0.0.1", server.Port, serverKey.GetPubKeyNoPrefix(), ct.Token);
 
-        var clientStatus = Eth69StatusFor(serverTemplate.NetworkId, clientGenesis, clientGenesis);
+        var clientStatus = Eth69StatusFor(connection, serverTemplate.NetworkId, clientGenesis, clientGenesis);
 
         var ethOffset = connection.GetCapabilityOffset("eth");
         await connection.SendMessageAsync(

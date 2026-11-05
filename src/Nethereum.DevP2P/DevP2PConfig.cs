@@ -16,9 +16,17 @@ namespace Nethereum.DevP2P
 
         public int MaxPeers { get; set; } = 25;
 
+        public Rlpx.InFlightDecodeLimiter DecodeLimiter { get; set; }
+
         public int MaxInboundPerIP { get; set; } = 9;
 
+        public Func<System.Net.IPAddress, bool> IsLanAddress { get; set; } = IpAddressExtensions.IsLan;
+
         public int MaxInboundPerSubnet { get; set; } = 18;
+
+        public int MaxPendingPeers { get; set; } = 50;
+
+        public int FrameWriteTimeoutMs { get; set; } = 20000;
 
         public string[] TrustedNodeIds { get; set; } = Array.Empty<string>();
 
@@ -27,9 +35,11 @@ namespace Nethereum.DevP2P
         public DialSchedulerOptions DialScheduler { get; set; } = new DialSchedulerOptions();
 
         public int ConnectTimeoutMs { get; set; } = 10000;
-        public int HandshakeTimeoutMs { get; set; } = 10000;
+        public int HandshakeTimeoutMs { get; set; } = 5000;
+        public int StatusHandshakeTimeoutMs { get; set; } = 5000;
         public int RequestTimeoutMs { get; set; } = 5000;
         public int ReadTimeoutMs { get; set; } = 30000;
+        public int AbandonedRequestTrackingMs { get; set; } = 300000;
         public int PingIntervalMs { get; set; } = 15000;
         public int ReconnectBackoffBaseMs { get; set; } = 1000;
         public int ReconnectBackoffMaxMs { get; set; } = 30000;
@@ -49,6 +59,18 @@ namespace Nethereum.DevP2P
         /// </para>
         /// </summary>
         public bool AdvertiseSnap2 { get; set; } = false;
+
+        public bool AdvertiseSnap1 { get; set; } = true;
+
+        public int MaxEthVersion { get; set; } = 71;
+
+        [NethereumDocExample(DocSection.DevP2P, "devp2p", "DevP2PConfig.WithMaxEthVersion — cap the advertised eth version")]
+        public DevP2PConfig WithMaxEthVersion(int maxEthVersion)
+        {
+            var copy = (DevP2PConfig)MemberwiseClone();
+            copy.MaxEthVersion = maxEthVersion;
+            return copy;
+        }
 
         [NethereumDocExample(DocSection.DevP2P, "devp2p", "DevP2PConfig.ForDevChain — dev-chain config factory")]
         public static DevP2PConfig ForDevChain(byte[] genesisHash, ulong networkId = 1337) => new()

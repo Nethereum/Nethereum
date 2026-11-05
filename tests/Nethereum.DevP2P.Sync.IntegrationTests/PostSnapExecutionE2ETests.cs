@@ -42,7 +42,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                     Assert.True(snap.Ran, $"snap did not run: {snap.SkipReason}");
                     _output.WriteLine($"snap complete at pivot {snap.PivotBlockNumber}; executed={follower.ExecutedHeight}");
 
-                    await follower.StartCatchUpAsync(log);
+                    await follower.StartAsync(log);
 
                     var reached = await DevChainNetwork.WaitUntilAsync(
                         () => follower.ExecutedHeight >= producerHeight,

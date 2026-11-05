@@ -49,17 +49,26 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             using var bundle = InMemoryChainStoreBundle.Open();
 
+            const int TicksToObserve = 5;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
             var clock = new SteppingClock(DateTimeOffset.UnixEpoch, ParallelBlockBackfiller.HardStallThreshold);
+            int ticks = 0;
+            Func<DateTimeOffset> countingClock = () =>
+            {
+                var now = clock.UtcNow();
+                if (Interlocked.Increment(ref ticks) >= TicksToObserve) cts.Cancel();
+                return now;
+            };
             var backfiller = new ParallelBlockBackfiller(
                 new UnusedScheduler(), new EmptyPeerPool(), new UnusedWorker(), bundle,
-                utcNow: clock.UtcNow);
+                utcNow: countingClock);
             backfiller.SetPersistWaitLogIntervalForTest(TimeSpan.FromMilliseconds(1));
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
             var result = await backfiller.BackfillAsync(0, 4, headersFromStore: true, cts.Token);
 
             Assert.True(result.Ran);
             Assert.Equal(0UL, result.BlocksWritten);
+            Assert.True(Volatile.Read(ref ticks) >= TicksToObserve);
         }
 
         [Fact]

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
@@ -23,6 +24,7 @@ using Nethereum.DevP2P.Sync.Serving;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(GethTestdataCollection.Name)]
+    [Trait("Requires", "Externals")]
     public class Devp2pEthTestConformanceTests
     {
         private readonly ITestOutputHelper _output;
@@ -65,6 +67,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             var genesisHeader = GethTestdataGenesisBuilder.Build(Path.Combine(testdata, "genesis.json"));
             var chainHandler = GethTestdataChainBackedEthHandler.Load(Path.Combine(testdata, "chain.rlp"), genesisHeader);
             var genesisHash = GethChainRlpFixtureReader.ReadGenesisHash(Path.Combine(testdata, "chain.rlp"));
+            Assert.Equal(genesisHash.ToHex(),
+                Nethereum.Util.Sha3Keccack.Current.CalculateHash(new BlockHeaderEncoder().Encode(genesisHeader)).ToHex());
             var headBlockJson = JObject.Parse(File.ReadAllText(Path.Combine(testdata, "headblock.json")));
             var forkenv = JObject.Parse(File.ReadAllText(Path.Combine(testdata, "forkenv.json")));
             var headHash = ParseHex(headBlockJson["hash"].ToString());
@@ -127,8 +131,10 @@ namespace Nethereum.DevP2P.IntegrationTests
             var mempool = new EthTestMempoolValidator(headState, headGasLimit);
 
             var listener = new RlpxListener(serverKey, serverConfig);
-            listener.PeerFailed += (_, e) => _output.WriteLine($"server PeerFailed: {e.Exception.GetType().Name}: {e.Exception.Message}");
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerFailed += (_, e) => peerWork.Log($"server PeerFailed: {e.Exception.GetType().Name}: {e.Exception.Message}");
+            var serverErrors = new ConcurrentQueue<string>();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 try
                 {
@@ -164,15 +170,13 @@ namespace Nethereum.DevP2P.IntegrationTests
                             ForkNext = 0
                         });
 
-                    ethServer.BlockRangeUpdateReceived += async (_, upd) =>
+                    ethServer.BlockRangeUpdateReceived += peerWork.OnEvent<Nethereum.Model.P2P.BlockRangeUpdateMessage>(async upd =>
                     {
                         if (upd.EarliestBlock > upd.LatestBlock)
                         {
-                            try { await conn.DisconnectAsync(Nethereum.Model.P2P.DisconnectReason.ProtocolBreach); }
-                            catch (System.IO.IOException) { }
-                            catch (System.ObjectDisposedException) { }
+                            await conn.DisconnectAsync(Nethereum.Model.P2P.DisconnectReason.ProtocolBreach);
                         }
-                    };
+                    });
 
                     peers[conn] = 0;
                     try
@@ -304,9 +308,9 @@ namespace Nethereum.DevP2P.IntegrationTests
                 }
                 catch (Exception ex)
                 {
-                    _output.WriteLine($"server: {ex.GetType().Name}: {ex.Message}");
+                    serverErrors.Enqueue($"server: {ex.GetType().Name}: {ex.Message}");
                 }
-            };
+            });
 
             using var engineApi = MockEngineApiHttpServer.Start();
             int enginePort = engineApi.Port;
@@ -352,6 +356,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
+                foreach (var error in serverErrors) _output.WriteLine(error);
             }
         }
 

@@ -223,7 +223,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             }
 
             public Task<BodyFetchResult> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, IReadOnlyCollection<System.Guid>? excludePeers, CancellationToken ct)
-                => throw new System.NotSupportedException("not exercised in this test");
+                => Task.FromResult(new BodyFetchResult(FetchBodiesAsync(blockHashes, ct).Result, Array.Empty<Guid>()));
 
             public Task<List<List<Receipt>>> FetchReceiptsAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct)
                 => throw new System.NotSupportedException("not exercised in this test");

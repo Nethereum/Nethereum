@@ -41,8 +41,17 @@ namespace Nethereum.Chain.TestData.UnitTests
         public IStateDiffStore Diffs => _bundle.Diffs;
         public byte[] PivotStateRoot => _pivotStateRoot;
 
-        public TrieFallbackStateStore RecoveredState()
-            => new TrieFallbackStateStore(_bundle.State, (INodeBlobStore)_bundle.TrieNodes, () => _pivotStateRoot);
+        public Task<Account> AccountAtPivotAsync(string address)
+            => FollowerStateAtPivot.ReadAsync(_bundle, _pivotStateRoot, address);
+
+        private ExecutionStack BuildStack()
+        {
+            var chainConfig = new ChainConfig { ChainId = _chainId, BaseFee = BigInteger.Zero, Coinbase = _sequencerAddress };
+            var activations = new FixedChainActivations(HardforkNames.Parse(chainConfig.Hardfork ?? "prague"));
+            var hardforkConfig = chainConfig.GetHardforkConfig();
+            return ExecutionStackFactory.Build(_bundle, activations, _ => chainConfig, _ => hardforkConfig,
+                new ExecutionStackOptions { RewardPolicy = NoRewardPolicy.Instance });
+        }
 
         private SnapFollowerNode(IChainStoreBundle bundle, string dataDir, BigInteger chainId, string sequencerAddress, byte[] pivotStateRoot)
         {
@@ -81,20 +90,8 @@ namespace Nethereum.Chain.TestData.UnitTests
 
         public async Task ForwardExecuteAsync(IEnumerable<(BlockHeader Header, IList<ISignedTransaction> Transactions)> blocks)
         {
-            var chainConfig = new ChainConfig { ChainId = _chainId, BaseFee = BigInteger.Zero, Coinbase = _sequencerAddress };
-            var activations = new FixedChainActivations(HardforkNames.Parse(chainConfig.Hardfork ?? "prague"));
-            var hardforkConfig = chainConfig.GetHardforkConfig();
-
-            var calc = new IncrementalStateRootCalculator(_bundle.State, _bundle.TrieNodes);
-            var engine = new BlockExecutor(
-                _bundle.State, _bundle.Blocks, activations,
-                chainConfigFactory: _ => chainConfig,
-                hardforkConfigFactory: _ => hardforkConfig,
-                stateRootCalculator: calc,
-                rewardPolicy: NoRewardPolicy.Instance,
-                trieNodeStore: _bundle.TrieNodes);
-            var importer = new BlockImporter(engine, _bundle.Blocks, _bundle.State, _bundle.Transactions,
-                _bundle.Receipts, _bundle.Logs, uncleStore: _bundle.Uncles);
+            using var stack = BuildStack();
+            var importer = stack.Importer;
 
             foreach (var (header, txs) in blocks)
             {
@@ -107,20 +104,8 @@ namespace Nethereum.Chain.TestData.UnitTests
 
         public async Task<bool> TryForwardExecuteFlatStateOnlyAsync(IEnumerable<(BlockHeader Header, IList<ISignedTransaction> Transactions)> blocks)
         {
-            var chainConfig = new ChainConfig { ChainId = _chainId, BaseFee = BigInteger.Zero, Coinbase = _sequencerAddress };
-            var activations = new FixedChainActivations(HardforkNames.Parse(chainConfig.Hardfork ?? "prague"));
-            var hardforkConfig = chainConfig.GetHardforkConfig();
-
-            var calc = new IncrementalStateRootCalculator(_bundle.State, _bundle.TrieNodes);
-            var engine = new BlockExecutor(
-                _bundle.State, _bundle.Blocks, activations,
-                chainConfigFactory: _ => chainConfig,
-                hardforkConfigFactory: _ => hardforkConfig,
-                stateRootCalculator: calc,
-                rewardPolicy: NoRewardPolicy.Instance,
-                trieNodeStore: _bundle.TrieNodes);
-            var importer = new BlockImporter(engine, _bundle.Blocks, _bundle.State, _bundle.Transactions,
-                _bundle.Receipts, _bundle.Logs, uncleStore: _bundle.Uncles);
+            using var stack = BuildStack();
+            var importer = stack.Importer;
 
             foreach (var (header, txs) in blocks)
             {

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.DevP2P;
 using Nethereum.DevP2P.Rlpx;
+using Nethereum.DevP2P.Sync.Peering;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
 using Nethereum.Model.P2P;
@@ -26,7 +27,6 @@ namespace Nethereum.DevP2P.Sync.Sequencer
         private int _ethOffset;
         private BigInteger _remoteTip;
 
-        public event EventHandler<NewBlockMessage>? NewBlockReceived;
         public event EventHandler<NewBlockHashesMessage>? NewBlockHashesReceived;
         public event EventHandler<TransactionsMessage>? TransactionsReceived;
         public event EventHandler<NewPooledTransactionHashesMessage>? NewPooledTransactionHashesReceived;
@@ -39,7 +39,7 @@ namespace Nethereum.DevP2P.Sync.Sequencer
             ulong[]? forkBlocks = null)
         {
             _enode = enode ?? throw new ArgumentNullException(nameof(enode));
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _config = (config ?? throw new ArgumentNullException(nameof(config))).WithMaxEthVersion(68);
             _genesisHash = genesisHash ?? throw new ArgumentNullException(nameof(genesisHash));
             _forkBlocks = forkBlocks ?? Array.Empty<ulong>();
         }
@@ -116,12 +116,15 @@ namespace Nethereum.DevP2P.Sync.Sequencer
                 Reverse = false
             };
 
-            var (_, payload) = await conn.RequestAsync(
+            return await conn.SendRequestAsync(
                 _ethOffset + Eth68MessageIds.GetBlockHeaders,
                 GetBlockHeadersMessageEncoder.Encode(request),
-                _ethOffset + Eth68MessageIds.BlockHeaders);
-
-            return BlockHeadersMessageEncoder.Decode(payload).Headers;
+                _ethOffset + Eth68MessageIds.BlockHeaders,
+                request.RequestId,
+                RequestTimeout,
+                RlpxResponseBound.Items(count),
+                payload => (IList<BlockHeader>)BlockHeadersMessageEncoder.Decode(payload).Headers,
+                cancellationToken);
         }
 
         private async Task<IList<BlockBody>> GetBodiesInternalAsync(
@@ -136,12 +139,15 @@ namespace Nethereum.DevP2P.Sync.Sequencer
                 BlockHashes = blockHashes
             };
 
-            var (_, payload) = await conn.RequestAsync(
+            return await conn.SendRequestAsync(
                 _ethOffset + Eth68MessageIds.GetBlockBodies,
                 GetBlockBodiesMessageEncoder.Encode(request),
-                _ethOffset + Eth68MessageIds.BlockBodies);
-
-            return BlockBodiesMessageEncoder.Decode(payload).Bodies;
+                _ethOffset + Eth68MessageIds.BlockBodies,
+                request.RequestId,
+                RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Length),
+                payload => (IList<BlockBody>)BlockBodiesMessageEncoder.Decode(payload).Bodies,
+                cancellationToken);
         }
 
         private async Task<List<List<Receipt>>> GetReceiptsInternalAsync(
@@ -156,13 +162,18 @@ namespace Nethereum.DevP2P.Sync.Sequencer
                 BlockHashes = blockHashes
             };
 
-            var (_, payload) = await conn.RequestAsync(
+            return await conn.SendRequestAsync(
                 _ethOffset + Eth68MessageIds.GetReceipts,
                 GetReceiptsMessageEncoder.Encode(request),
-                _ethOffset + Eth68MessageIds.Receipts);
-
-            return ReceiptsMessageEncoder.Decode(payload).ReceiptsByBlock;
+                _ethOffset + Eth68MessageIds.Receipts,
+                request.RequestId,
+                RequestTimeout,
+                RlpxResponseBound.Items(blockHashes.Length),
+                payload => ReceiptsMessageEncoder.Decode(payload).ReceiptsByBlock,
+                cancellationToken);
         }
+
+        private TimeSpan RequestTimeout => TimeSpan.FromMilliseconds(_config.RequestTimeoutMs);
 
         private async Task EnsureConnectedAsync(CancellationToken cancellationToken)
         {
@@ -192,8 +203,23 @@ namespace Nethereum.DevP2P.Sync.Sequencer
                     _ethOffset + Eth68MessageIds.Status,
                     Eth68StatusMessageEncoder.Encode(status));
 
-                var (_, payload) = await _connection.ReceiveMessageAsync(cancellationToken);
-                var remoteStatus = Eth68StatusMessageEncoder.Decode(payload);
+                var (_, payload) = await _connection.ReceiveStatusAsync(cancellationToken);
+                var ethVersion = _connection.SharedCapabilities.Find(c => c.Name == "eth")!.Version;
+                var remoteStatus = EthStatusValidator.Decode(ethVersion, payload).Status;
+                var violation = EthStatusValidator.Violation(
+                    new EthStatusExpectation
+                    {
+                        NetworkId = _config.NetworkId,
+                        GenesisHash = _genesisHash,
+                        ForkBlocks = _forkBlocks,
+                        ForkTimestamps = _config.ForkTimestamps
+                    },
+                    ethVersion, remoteStatus);
+                if (violation != null)
+                {
+                    await SafeDisconnectAsync(DisconnectReason.ProtocolBreach);
+                    throw new InvalidOperationException(violation);
+                }
 
                 _remoteTip = await DiscoverRemoteTipAsync(remoteStatus.BestHash, cancellationToken);
             }
@@ -232,7 +258,7 @@ namespace Nethereum.DevP2P.Sync.Sequencer
             switch (localId)
             {
                 case EthMessageIds.NewBlock:
-                    DispatchPush(localId, e.Payload, NewBlockMessageEncoder.Decode, NewBlockReceived);
+                    OnNewBlock(localId, e.Payload);
                     break;
                 case EthMessageIds.NewBlockHashes:
                     DispatchPush(localId, e.Payload, NewBlockHashesMessageEncoder.Decode, NewBlockHashesReceived);
@@ -244,9 +270,27 @@ namespace Nethereum.DevP2P.Sync.Sequencer
                     DispatchPush(localId, e.Payload, NewPooledTransactionHashesMessageEncoder.Decode, NewPooledTransactionHashesReceived);
                     break;
                 case EthMessageIds.BlockRangeUpdate:
-                    DispatchPush(localId, e.Payload, BlockRangeUpdateMessageEncoder.Decode, BlockRangeUpdateReceived);
+                    DispatchPush(localId, e.Payload, DecodeBlockRangeUpdate, BlockRangeUpdateReceived);
                     break;
             }
+        }
+
+        private void OnNewBlock(int localId, byte[] payload)
+        {
+            DispatchPush(localId, payload, NewBlockMessageEncoder.Decode, new EventHandler<NewBlockMessage>(
+                (_, message) =>
+                {
+                    if (message?.Header != null) UpdateTipIfHigher(message.Header.BlockNumber);
+                }));
+        }
+
+        private static BlockRangeUpdateMessage DecodeBlockRangeUpdate(byte[] payload)
+        {
+            var update = BlockRangeUpdateMessageEncoder.Decode(payload);
+            var violation = BlockRangeValidator.Violation(update.EarliestBlock, update.LatestBlock, update.LatestBlockHash);
+            if (violation != null)
+                throw new InvalidOperationException($"Peer sent an invalid block range: {violation}");
+            return update;
         }
 
         private void DispatchPush<T>(int localId, byte[] payload, Func<byte[], T> decoder, EventHandler<T>? subscribers)

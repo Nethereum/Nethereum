@@ -98,7 +98,6 @@ namespace Nethereum.DevP2P.IntegrationTests.Eth
             };
 
             await serverConn.SendMessageAsync(serverEthOffset + EthMessageIds.Status, Eth68StatusMessageEncoder.Encode(serverStatus));
-            await clientConn.SendMessageAsync(clientEthOffset + EthMessageIds.Status, Eth68StatusMessageEncoder.Encode(clientStatus));
             var (clientReceivedId, _) = await clientConn.ReceiveMessageAsync();
             Assert.Equal(clientEthOffset + EthMessageIds.Status, clientReceivedId);
 
@@ -146,6 +145,32 @@ namespace Nethereum.DevP2P.IntegrationTests.Eth
         }
 
         [Fact]
+        public async Task Given_RealPeerSendsAnEthMessageOver10MiB_When_SessionReceives_Then_DisconnectsWithProtocolBreach()
+        {
+            var (listener, serverConn, clientConn, serverEthOffset, clientEthOffset, session, sessionLoop, sessionCts) =
+                await StartEth68LoopbackSessionAsync(serverProtocolVersion: 68);
+            try
+            {
+                var oversized = new byte[10 * 1024 * 1024 + 1];
+                await clientConn.SendMessageAsync(clientEthOffset + 0x0e, oversized);
+
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (DateTime.UtcNow < deadline && serverConn.IsConnected)
+                    await Task.Delay(50);
+
+                Assert.False(serverConn.IsConnected,
+                    "an eth message over the 10 MiB maxMessageSize must Disconnect(ProtocolBreach) before any decode");
+            }
+            finally
+            {
+                sessionCts.Cancel();
+                try { await sessionLoop; } catch { }
+                try { clientConn.Dispose(); } catch { }
+                await listener.StopAsync();
+            }
+        }
+
+        [Fact]
         public async Task Given_RealPeerSendsBlockRangeUpdateOnEth68_When_SessionReceives_Then_DisconnectsWithProtocolBreach()
         {
             var (listener, serverConn, clientConn, serverEthOffset, clientEthOffset, session, sessionLoop, sessionCts) =
@@ -178,7 +203,7 @@ namespace Nethereum.DevP2P.IntegrationTests.Eth
         }
 
         [Fact]
-        public async Task Given_RealPeerSendsHonestNewBlockHashes_When_SessionReceives_Then_StaysAliveAndDispatches()
+        public async Task Given_RealPeerSendsHonestNewBlockHashesOnEth68_When_SessionReceives_Then_StaysAliveAndDispatches()
         {
             var (listener, serverConn, clientConn, serverEthOffset, clientEthOffset, session, sessionLoop, sessionCts) =
                 await StartEth68LoopbackSessionAsync(serverProtocolVersion: 68);

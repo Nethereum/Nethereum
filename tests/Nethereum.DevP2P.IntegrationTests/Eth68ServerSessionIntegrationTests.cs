@@ -22,6 +22,7 @@ using Nethereum.DevP2P.Sync.Serving;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class Eth68ServerSessionIntegrationTests
     {
         private readonly DevP2PGethFixture _fixture;
@@ -98,7 +99,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             var sessionStarted = new TaskCompletionSource<bool>();
 
             var listener = new RlpxListener(relayKey, devP2PConfig);
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 var session = new Eth68ServerSession(conn, handler, localStatus);
                 try
@@ -110,7 +112,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 catch
                 {
                 }
-            };
+            });
             listener.PeerFailed += (_, _) => { };
 
             try
@@ -140,6 +142,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
             }
         }
     }

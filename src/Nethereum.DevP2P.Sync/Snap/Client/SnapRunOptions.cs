@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.DevP2P.Sync.Metrics;
 using Nethereum.EVM;
 using Nethereum.Model;
 
@@ -23,11 +22,13 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
         public bool UseBackwardSkeleton { get; init; }
 
-        public int RootRefreshIntervalMs { get; init; } = 12_000;
+        public int RootRefreshIntervalMs { get; init; } = (int)PivotTiming.PollInterval.TotalMilliseconds;
 
-        public bool FinalizeVerify { get; init; } = true;
-
+        [Obsolete("No longer used: the flat state is always certified; the value is ignored.")]
         public bool EnableFlatReconcile { get; init; }
+
+        [Obsolete("No longer used: the flat state is always certified; the value is ignored.")]
+        public bool FinalizeVerify { get; init; } = true;
 
         public (ulong From, ulong To)? HeaderSweepOverride { get; init; }
 

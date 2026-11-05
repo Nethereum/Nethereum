@@ -59,6 +59,16 @@ namespace Nethereum.DevP2P.Discv5
 
         public event EventHandler<SessionEstablishedEventArgs> OutboundSessionEstablished;
 
+        private void RaiseSessionEstablished(EventHandler<SessionEstablishedEventArgs> handlers, SessionEstablishedEventArgs args)
+        {
+            if (handlers == null) return;
+            foreach (EventHandler<SessionEstablishedEventArgs> handler in handlers.GetInvocationList())
+            {
+                try { handler(this, args); }
+                catch (Exception) { }
+            }
+        }
+
         public enum IncomingPacketKind
         {
             Ignored,
@@ -261,8 +271,26 @@ namespace Nethereum.DevP2P.Discv5
             if (pending == null)
                 return Ignored(fromAddr);
 
-            if (!TryResolveVerifiedStaticPubKey(auth, srcId, out var staticPubKey))
-                return Ignored(fromAddr);
+            var completed = TryResolveVerifiedStaticPubKey(auth, srcId, out var staticPubKey)
+                ? CompleteHandshake(maskingIv, header, encMsg, rawHeaderForAad, fromAddr, auth, pending, pendingKey, staticPubKey)
+                : Ignored(fromAddr);
+            if (completed.Kind != IncomingPacketKind.Decoded)
+                _pendingChallengeStore.Consume(pendingKey, out _);
+            return completed;
+        }
+
+        private IncomingPacket CompleteHandshake(
+            byte[] maskingIv,
+            Discv5Packet.Header header,
+            byte[] encMsg,
+            byte[] rawHeaderForAad,
+            IPEndPoint fromAddr,
+            Discv5HandshakePackets.HandshakeAuth auth,
+            Discv5PendingChallenge pending,
+            string pendingKey,
+            byte[] staticPubKey)
+        {
+            var srcId = auth.SrcId;
 
             var idSigInputHash = Discv5KeyDerivation.ComputeIdSignatureInput(
                 pending.ChallengeData,
@@ -301,7 +329,7 @@ namespace Nethereum.DevP2P.Discv5
             if (!_pendingChallengeStore.Consume(pendingKey, out _))
                 return Ignored(fromAddr);
             _sessionStore.Store(SessionKey(srcId, fromAddr), session);
-            SessionEstablished?.Invoke(this, new SessionEstablishedEventArgs
+            RaiseSessionEstablished(SessionEstablished, new SessionEstablishedEventArgs
             {
                 Session = session,
                 EnrEncoded = auth.Record
@@ -473,7 +501,7 @@ namespace Nethereum.DevP2P.Discv5
             _sessionStore.Store(SessionKey(remoteNodeId, fromAddr), session);
             _pendingOutboundStore.Remove(pendingKey);
 
-            OutboundSessionEstablished?.Invoke(this, new SessionEstablishedEventArgs
+            RaiseSessionEstablished(OutboundSessionEstablished, new SessionEstablishedEventArgs
             {
                 Session = session,
                 EnrEncoded = record

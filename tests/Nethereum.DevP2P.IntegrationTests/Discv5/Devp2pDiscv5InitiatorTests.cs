@@ -16,6 +16,8 @@ using Xunit.Abstractions;
 
 namespace Nethereum.DevP2P.IntegrationTests.Discv5
 {
+    [Trait("Requires", "Externals")]
+    [Collection(ExternalToolConformanceCollection.Name)]
     public class Devp2pDiscv5InitiatorTests
     {
         private const int OurDiscv5Port = 30305;

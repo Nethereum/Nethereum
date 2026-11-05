@@ -159,7 +159,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.True(peer.CallCount >= rounds);
             Assert.True(set.AllDone);
             Assert.Null(set.Tasks[0].LargeContracts[owner].Scope);
-            Assert.Empty(deferredStorageDebts);
+            Assert.Empty(set.AccountsNeedingHeal);
             Assert.Empty(accountsNeedingHeal);
 
             Assert.NotNull(observedScope);
@@ -240,7 +240,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             foreach (var (key, value) in entries)
                 Assert.Equal(value, sharedScope.Get(key));
             Assert.Equal(finalRoot, sharedScope.CurrentRootHash, ByteArrayComparer.Current);
-            Assert.Empty(deferredStorageDebts);
+            Assert.Empty(set.AccountsNeedingHeal);
             Assert.Empty(accountsNeedingHeal);
         }
 
@@ -287,7 +287,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             foreach (var (key, value) in entries)
                 Assert.Equal(value, drainedScope.Get(key));
             Assert.Equal(finalRoot, drainedScope.CurrentRootHash, ByteArrayComparer.Current);
-            Assert.Empty(deferredStorageDebts);
+            Assert.Empty(set.AccountsNeedingHeal);
             Assert.Empty(accountsNeedingHeal);
         }
     }

@@ -98,12 +98,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
         private sealed class RecordingLogger : ILogger
         {
-            private readonly ConcurrentQueue<string> _messages = new();
-            public IReadOnlyList<string> Messages => _messages.ToList();
+            private readonly ConcurrentQueue<(LogLevel Level, string Message, Exception Exception)> _entries = new();
+            public IReadOnlyList<string> Messages => _entries.Select(e => e.Message).ToList();
+            public IReadOnlyList<(LogLevel Level, string Message, Exception Exception)> Entries => _entries.ToList();
             public IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
             public bool IsEnabled(LogLevel logLevel) => true;
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-                => _messages.Enqueue(formatter(state, exception));
+                => _entries.Enqueue((logLevel, formatter(state, exception), exception));
         }
 
         private static Account Eoa(int balance) => new Account
@@ -192,6 +193,20 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.Contains(log.Messages, m => m.Contains("snap.phase2.pivot_move new_root=", StringComparison.Ordinal));
             Assert.Contains(log.Messages, m => m.Contains("from=Phase2 to=Phase3", StringComparison.Ordinal));
             Assert.DoesNotContain(log.Messages, m => m.Contains("snap.bal_catchup", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task Given_ASnapOneStreamWhoseRootDoesNotMatch_When_Phase2Completes_Then_TheResultIsReturnedNotThrown()
+        {
+            var (run, log, moved) = await StartAsync(HardforkName.Osaka);
+
+            var result = await run;
+
+            Assert.True(result.Ran, result.SkipReason);
+            Assert.Equal(moved.StateRoot.ToHex(), result.PivotStateRoot.ToHex());
+            var warning = Assert.Single(log.Entries, e => e.Message == "Snap leaf-stream root mismatch — entering heal phase");
+            Assert.Equal(LogLevel.Warning, warning.Level);
+            Assert.Null(warning.Exception);
         }
 
         [Fact]

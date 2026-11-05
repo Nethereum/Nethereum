@@ -27,7 +27,7 @@ namespace Nethereum.DevP2P.IntegrationTests
         }
 
         [Fact]
-        public async Task GetBlockHeaderAsync_NewBlockArrivesMidRequest_TypedEventFires()
+        public async Task GetBlockHeaderAsync_NewBlockArrivesMidRequestOnEth68_RemoteTipAdvances()
         {
             var serverKey = EthECKey.GenerateKey();
             var config = new DevP2PConfig
@@ -47,7 +47,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             using var sessionCts = new CancellationTokenSource();
 
             var listener = new RlpxListener(serverKey, config);
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 try
                 {
@@ -100,7 +101,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 catch
                 {
                 }
-            };
+            });
 
             try
             {
@@ -109,25 +110,21 @@ namespace Nethereum.DevP2P.IntegrationTests
 
                 await using var client = new DevP2PSequencerRpcClient(serverEnode, config, genesisHash);
 
-                var pushTcs = new TaskCompletionSource<NewBlockMessage>();
-                client.NewBlockReceived += (_, msg) =>
-                {
-                    if (msg.Header.BlockNumber == 7)
-                        pushTcs.TrySetResult(msg);
-                };
+                var header = await client.GetBlockHeaderAsync(BigInteger.Zero);
+                Assert.NotNull(header);
 
-                _ = await client.GetBlockHeaderAsync(BigInteger.Zero);
+                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+                while (await client.GetBlockNumberAsync() != 7 && DateTime.UtcNow < deadline)
+                    await Task.Delay(25);
 
-                var pushed = await pushTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-                Assert.NotNull(pushed);
-                Assert.Equal(7L, (long)pushed.Header.BlockNumber);
-                Assert.Equal(BigInteger.Parse("99"), pushed.TotalDifficulty);
-                _output.WriteLine($"Typed NewBlockReceived: block #{pushed.Header.BlockNumber}, TD={pushed.TotalDifficulty}");
+                Assert.Equal(new BigInteger(7), await client.GetBlockNumberAsync());
+                _output.WriteLine($"remote tip after mid-request NewBlock: {await client.GetBlockNumberAsync()}");
             }
             finally
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
             }
         }
 

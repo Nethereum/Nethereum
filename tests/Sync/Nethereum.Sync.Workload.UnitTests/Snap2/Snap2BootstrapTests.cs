@@ -2,9 +2,13 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.CoreChain.RocksDB;
+using Nethereum.CoreChain.RocksDB.Stores;
 using Nethereum.CoreChain.Storage;
 using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 using Nethereum.Hex.HexConvertors.Extensions;
+using Nethereum.Merkle.Patricia;
+using Nethereum.Merkle.Patricia.Storage;
 using Nethereum.Model;
 using Nethereum.Util;
 using Xunit;
@@ -257,24 +261,83 @@ namespace Nethereum.Chain.TestData.UnitTests
             Assert.True(whale.PagesAt(2) >= 2, "the whale was not paged at the first pivot");
             Assert.True(whale.CursoredPagesAt(4) >= 1, "the whale did not resume as cursored subtasks at the second pivot");
             Assert.False(bed.Log.Contains("snap.phase2.bigaccount.deferred"), "snap/2 recorded a big-account debt");
+            Assert.Null(bed.Bundle.Metadata.GetDeferredHealAccountsBlob());
             Assert.Equal(bed.Hashes(3, 4), bed.RequestedBalBlocks());
             Assert.Equal(4UL, result.PivotBlockNumber);
             Assert.Equal(Root(bed, 4), result.PivotStateRoot.ToHex());
         }
 
         [Fact]
-        public async Task Given_ASnap1WhaleWhosePagesSpanTwoPivots_When_ItsLastSubtaskCompletes_Then_ABigAccountDebtIsRecorded()
+        public async Task Given_ASnap1WhaleWhosePagesSpanTwoPivots_When_TheRunCompletes_Then_NoDebtIsRecordedTheWhaleIsHealedAtTheLivePivotAndFlatEqualsTheTrie()
         {
             using var bed = await Snap2BootstrapBed.OpenAsync(Snap2Chain.BuildWithWhale(4, rewriteWhaleFrom: 3));
             bed.MoveTipTo(2);
             var whale = new WhaleServing(bed);
             using var cts = new CancellationTokenSource(RunTimeout);
 
-            try { await bed.RunAsync(2, whale.Peer, cts.Token, balHealEnabled: false); }
-            catch (Exception) { }
+            var result = await bed.RunAsync(2, whale.Peer, cts.Token, balHealEnabled: false);
 
+            Assert.True(result.Ran);
             Assert.True(whale.CursoredPagesAt(4) >= 1, "the whale did not resume as cursored subtasks at the second pivot");
-            Assert.True(bed.Log.Contains("snap.phase2.bigaccount.deferred reason=BigAccountChunked"), "snap/1 no longer records the big-account debt");
+            Assert.False(bed.Log.Contains("snap.phase2.bigaccount.deferred"), "snap/1 recorded a big-account debt");
+            Assert.False(bed.Log.Contains("snap.deferred.resolve"), "snap/1 resolved a deferred debt");
+            Assert.False(bed.Log.Contains("deferred_heal"), "snap/1 healed a deferred debt");
+            Assert.Equal(1, bed.Log.Messages.Count(m => m.Contains("snap.phase3.needheal accounts=1", StringComparison.Ordinal)));
+            Assert.Equal(0UL, bed.Bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.Null(bed.Bundle.Metadata.GetDeferredHealAccountsBlob());
+            Assert.Equal(Root(bed, result.PivotBlockNumber), result.PivotStateRoot.ToHex());
+            var verify = await ((IFlatStateReconciler)bed.Bundle).VerifyFlatStateAsync(result.PivotStateRoot, null, cts.Token);
+            Assert.Equal(0, verify.TotalRepairs);
+            Assert.Equal(WhaleStorageRootAt(bed, result.PivotStateRoot).ToHex(), FlatWhaleStorageRoot(bed).ToHex());
+        }
+
+        [Fact]
+        public async Task Given_ASnap2StoreWithALegacyDebtRow_When_TheRunStarts_Then_TheStoreIsResetWithReasonLegacyStorageDebts()
+        {
+            using var bed = await Snap2BootstrapBed.OpenAsync(Snap2Chain.Build(4));
+            await bed.DownloadFlatAtAsync(2);
+            bed.SaveState(SnapPhase.Phase2Running, 2, Snap2BootstrapBed.SecondHalfUnfetched());
+            var accountHash = BalCatchUpBed.Filled(0x11);
+            var storageRoot = BalCatchUpBed.Filled(0x22);
+            bed.Rocks.Put(
+                RocksDbManager.CF_METADATA,
+                RocksDbChainMetadataStore.DeferredStorageDebtKey(accountHash, storageRoot),
+                DeferredStorageDebtCodec.Encode(new DeferredStorageDebt
+                {
+                    AccountHash = accountHash,
+                    DiscoveredStorageRoot = storageRoot,
+                    FetchStateRoot = bed.Fixture.HeaderAt(2).StateRoot,
+                    FetchPivotBlock = 2UL,
+                    Reason = DeferredStorageReason.BigAccountChunked,
+                    Status = StorageCompleteness.DeferredBigAccount,
+                }));
+            Assert.Equal(1UL, bed.Bundle.Metadata.CountOpenDeferredStorageDebts());
+            bed.MoveTipTo(2);
+            using var cts = new CancellationTokenSource(RunTimeout);
+
+            var result = await bed.RunAsync(2, bed.Peer(), cts.Token);
+
+            Assert.True(bed.Log.Contains("snap.bootstrap.snap2_reset reason=legacy_storage_debts"), "the router did not reset the store holding a legacy debt row");
+            Assert.Equal(0UL, bed.Bundle.Metadata.CountOpenDeferredStorageDebts());
+            Assert.Equal(2UL, result.PivotBlockNumber);
+            Assert.Equal(Root(bed, 2), result.PivotStateRoot.ToHex());
+        }
+
+        private static byte[] WhaleStorageRootAt(Snap2BootstrapBed bed, byte[] stateRoot)
+        {
+            var accounts = PatriciaTrie.LoadFromStorage(stateRoot, bed.Fixture.NodeStore);
+            var leaf = accounts.Get(Sha3Keccack.Current.CalculateHash(Snap2Chain.Whale.HexToByteArray()));
+            return AccountEncoder.Current.Decode(leaf).StateRoot;
+        }
+
+        private static byte[] FlatWhaleStorageRoot(Snap2BootstrapBed bed)
+        {
+            var owner = Sha3Keccack.Current.CalculateHash(Snap2Chain.Whale.HexToByteArray());
+            var trie = new PatriciaTrie(new InMemoryContentNodeStore());
+            using var it = bed.Rocks.CreateIterator(RocksDbManager.CF_STATE_STORAGE);
+            for (it.Seek(owner); it.Valid() && it.Key().Length == 64 && ByteUtil.StartsWith(it.Key(), owner); it.Next())
+                trie.Put(it.Key().Skip(32).ToArray(), Nethereum.RLP.RLP.EncodeElement(it.Value()));
+            return trie.Root.GetHash();
         }
 
         private sealed class WhaleServing
@@ -382,7 +445,7 @@ namespace Nethereum.Chain.TestData.UnitTests
         }
 
         [Fact]
-        public async Task Given_ACompletedSnap2PhaseTwo_When_TheGateAndTheGeneratingPersistRun_Then_GeneratingIsDurableBeforeGenerationStartsAndAFailedGateLeavesPhase2Running()
+        public async Task Given_ACompletedSnap2PhaseTwo_When_TheGeneratingPersistRuns_Then_GeneratingIsDurableBeforeGenerationStarts()
         {
             using (var bed = await Snap2BootstrapBed.OpenAsync(Snap2Chain.Build(2)))
             {
@@ -400,20 +463,6 @@ namespace Nethereum.Chain.TestData.UnitTests
                 Assert.Equal(SnapPhase.Generating, phaseWhenGenerationStarted);
                 Assert.Equal(2UL, result.PivotBlockNumber);
             }
-
-            using (var bed = await Snap2BootstrapBed.OpenAsync(Snap2Chain.Build(2)))
-            {
-                await bed.DownloadFlatAtAsync(2);
-                bed.SaveState(SnapPhase.Phase2Running, 2, Snap2BootstrapBed.SecondHalfUnfetched());
-                bed.Bundle.Metadata.SaveDeferredHealAccountsBlob(BalCatchUpBed.Filled(0x11).Concat(BalCatchUpBed.Filled(0x22)).ToArray());
-                bed.MoveTipTo(2);
-                using var cts = new CancellationTokenSource(RunTimeout);
-
-                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => bed.RunAsync(2, bed.Peer(), cts.Token));
-
-                Assert.Contains("storage completeness gate failed", ex.Message);
-                Assert.Equal(SnapPhase.Phase2Running, bed.Bundle.Metadata.GetSnapSyncState().Phase);
-            }
         }
 
         [Fact]
@@ -422,15 +471,19 @@ namespace Nethereum.Chain.TestData.UnitTests
             using var bed = await Snap2BootstrapBed.OpenAsync(Snap2Chain.Build(4));
             await bed.DownloadFlatAtAsync(2);
             bed.SaveState(SnapPhase.Phase2Running, 2, Snap2BootstrapBed.SecondHalfUnfetched());
-            bed.Bundle.Metadata.SaveDeferredHealAccountsBlob(BalCatchUpBed.Filled(0x11).Concat(BalCatchUpBed.Filled(0x22)).ToArray());
             bed.MoveTipTo(2);
+            bed.Log.OnMessage = m =>
+            {
+                if (m.StartsWith("Snap-bootstrap: state populated", StringComparison.Ordinal))
+                    throw new InvalidOperationException("injected crash after phase 2");
+            };
             using (var cts = new CancellationTokenSource(RunTimeout))
                 await Assert.ThrowsAsync<InvalidOperationException>(() => bed.RunAsync(2, bed.Peer(), cts.Token));
             var afterCrash = bed.Bundle.Metadata.GetSnapSyncState();
             Assert.Equal(SnapPhase.Phase2Running, afterCrash.Phase);
             Assert.NotEmpty(afterCrash.Tasks);
 
-            bed.Bundle.Metadata.ClearDeferredHealAccountsBlob();
+            bed.Log.OnMessage = null;
             bed.MoveTipTo(4);
             using var restart = new CancellationTokenSource(RunTimeout);
             var result = await bed.RunAsync(4, bed.Peer(), restart.Token);
@@ -561,7 +614,7 @@ namespace Nethereum.Chain.TestData.UnitTests
             var result = await bed.RunAsync(2, bed.Peer(), cts.Token, runBackfill: true);
 
             Assert.False(result.HistoryBackfill.IsCompleted, "Result.HistoryBackfill completed while the backfill still blocks");
-            Assert.NotSame(Task.CompletedTask, result.StateCompaction);
+            Assert.True(result.StateCompaction.IsCompleted);
             var deadline = DateTime.UtcNow.AddSeconds(10);
             while (bed.Scheduler.LiveRequests == 0 && DateTime.UtcNow < deadline) await Task.Delay(10);
             Assert.Equal(1, bed.Scheduler.LiveRequests);

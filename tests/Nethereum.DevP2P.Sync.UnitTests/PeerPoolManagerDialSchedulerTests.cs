@@ -48,6 +48,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         [Fact]
         public async Task RecentlyFailed_NotRedialedWithinInterval()
         {
+            var interval = TimeSpan.FromSeconds(2);
             var enode = MakeEnode(1);
             var worker = new SlowHandshakeWorker(TimeSpan.FromMilliseconds(10));
             worker.SetFailure(enode);
@@ -59,24 +60,22 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     MaxConcurrentDials: 1,
                     DialBudgetPerSecond: 1000,
                     DialCooldown: TimeSpan.FromMilliseconds(1),
-                    MinDialIntervalPerHost: TimeSpan.FromMilliseconds(800)),
+                    MinDialIntervalPerHost: interval),
                 bootnodes: new[] { enode });
 
+            var beforeFirstDial = DateTimeOffset.UtcNow;
             await pool.StartAsync(CancellationToken.None);
 
-            await Task.Delay(TimeSpan.FromMilliseconds(300));
-            var afterFirstFail = worker.HandshakeCount(enode);
-            Assert.Equal(1, afterFirstFail);
+            var redialed = await SnapLoopback.WaitUntilAsync(() =>
+            {
+                pool.EnqueueCandidate(enode);
+                return worker.HandshakeCount(enode) >= 2;
+            }, TimeSpan.FromSeconds(60));
 
-            pool.EnqueueCandidate(enode);
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
-            Assert.Equal(1, worker.HandshakeCount(enode));
-
-            await Task.Delay(TimeSpan.FromMilliseconds(700));
-            pool.EnqueueCandidate(enode);
-            await Task.Delay(TimeSpan.FromMilliseconds(300));
-            Assert.True(worker.HandshakeCount(enode) >= 2,
-                $"Expected re-dial after cooldown elapsed, got {worker.HandshakeCount(enode)} attempts.");
+            Assert.True(redialed, "Expected re-dial after the interval elapsed.");
+            var redialStart = worker.StartTimes(enode)[1];
+            Assert.True(redialStart - beforeFirstDial >= interval,
+                $"Re-dialed {(redialStart - beforeFirstDial).TotalMilliseconds} ms after the first dial began, inside the {interval.TotalMilliseconds} ms interval.");
         }
 
         [Fact]
@@ -192,6 +191,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             private readonly TimeSpan _delay;
             private readonly ConcurrentDictionary<string, OutcomeKind> _outcomes = new(StringComparer.OrdinalIgnoreCase);
             private readonly ConcurrentDictionary<string, int> _counts = new(StringComparer.OrdinalIgnoreCase);
+            private readonly ConcurrentDictionary<string, ConcurrentQueue<DateTimeOffset>> _starts = new(StringComparer.OrdinalIgnoreCase);
             private int _total;
 
             public SlowHandshakeWorker(TimeSpan delay) { _delay = delay; }
@@ -201,10 +201,12 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             public int TotalHandshakes => Volatile.Read(ref _total);
             public int HandshakeCount(string enode) => _counts.TryGetValue(enode, out var c) ? c : 0;
+            public DateTimeOffset[] StartTimes(string enode) => _starts.TryGetValue(enode, out var q) ? q.ToArray() : Array.Empty<DateTimeOffset>();
 
             public async Task<IEthPeer> HandshakeAsync(
                 string enode, TimeSpan timeout, ulong minPeerLatestBlock, CancellationToken ct)
             {
+                _starts.GetOrAdd(enode, _ => new ConcurrentQueue<DateTimeOffset>()).Enqueue(DateTimeOffset.UtcNow);
                 _counts.AddOrUpdate(enode, 1, (_, prev) => prev + 1);
                 Interlocked.Increment(ref _total);
                 await Task.Delay(_delay, ct).ConfigureAwait(false);

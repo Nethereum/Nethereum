@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Numerics;
@@ -76,7 +77,9 @@ namespace Nethereum.DevP2P.IntegrationTests
             var serverReadyTcs = new TaskCompletionSource<bool>();
 
             var listener = new RlpxListener(serverKey, config);
-            listener.PeerAccepted += async (_, conn) =>
+            var serverErrors = new ConcurrentQueue<string>();
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 try
                 {
@@ -106,10 +109,10 @@ namespace Nethereum.DevP2P.IntegrationTests
                 }
                 catch (Exception ex)
                 {
-                    _output.WriteLine($"server side: {ex.GetType().Name}: {ex.Message}");
+                    serverErrors.Enqueue($"server side: {ex.GetType().Name}: {ex.Message}");
                     serverReadyTcs.TrySetException(ex);
                 }
-            };
+            });
 
             try
             {
@@ -170,6 +173,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
+                foreach (var error in serverErrors) _output.WriteLine(error);
             }
         }
 

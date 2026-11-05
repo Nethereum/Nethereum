@@ -149,8 +149,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             var peerHeader = peerHeaders[0];
             if ((ulong)peerHeader.BlockNumber.ToBigInteger() != block) return ProbeResult.Mismatch;
 
-            var peerEncoded = BlockHeaderEncoder.Current.Encode(peerHeader);
-            var peerHash = Sha3Keccack.Current.CalculateHash(peerEncoded);
+            var peerHash = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(peerHeader);
 
             var localHash = await _bundle.Blocks.GetHashByNumberAsync(new BigInteger(block))
                 .ConfigureAwait(false);

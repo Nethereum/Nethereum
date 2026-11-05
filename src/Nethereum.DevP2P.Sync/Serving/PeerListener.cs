@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain.Storage;
 using Nethereum.DevP2P.Rlpx;
+using Nethereum.DevP2P.Sync.Peering;
+using Nethereum.DevP2P.Sync.Scheduling;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.P2P;
 using Nethereum.Signer;
@@ -25,6 +27,8 @@ namespace Nethereum.DevP2P.Sync.Serving
         private RlpxListener _inner;
         private CancellationTokenSource _cts;
         private readonly System.Collections.Concurrent.ConcurrentDictionary<RlpxConnection, int> _ethPeers = new();
+
+        private bool ServesSnap => _options.ServeSnap && _snapHandler != null;
 
         public int ActivePeers => _inner?.ActivePeers ?? 0;
 
@@ -63,9 +67,11 @@ namespace Nethereum.DevP2P.Sync.Serving
                 MaxInboundPerIP = _options.MaxInboundPerIP,
                 HandshakeTimeoutMs = _options.HandshakeTimeoutMs,
                 TrustedNodeIds = _options.TrustedNodeIds ?? Array.Empty<string>(),
-                AdvertiseSnap2 = _options.AdvertiseSnap2,
+                AdvertiseSnap1 = ServesSnap,
+                AdvertiseSnap2 = ServesSnap && _options.AdvertiseSnap2,
                 NetworkId = _statusTemplate != null ? _statusTemplate.NetworkId : 0,
                 GenesisHash = _statusTemplate != null ? _statusTemplate.GenesisHash : null,
+                DecodeLimiter = _options.DecodeLimiter,
             };
         }
 
@@ -84,7 +90,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                 "PeerListener bound on {Address}:{Port} (NodeId 0x{NodeId})",
                 _options.BindAddress ?? IPAddress.Any,
                 Port,
-                NodeId.ToHex().Substring(0, 16));
+                FetchRequestScheduler.HexShort(NodeId));
 
             return Task.CompletedTask;
         }
@@ -150,14 +156,22 @@ namespace Nethereum.DevP2P.Sync.Serving
                         EncodeStatus(ethCap.Version, localStatus, latestBlock),
                         ct).ConfigureAwait(false);
 
-                var (msgId, payload) = await connection.ReceiveMessageAsync(ct).ConfigureAwait(false);
+                var (msgId, payload) = await connection.ReceiveStatusAsync(ct).ConfigureAwait(false);
                 if (msgId != ethOffset + Eth68MessageIds.Status)
                 {
                     _logger.LogDebug("Inbound peer {Endpoint} sent msgId=0x{Id:x2} instead of Status", connection.RemoteEndpoint, msgId);
                     try { await connection.DisconnectAsync(DisconnectReason.ProtocolBreach); } catch { }
                     return;
                 }
-                var remoteStatus = DecodeStatus(ethCap.Version, payload);
+                var remoteStatus = EthStatusValidator.Decode(ethCap.Version, payload).Status;
+                var violation = EthStatusValidator.Violation(
+                    await BuildExpectationAsync(latestBlock).ConfigureAwait(false), ethCap.Version, remoteStatus);
+                if (violation != null)
+                {
+                    _logger.LogDebug("Inbound peer {Endpoint} refused: {Violation}", connection.RemoteEndpoint, violation);
+                    try { await connection.DisconnectAsync(DisconnectReason.ProtocolBreach); } catch { }
+                    return;
+                }
 
                 if (localStatus == null)
                 {
@@ -209,6 +223,9 @@ namespace Nethereum.DevP2P.Sync.Serving
                 if (_options.OnTransactionsReceived != null)
                     ethSession.TransactionsReceived += (_, msg) =>
                         _options.OnTransactionsReceived(msg);
+                if (_options.OnBlockRangeUpdateReceived != null)
+                    ethSession.BlockRangeUpdateReceived += (_, msg) =>
+                        _options.OnBlockRangeUpdateReceived(msg);
                 if (_inner.IsTrustedNodeId(connection.RemoteNodeId))
                 {
                     if (_options.OnTrustedTransactionsReceivedFrom != null)
@@ -218,17 +235,14 @@ namespace Nethereum.DevP2P.Sync.Serving
                         ethSession.TransactionsReceived += (_, msg) =>
                             _options.OnTrustedTransactionsReceived(msg);
                 }
-                if (_options.OnNewBlockReceived != null)
-                    ethSession.NewBlockReceived += (_, msg) =>
-                        _options.OnNewBlockReceived(msg);
 
                 _ethPeers[connection] = ethOffset;
 
-                var snapCap = _options.ServeSnap
+                var snapCap = ServesSnap
                     ? connection.SharedCapabilities.Find(c => c.Name == "snap")
                     : null;
 
-                if (snapCap != null && _snapHandler != null)
+                if (snapCap != null)
                 {
                     var snapSession = new Snap1Handler(connection, _snapHandler);
                     var multiplexed = new MultiProtocolRlpxSession(connection, ethSession, snapSession);
@@ -241,11 +255,9 @@ namespace Nethereum.DevP2P.Sync.Serving
                         int id; byte[] body;
                         if (_options.IdleTimeout > TimeSpan.Zero)
                         {
-                            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                            idleCts.CancelAfter(_options.IdleTimeout);
                             try
                             {
-                                (id, body) = await connection.ReceiveMessageAsync(idleCts.Token).ConfigureAwait(false);
+                                (id, body) = await connection.ReceiveMessageAsync(_options.IdleTimeout, ct).ConfigureAwait(false);
                             }
                             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                             {
@@ -255,11 +267,16 @@ namespace Nethereum.DevP2P.Sync.Serving
                         }
                         else
                         {
-                            (id, body) = await connection.ReceiveMessageAsync(ct).ConfigureAwait(false);
+                            (id, body) = await connection.ReceiveMessageAsync(connection.FrameReadTimeout, ct).ConfigureAwait(false);
                         }
                         var localId = id - ethOffset;
-                        if (localId < 0 || localId >= ethCap.Length) continue;
-                        await ethSession.HandleEthMessageAsync(localId, body, ct).ConfigureAwait(false);
+                        if (localId < 0 || localId >= ethCap.Length)
+                        {
+                            try { await connection.DisconnectAsync(DisconnectReason.ProtocolBreach).ConfigureAwait(false); } catch { }
+                            return;
+                        }
+                        using var lease = await connection.AcquireDecodeLeaseAsync(body.Length, ct).ConfigureAwait(false);
+                        await ethSession.HandleEthMessageAsync(localId, body, lease, ct).ConfigureAwait(false);
                     }
                 }
             }
@@ -290,6 +307,26 @@ namespace Nethereum.DevP2P.Sync.Serving
                     }
                 }
             }
+        }
+
+        private async Task<EthStatusExpectation> BuildExpectationAsync(ulong latestBlock)
+        {
+            if (_options.MirrorRemoteStatus) return null;
+
+            var expectation = new EthStatusExpectation
+            {
+                NetworkId = _statusTemplate.NetworkId,
+                GenesisHash = _statusTemplate.GenesisHash,
+                ForkBlocks = _options.ForkBlockNumbers,
+                ForkTimestamps = _options.ForkTimestamps,
+                HeadBlock = latestBlock
+            };
+            if ((_options.ForkTimestamps?.Length ?? 0) > 0)
+            {
+                var head = await _bundle.Blocks.GetByNumberAsync(latestBlock).ConfigureAwait(false);
+                if (head != null) expectation.HeadTimestamp = (ulong)head.Timestamp;
+            }
+            return expectation;
         }
 
         private Eth68StatusMessage BuildLocalStatus(int negotiatedVersion, Eth68StatusMessage remoteStatus)
@@ -335,24 +372,6 @@ namespace Nethereum.DevP2P.Sync.Serving
                     LatestBlockHash = s.BestHash,
                 });
             return Eth68StatusMessageEncoder.Encode(s);
-        }
-
-        private static Eth68StatusMessage DecodeStatus(int version, byte[] payload)
-        {
-            if (version >= 69)
-            {
-                var s = Eth69StatusMessageEncoder.Decode(payload);
-                return new Eth68StatusMessage
-                {
-                    ProtocolVersion = s.ProtocolVersion,
-                    NetworkId = s.NetworkId,
-                    GenesisHash = s.GenesisHash,
-                    ForkHash = s.ForkHash,
-                    ForkNext = s.ForkNext,
-                    BestHash = s.LatestBlockHash,
-                };
-            }
-            return Eth68StatusMessageEncoder.Decode(payload);
         }
 
         public void Dispose() => StopAsync().GetAwaiter().GetResult();

@@ -10,12 +10,14 @@ using Nethereum.RPC.Web3;
 using Xunit;
 using Xunit.Abstractions;
 using Nethereum.DevP2P.Sync.Peering;
+using Nethereum.Testing;
 
 #nullable enable
 
 namespace Nethereum.DevP2P.SpecTests.Eth69
 {
     [Trait("Category", "Integration-Peer")]
+    [Trait("Category", "LivePeer")]
     public abstract class MainnetPeerTestBase
     {
         protected const int DefaultDevP2PPort = 30303;
@@ -64,20 +66,20 @@ namespace Nethereum.DevP2P.SpecTests.Eth69
 
         protected async Task<PeerContext> BuildContextOrSkipAsync()
         {
-            var host = Environment.GetEnvironmentVariable("PEER_HOST")?.Trim();
+            var host = TestEnvironment.ServiceOrNull("PeerHost")?.Trim();
             Skip.If(string.IsNullOrEmpty(host),
-                "PEER_HOST env var not set — skipping live peer integration. Set PEER_HOST=<addr> to enable.");
+                "Services:PeerHost is not set in appsettings.test.local.json — skipping live peer integration. Set it to <addr> to enable.");
 
-            var rpcHost = Environment.GetEnvironmentVariable("PEER_RPC_HOST")?.Trim();
+            var rpcHost = TestEnvironment.ServiceOrNull("PeerRpcHost")?.Trim();
             if (string.IsNullOrEmpty(rpcHost)) rpcHost = host;
 
-            var rpcPort = int.TryParse(Environment.GetEnvironmentVariable("PEER_RPC_PORT"), out var parsedRpc)
+            var rpcPort = int.TryParse(TestEnvironment.ServiceOrNull("PeerRpcPort"), out var parsedRpc)
                 ? parsedRpc : DefaultJsonRpcPort;
-            var devp2pPort = int.TryParse(Environment.GetEnvironmentVariable("PEER_DEVP2P_PORT"), out var parsedDev)
+            var devp2pPort = int.TryParse(TestEnvironment.ServiceOrNull("PeerDevp2pPort"), out var parsedDev)
                 ? parsedDev : DefaultDevP2PPort;
 
             Output.WriteLine($"Target: DevP2P {host}:{devp2pPort}, JSON-RPC {rpcHost}:{rpcPort}");
-            Output.WriteLine("Override PEER_HOST, PEER_RPC_HOST, PEER_DEVP2P_PORT, PEER_RPC_PORT, PEER_ENODE to retarget.");
+            Output.WriteLine("Override Services:PeerHost, PeerRpcHost, PeerDevp2pPort, PeerRpcPort, PeerEnode to retarget.");
 
             Skip.IfNot(await ProbeTcpAsync(host!, devp2pPort, TcpProbeTimeout),
                 $"DevP2P at {host}:{devp2pPort} not reachable within {TcpProbeTimeout.TotalSeconds:F0}s.");
@@ -101,14 +103,14 @@ namespace Nethereum.DevP2P.SpecTests.Eth69
             Output.WriteLine($"Peer clientVersion = {clientVersion}");
             Output.WriteLine($"Peer head block = {head}");
 
-            var enodeUrl = Environment.GetEnvironmentVariable("PEER_ENODE")?.Trim();
+            var enodeUrl = TestEnvironment.ServiceOrNull("PeerEnode")?.Trim();
             if (string.IsNullOrEmpty(enodeUrl))
             {
                 enodeUrl = await TryGetEnodeAsync(web3, host!, devp2pPort);
             }
             Skip.If(string.IsNullOrEmpty(enodeUrl),
                 "No usable enode — admin_nodeInfo is not exposed on this RPC. " +
-                "Set PEER_ENODE=enode://<nodeid>@<host>:<port> to enable DevP2P dial.");
+                "Set Services:PeerEnode to enode://<nodeid>@<host>:<port> to enable DevP2P dial.");
 
             Output.WriteLine($"Enode = {Truncate(enodeUrl!, 90)}");
 

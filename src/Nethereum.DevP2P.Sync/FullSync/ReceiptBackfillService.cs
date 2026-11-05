@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,11 +7,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain;
 using Nethereum.CoreChain.Storage;
 using Nethereum.EVM;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
-using Nethereum.Signer;
-using Nethereum.Util;
-using Nethereum.Util.HashProviders;
 
 namespace Nethereum.DevP2P.Sync.FullSync
 {
@@ -43,156 +37,172 @@ namespace Nethereum.DevP2P.Sync.FullSync
             public ulong Cursor { get; internal set; }
         }
 
-        private static readonly byte[] EmptyTrieRoot =
-            "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421".HexToByteArray();
+        private sealed class ReceiptCursor : IBodyFillCursor
+        {
+            private readonly IChainStoreBundle _bundle;
+            private readonly Stats _stats;
+
+            public ReceiptCursor(IChainStoreBundle bundle, Stats stats)
+            {
+                _bundle = bundle;
+                _stats = stats;
+            }
+
+            public ulong Get() => _stats.Cursor;
+
+            public Task AdvanceAsync(ulong highestPersisted, CancellationToken ct)
+            {
+                if (highestPersisted > _stats.Cursor)
+                {
+                    _stats.Cursor = highestPersisted;
+                    _bundle.Metadata.SetReceiptBackfillCursor(highestPersisted);
+                }
+                return Task.CompletedTask;
+            }
+        }
 
         private readonly IChainStoreBundle _bundle;
+        private readonly IPeerPool _pool;
         private readonly IFetchRequestScheduler _scheduler;
+        private readonly IPeerRequestWorker _worker;
         private readonly IBlockRootsProvider _rootsProvider;
         private readonly Options _options;
         private readonly ILogger _logger;
-        private readonly IHashProvider _keccak;
 
         public Stats Counters { get; } = new Stats();
 
+        [Obsolete("Receipts are fetched by the backfiller receipt role, which needs the peer pool: use the overload that takes an IPeerPool.")]
         public ReceiptBackfillService(
             IChainStoreBundle bundle,
             IFetchRequestScheduler scheduler,
             IBlockRootsProvider rootsProvider = null,
             Options options = null,
             ILogger logger = null)
+            : this(bundle, scheduler, null, rootsProvider, options, logger, null)
+        {
+        }
+
+        public ReceiptBackfillService(
+            IChainStoreBundle bundle,
+            IFetchRequestScheduler scheduler,
+            IPeerPool pool,
+            IBlockRootsProvider rootsProvider = null,
+            Options options = null,
+            ILogger logger = null,
+            IPeerRequestWorker worker = null)
         {
             _bundle = bundle ?? throw new ArgumentNullException(nameof(bundle));
             _scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+            _pool = pool;
+            _worker = worker ?? new PeerRequestWorker();
             _rootsProvider = rootsProvider ?? PatriciaBlockRootsProvider.Instance;
             _options = options ?? new Options();
             _logger = logger ?? NullLogger.Instance;
-            _keccak = Sha3KeccackHashProvider.Instance;
         }
 
         public async Task RunAsync(CancellationToken ct)
         {
+            if (_pool == null)
+                throw new InvalidOperationException(
+                    "ReceiptBackfillService has no peer pool: construct it with the overload that takes an IPeerPool.");
+
             var startCursor = Math.Max(_bundle.Metadata.GetReceiptBackfillCursor(), _options.FromBlock);
             Counters.Cursor = startCursor;
+            LogStarting(startCursor);
 
-            _logger.LogInformation(
-                "Receipt-backfill: starting at block {Start} (executor frontier {Head}{ToBlock})",
-                startCursor,
-                _bundle.Metadata.GetLastBlock(),
-                _options.ToBlock > 0 ? $", upper bound {_options.ToBlock}" : "");
+            var backfiller = new ParallelBlockBackfiller(
+                _scheduler, _pool, _worker, _bundle, _rootsProvider, _logger, role: ParallelBlockBackfiller.ReceiptsRole);
+            var cursorStore = new ReceiptCursor(_bundle, Counters);
+            ulong lastBlocks = 0, lastReceipts = 0, lastUnmatched = 0;
 
             var lastProgressLog = DateTime.UtcNow;
 
             while (!ct.IsCancellationRequested)
             {
+                if ((_bundle as IBackfillPauseControl)?.ShouldYieldToExecution() == true)
+                {
+                    if (!await IdleAsync(ct).ConfigureAwait(false)) return;
+                    continue;
+                }
+
                 var cursor = Counters.Cursor;
                 var head = ResolveHeadBlock();
                 if (cursor >= head)
                 {
-                    try { await Task.Delay(_options.IdlePoll, ct).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { return; }
+                    if (!await IdleAsync(ct).ConfigureAwait(false)) return;
                     continue;
                 }
 
                 ulong batchEnd = cursor + (ulong)_options.BatchSize;
                 if (batchEnd > head) batchEnd = head;
 
-                var (headers, hashes) = LoadHeaderBatch(cursor + 1, batchEnd);
-                if (headers.Count == 0)
+                var firstHash = await _bundle.Blocks.GetHashByNumberAsync(new BigInteger(cursor + 1)).ConfigureAwait(false);
+                if (firstHash == null)
                 {
-                    _logger.LogWarning(
-                        "Receipt-backfill: no headers in [{From},{To}] — skipping (initial sync hasn't delivered them yet)",
-                        cursor + 1, batchEnd);
-                    Counters.Cursor = batchEnd;
-                    _bundle.Metadata.SetReceiptBackfillCursor(batchEnd);
+                    SkipUndeliveredBatch(cursor, batchEnd);
                     continue;
                 }
 
-                List<List<Receipt>> fetched;
+                ParallelBlockBackfiller.BackfillResult result;
                 try
                 {
-                    using var fetchCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    fetchCts.CancelAfter(_options.FetchTimeout);
-                    fetched = await _scheduler.FetchReceiptsAsync(hashes, fetchCts.Token).ConfigureAwait(false);
+                    result = await backfiller.BackfillAsync(cursor + 1, batchEnd, cursorStore, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug("Receipt-backfill: fetch batch failed [{From},{To}]: {Err}",
-                        cursor + 1, batchEnd, ex.GetType().Name);
-                    try { await Task.Delay(_options.IdlePoll, ct).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { return; }
+                    _logger.LogWarning(ex, "Receipt-backfill: batch [{From},{To}] failed - retrying", cursor + 1, batchEnd);
+                    if (!await IdleAsync(ct).ConfigureAwait(false)) return;
                     continue;
                 }
 
                 Counters.BatchesProcessed++;
+                Counters.BlocksValidated += (long)(result.BlocksWritten - lastBlocks);
+                Counters.ReceiptsPersisted += (long)(result.ReceiptsWritten - lastReceipts);
+                Counters.BlocksMismatched += (long)(result.ReceiptsUnmatched - lastUnmatched);
+                lastBlocks = result.BlocksWritten;
+                lastReceipts = result.ReceiptsWritten;
+                lastUnmatched = result.ReceiptsUnmatched;
 
-                int matched = 0, mismatched = 0;
-                ulong nextCursor = cursor;
-                bool advanced = false;
+                if (Counters.Cursor == cursor && !await IdleAsync(ct).ConfigureAwait(false)) return;
 
-                for (int i = 0; i < headers.Count; i++)
-                {
-                    var header = headers[i];
-                    var blockHash = hashes[i];
-                    ulong blockNumber = cursor + 1 + (ulong)i;
-
-                    if (i >= fetched.Count)
-                    {
-                        break;
-                    }
-
-                    var receipts = fetched[i] ?? new List<Receipt>();
-                    var computed = receipts.Count == 0
-                        ? EmptyTrieRoot
-                        : _rootsProvider.CalculateReceiptsRoot(receipts);
-
-                    if (!ByteArrayEquals(computed, header.ReceiptHash))
-                    {
-                        mismatched++;
-                        Counters.BlocksMismatched++;
-                        break;
-                    }
-
-                    try
-                    {
-                        await PersistReceiptsForBlockAsync(header, blockHash, blockNumber, receipts, ct)
-                            .ConfigureAwait(false);
-                        matched++;
-                        Counters.BlocksValidated++;
-                        nextCursor = blockNumber;
-                        advanced = true;
-                    }
-                    catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex,
-                            "Receipt-backfill: persist failed at block {Block} — leaving cursor at {Cursor}",
-                            blockNumber, nextCursor);
-                        break;
-                    }
-                }
-
-                if (advanced)
-                {
-                    Counters.Cursor = nextCursor;
-                    _bundle.Metadata.SetReceiptBackfillCursor(nextCursor);
-                }
-                else
-                {
-                    try { await Task.Delay(_options.IdlePoll, ct).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { return; }
-                }
-
-                if (DateTime.UtcNow - lastProgressLog >= _options.ProgressLogInterval)
-                {
-                    _logger.LogInformation(
-                        "Receipt-backfill: cursor={Cursor} validated={V} mismatched={M} receipts={R} (head={Head})",
-                        Counters.Cursor, Counters.BlocksValidated, Counters.BlocksMismatched,
-                        Counters.ReceiptsPersisted, head);
-                    lastProgressLog = DateTime.UtcNow;
-                }
+                lastProgressLog = LogProgressWhenDue(lastProgressLog, head);
             }
+        }
+
+        private void LogStarting(ulong startCursor)
+        {
+            _logger.LogInformation(
+                "Receipt-backfill: starting at block {Start} (executor frontier {Head}{ToBlock})",
+                startCursor,
+                _bundle.Metadata.GetLastBlock(),
+                _options.ToBlock > 0 ? $", upper bound {_options.ToBlock}" : "");
+        }
+
+        private async Task<bool> IdleAsync(CancellationToken ct)
+        {
+            try { await Task.Delay(_options.IdlePoll, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return false; }
+            return true;
+        }
+
+        private void SkipUndeliveredBatch(ulong cursor, ulong batchEnd)
+        {
+            _logger.LogWarning(
+                "Receipt-backfill: no headers in [{From},{To}] - skipping (initial sync has not delivered them yet)",
+                cursor + 1, batchEnd);
+            Counters.Cursor = batchEnd;
+            _bundle.Metadata.SetReceiptBackfillCursor(batchEnd);
+        }
+
+        private DateTime LogProgressWhenDue(DateTime lastProgressLog, ulong head)
+        {
+            if (DateTime.UtcNow - lastProgressLog < _options.ProgressLogInterval) return lastProgressLog;
+            _logger.LogInformation(
+                "Receipt-backfill: cursor={Cursor} validated={V} mismatched={M} receipts={R} (head={Head})",
+                Counters.Cursor, Counters.BlocksValidated, Counters.BlocksMismatched,
+                Counters.ReceiptsPersisted, head);
+            return DateTime.UtcNow;
         }
 
         private ulong ResolveHeadBlock()
@@ -202,73 +212,6 @@ namespace Nethereum.DevP2P.Sync.FullSync
             var head = executorHead < bodyHead ? executorHead : bodyHead;
             if (_options.ToBlock > 0 && _options.ToBlock < head) head = _options.ToBlock;
             return head;
-        }
-
-        private (List<BlockHeader> Headers, List<byte[]> Hashes) LoadHeaderBatch(ulong fromBlock, ulong toBlockInclusive)
-        {
-            var headers = new List<BlockHeader>((int)(toBlockInclusive - fromBlock + 1));
-            var hashes = new List<byte[]>((int)(toBlockInclusive - fromBlock + 1));
-            for (ulong n = fromBlock; n <= toBlockInclusive; n++)
-            {
-                var hash = _bundle.Blocks.GetHashByNumberAsync(new BigInteger(n)).GetAwaiter().GetResult();
-                if (hash == null) break;
-                var header = _bundle.Blocks.GetByHashAsync(hash).GetAwaiter().GetResult();
-                if (header == null) break;
-                headers.Add(header);
-                hashes.Add(hash);
-            }
-            return (headers, hashes);
-        }
-
-        private async Task PersistReceiptsForBlockAsync(
-            BlockHeader header, byte[] blockHash, ulong blockNumber, List<Receipt> receipts, CancellationToken ct)
-        {
-            var txs = await _bundle.Transactions.GetByBlockHashAsync(blockHash).ConfigureAwait(false);
-            if (txs == null || txs.Count < receipts.Count)
-            {
-                _logger.LogWarning(
-                    "Receipt-backfill: block {Block} has {RcptCount} receipts but only {TxCount} stored txs — skipping persist",
-                    blockNumber, receipts.Count, txs?.Count ?? 0);
-                return;
-            }
-
-            var gasUsedPerTransaction = ReceiptGasAccounting.PerTransactionGasUsed(
-                receipts, new EvmUInt256(blockNumber));
-
-            for (int j = 0; j < receipts.Count; j++)
-            {
-                if (ct.IsCancellationRequested) return;
-
-                var rcpt = receipts[j];
-                var tx = txs[j];
-                var gasUsed = gasUsedPerTransaction[j].ToBigInteger();
-
-                var txHash = _keccak.ComputeHash(tx.GetRLPEncoded());
-                var baseFee = header.BaseFee ?? Nethereum.Util.EvmUInt256.Zero;
-                var effectiveGasPrice = (BigInteger)tx.GetEffectiveGasPrice(baseFee);
-
-                string contractAddress = null;
-                if (tx.IsContractCreation())
-                {
-                    var sender = tx.GetSenderAddress();
-                    var nonce = (BigInteger)tx.GetNonce();
-                    contractAddress = ContractUtils.CalculateContractAddress(sender, nonce);
-                }
-
-                await _bundle.Receipts.SaveAsync(
-                    rcpt, txHash, blockHash, new BigInteger(blockNumber), j,
-                    gasUsed, contractAddress, effectiveGasPrice).ConfigureAwait(false);
-                Counters.ReceiptsPersisted++;
-            }
-        }
-
-        private static bool ByteArrayEquals(byte[] a, byte[] b)
-        {
-            if (a == null || b == null) return a == b;
-            if (a.Length != b.Length) return false;
-            for (int i = 0; i < a.Length; i++)
-                if (a[i] != b[i]) return false;
-            return true;
         }
     }
 }

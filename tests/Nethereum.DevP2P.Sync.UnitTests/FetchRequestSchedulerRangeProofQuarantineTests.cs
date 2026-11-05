@@ -175,13 +175,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 => throw new NotSupportedException("not exercised by this test");
         }
 
-        private static readonly byte[] GenesisHash = new byte[32];
+        private static readonly byte[] GenesisHash = System.Array.ConvertAll(new byte[32], _ => (byte)1);
         private const ulong NetworkId = 1;
 
         private static async Task<(PeerListener Listener, string Enode)> StartListenerAsync(ISnapRequestHandler handler)
         {
             var bundle = InMemoryChainStoreBundle.Open();
-            await bundle.Blocks.SaveAsync(new Nethereum.Model.BlockHeader { BlockNumber = 0 }, new byte[32]);
+            await bundle.Blocks.SaveAsync(new Nethereum.Model.BlockHeader { BlockNumber = 0 }, GenesisHash);
             var options = new PeerListenerOptions
             {
                 ListenPort = 0,
@@ -583,7 +583,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.True(set.AllDone);
             Assert.Contains(owner, set.Tasks[0].StorageCompleted, ByteArrayComparer.Current);
             Assert.DoesNotContain(accountsNeedingHeal, a => ByteArrayComparer.Current.Equals(a.AccountHash, owner));
-            Assert.DoesNotContain(deferredStorageDebts.Values, d => ByteArrayComparer.Current.Equals(d.AccountHash, owner));
+            Assert.Empty(set.AccountsNeedingHeal);
             Assert.True(scheduler.IsSnapStateQuarantined(badPeerId), "the proof-invalid peer must remain quarantined");
 
             Assert.NotNull(observedScope);

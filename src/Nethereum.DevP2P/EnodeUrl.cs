@@ -100,7 +100,7 @@ namespace Nethereum.DevP2P
                 parsed = Parse(enode);
                 return true;
             }
-            catch (ArgumentException)
+            catch (Exception ex) when (ex is ArgumentException || ex is FormatException)
             {
                 parsed = null;
                 return false;

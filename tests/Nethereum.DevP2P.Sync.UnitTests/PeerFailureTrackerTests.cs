@@ -1,3 +1,4 @@
+#pragma warning disable CS0618
 using System;
 using System.Diagnostics;
 using Nethereum.DevP2P.Sync.FullSync;

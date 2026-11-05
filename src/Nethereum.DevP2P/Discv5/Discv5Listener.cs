@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.DevP2P.Common;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Model.Enr;
 using Nethereum.Signer;
 
@@ -24,6 +25,12 @@ namespace Nethereum.DevP2P.Discv5
 
         public const int NodesRecordsBudgetBytes = 900;
 
+        public const int MaxLogDistance = 256;
+
+        public static readonly TimeSpan DefaultBanDuration = TimeSpan.FromMinutes(5);
+
+        public const int MaxConcurrentTalkRequests = 1024;
+
         private readonly EthECKey _localKey;
         private readonly Discv5SessionManager _sessionManager;
         public Discv5SessionManager SessionManager => _sessionManager;
@@ -31,9 +38,10 @@ namespace Nethereum.DevP2P.Discv5
         private readonly Discv5RequestTracker _requestTracker;
         private readonly ConcurrentDictionary<string, Func<byte[], IPEndPoint, byte[]>> _talkHandlers
             = new ConcurrentDictionary<string, Func<byte[], IPEndPoint, byte[]>>(StringComparer.Ordinal);
+        private readonly SemaphoreSlim _talkSlots = new SemaphoreSlim(MaxConcurrentTalkRequests, MaxConcurrentTalkRequests);
         private readonly TokenBucketRateLimiter<IPAddress> _inboundFilter;
-        private readonly ConcurrentDictionary<IPAddress, long> _bannedIps
-            = new ConcurrentDictionary<IPAddress, long>();
+        private readonly ConcurrentDictionary<IPAddress, (long Sequence, long ExpiresAtMs)> _bannedIps
+            = new ConcurrentDictionary<IPAddress, (long, long)>();
         private long _banSequence;
         private long _droppedInboundCount;
         private UdpClient _udp;
@@ -56,9 +64,19 @@ namespace Nethereum.DevP2P.Discv5
                 maxCachedKeys: DevP2PRateLimitConstants.KnownSourcesCacheSize);
         }
 
+        public bool EnableInboundPacketFilter { get; set; }
+
         public long DroppedInboundCount => Interlocked.Read(ref _droppedInboundCount);
 
-        public bool IsBanned(IPAddress ip) => ip != null && _bannedIps.ContainsKey(ip);
+        public TimeSpan BanDuration { get; set; } = DefaultBanDuration;
+
+        public bool IsBanned(IPAddress ip)
+        {
+            if (ip == null || !_bannedIps.TryGetValue(ip, out var ban)) return false;
+            if (Environment.TickCount64 < ban.ExpiresAtMs) return true;
+            _bannedIps.TryRemove(ip, out _);
+            return false;
+        }
 
         public Discv5RequestTracker RequestTracker => _requestTracker;
 
@@ -84,6 +102,7 @@ namespace Nethereum.DevP2P.Discv5
         public void Start(IPAddress bindAddress, int port = 0)
         {
             _udp = new UdpClient(new IPEndPoint(bindAddress, port));
+            _udp.IgnoreIcmpConnectionReset();
             _cts = new CancellationTokenSource();
             _readLoop = Task.Run(() => ReadLoopAsync(_cts.Token));
         }
@@ -188,7 +207,8 @@ namespace Nethereum.DevP2P.Discv5
             var msg = Discv5MessageEncoder.EncodeFindNode(findNode);
 
             var task = _requestTracker.RegisterFindNode(
-                peerNodeId, requestId, expectedTotalHint: 1, timeout, ct);
+                peerNodeId, requestId, expectedTotalHint: 1, timeout, ct,
+                findNode.Distances.ConvertAll(d => (uint)d), peer.Address);
             DispatchOutboundMessage(peer, peerNodeId, peerStaticCompressedPubKey, msg);
             return await task.ConfigureAwait(false);
         }
@@ -255,16 +275,16 @@ namespace Nethereum.DevP2P.Discv5
 
         private void AddBannedIp(IPAddress ip)
         {
-            _bannedIps[ip] = Interlocked.Increment(ref _banSequence);
+            _bannedIps[ip] = (Interlocked.Increment(ref _banSequence), Environment.TickCount64 + (long)BanDuration.TotalMilliseconds);
             if (_bannedIps.Count <= DevP2PRateLimitConstants.MaxBannedIpsCached) return;
 
             IPAddress oldest = null;
             long oldestSeq = long.MaxValue;
             foreach (var kvp in _bannedIps)
             {
-                if (kvp.Value < oldestSeq)
+                if (kvp.Value.Sequence < oldestSeq)
                 {
-                    oldestSeq = kvp.Value;
+                    oldestSeq = kvp.Value.Sequence;
                     oldest = kvp.Key;
                 }
             }
@@ -321,7 +341,8 @@ namespace Nethereum.DevP2P.Discv5
         {
             var srcIp = remoteEndPoint?.Address;
             if (srcIp == null) return false;
-            if (_bannedIps.ContainsKey(srcIp))
+            if (!EnableInboundPacketFilter) return true;
+            if (IsBanned(srcIp))
             {
                 Interlocked.Increment(ref _droppedInboundCount);
                 return false;
@@ -337,7 +358,9 @@ namespace Nethereum.DevP2P.Discv5
 
         private async Task<LoopSignal> DispatchPacketAsync(byte[] buffer, IPEndPoint remoteEndPoint)
         {
-            var processed = _sessionManager.Process(buffer, remoteEndPoint);
+            Discv5SessionManager.IncomingPacket processed;
+            try { processed = _sessionManager.Process(buffer, remoteEndPoint); }
+            catch (Exception) { return LoopSignal.SkipIteration; }
             if (processed.Kind == Discv5SessionManager.IncomingPacketKind.NeedWhoAreYou)
             {
                 try { await _udp.SendAsync(processed.OutgoingBytes, processed.OutgoingBytes.Length, processed.Source).ConfigureAwait(false); }
@@ -425,23 +448,18 @@ namespace Nethereum.DevP2P.Discv5
         {
             if (!TryDecode(body, Discv5MessageEncoder.DecodeNodes, out var nodes)) return;
             if (!IsValidRequestId(nodes.RequestId, allowNull: false)) return;
-            _requestTracker.CompleteNodesChunk(session.RemoteNodeId, nodes);
+            if (!_requestTracker.CompleteNodesChunk(session.RemoteNodeId, nodes, out var accepted)) return;
 
-            if (nodes.Records == null) return;
-            foreach (var encoded in nodes.Records)
+            foreach (var enr in accepted)
             {
-                if (encoded == null || encoded.Length == 0) continue;
-                if (!TryDecode(encoded, EnrRecordEncoder.Decode, out var enr)) continue;
-                if (enr.Secp256k1 == null) continue;
-                var nodeId = Discv5Crypto.ComputeNodeId(enr.Secp256k1);
-                var ip = enr.IP4;
-                var udpPort = enr.UdpPort;
+                var ip = enr.IP4 ?? enr.IP6;
+                var udpPort = enr.IP4 != null ? enr.UdpPort : enr.UdpPort6 ?? enr.UdpPort;
                 if (ip == null || udpPort == null) continue;
                 _routingTable.Upsert(new Discv5RoutingTable.Entry
                 {
-                    NodeId = nodeId,
+                    NodeId = Discv5Crypto.ComputeNodeId(enr.Secp256k1),
                     Address = new IPEndPoint(ip, udpPort.Value),
-                    EnrEncoded = encoded
+                    EnrEncoded = EnrRecordEncoder.EncodeRecord(enr)
                 });
             }
         }
@@ -471,9 +489,11 @@ namespace Nethereum.DevP2P.Discv5
         {
             var records = new List<byte[]>();
             if (distances == null) return records;
+            var seen = new HashSet<ulong>();
             foreach (var d in distances)
             {
                 if (records.Count >= MaxNodesResponseTotal) break;
+                if (d > MaxLogDistance || !seen.Add(d)) continue;
                 if (d == 0)
                 {
                     if (LocalEnrEncoded != null) records.Add(LocalEnrEncoded);
@@ -519,21 +539,42 @@ namespace Nethereum.DevP2P.Discv5
             if (!TryDecode(body, Discv5MessageEncoder.DecodeTalkReq, out var req)) return;
             if (!IsValidRequestId(req.RequestId, allowNull: true)) return;
 
-            byte[] response = Array.Empty<byte>();
+            Func<byte[], IPEndPoint, byte[]> handler = null;
             if (req.Protocol != null && req.Protocol.Length > 0)
-            {
-                var protocolKey = System.Text.Encoding.ASCII.GetString(req.Protocol);
-                if (_talkHandlers.TryGetValue(protocolKey, out var handler))
-                {
-                    try
-                    {
-                        var handlerResponse = handler(req.Request ?? Array.Empty<byte>(), session.RemoteAddr);
-                        if (handlerResponse != null) response = handlerResponse;
-                    }
-                    catch (Exception) { }
-                }
-            }
+                _talkHandlers.TryGetValue(System.Text.Encoding.ASCII.GetString(req.Protocol), out handler);
 
+            if (handler == null)
+            {
+                SendTalkResponse(session, req, Array.Empty<byte>());
+                return;
+            }
+            if (!_talkSlots.Wait(0)) return;
+            _ = Task.Run(() => RunTalkHandler(session, req, handler));
+        }
+
+        private void RunTalkHandler(Discv5Session session, Discv5TalkReqMessage req, Func<byte[], IPEndPoint, byte[]> handler)
+        {
+            try
+            {
+                var response = Array.Empty<byte>();
+                try
+                {
+                    var handlerResponse = handler(req.Request ?? Array.Empty<byte>(), session.RemoteAddr);
+                    if (handlerResponse != null) response = handlerResponse;
+                }
+                catch (Exception) { }
+                SendTalkResponse(session, req, response);
+            }
+            catch (Exception) { }
+            finally
+            {
+                try { _talkSlots.Release(); }
+                catch (ObjectDisposedException) { }
+            }
+        }
+
+        private void SendTalkResponse(Discv5Session session, Discv5TalkReqMessage req, byte[] response)
+        {
             var resp = new Discv5TalkRespMessage
             {
                 RequestId = req.RequestId ?? Array.Empty<byte>(),

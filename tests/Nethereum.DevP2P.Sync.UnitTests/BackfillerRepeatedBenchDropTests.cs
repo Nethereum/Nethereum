@@ -10,17 +10,21 @@ using Nethereum.Model.P2P.Snap;
 using Xunit;
 using Nethereum.DevP2P.Sync.Abstractions;
 using Nethereum.DevP2P.Sync.FullSync;
+using Nethereum.DevP2P.Sync.Scheduling;
 
 namespace Nethereum.DevP2P.Sync.UnitTests
 {
     public class BackfillerRepeatedBenchDropTests
     {
+        private const int UntrustedDropAfter = 3;
+        private const int TrustedDropAfter = 20;
+
         [Fact]
         public void SingleTimeout_DoesNotDropThePeer()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: false);
 
             backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: true);
@@ -29,14 +33,14 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void RepeatedTimeouts_NonTrustedPeer_DropsOnTheFirstBenchOutcome()
+        public void RepeatedTimeouts_NonTrustedPeer_IsDroppedByTheQuarantineAtItsThreshold()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: false);
 
-            for (int i = 0; i < ParallelBlockBackfiller.PeerFailureDropThreshold - 1; i++)
+            for (int i = 0; i < UntrustedDropAfter - 1; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: true);
             Assert.Empty(pool.DropCalls);
 
@@ -48,16 +52,14 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void RepeatedTimeouts_TrustedPeer_NeedsMultipleBenchOutcomes_BeforeDrop()
+        public void RepeatedTimeouts_TrustedPeer_IsDroppedByTheQuarantineOnlyAtTheTrustedThreshold()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: true);
 
-            var callsBeforeDrop =
-                (ParallelBlockBackfiller.PeerFailureDropThreshold - 1)
-                + (ParallelBlockBackfiller.TrustedRepeatedBenchDropThreshold - 1);
+            var callsBeforeDrop = TrustedDropAfter - 1;
             for (int i = 0; i < callsBeforeDrop; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: true);
             Assert.Empty(pool.DropCalls);
@@ -70,14 +72,14 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void RepeatedNonTimeoutFailures_NonTrustedPeer_DropsViaPoolOnTheFirstDisposeOutcome()
+        public void RepeatedNonTimeoutFailures_NonTrustedPeer_IsDroppedByTheQuarantineAtItsThreshold()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: false);
 
-            for (int i = 0; i < ParallelBlockBackfiller.PeerFailureDropThreshold - 1; i++)
+            for (int i = 0; i < UntrustedDropAfter - 1; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: false);
             Assert.Empty(pool.DropCalls);
 
@@ -89,16 +91,14 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void RepeatedNonTimeoutFailures_TrustedPeer_NeedsMultipleDisposeOutcomes_BeforeDrop()
+        public void RepeatedNonTimeoutFailures_TrustedPeer_IsDroppedByTheQuarantineOnlyAtTheTrustedThreshold()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: true);
 
-            var callsBeforeDrop =
-                (ParallelBlockBackfiller.PeerFailureDropThreshold - 1)
-                + (ParallelBlockBackfiller.TrustedRepeatedBenchDropThreshold - 1);
+            var callsBeforeDrop = TrustedDropAfter - 1;
             for (int i = 0; i < callsBeforeDrop; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: false);
             Assert.Empty(pool.DropCalls);
@@ -115,10 +115,10 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: false);
 
-            for (int i = 0; i < ParallelBlockBackfiller.PeerFailureDropThreshold * 4; i++)
+            for (int i = 0; i < UntrustedDropAfter * 4; i++)
                 backfiller.RecordReceiptDeliveryOutcomeForTest(peer, matched: 0);
 
             Assert.Empty(pool.DropCalls);
@@ -129,7 +129,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: false);
 
             backfiller.RecordReceiptDeliveryOutcomeForTest(peer, matched: 3);
@@ -138,20 +138,20 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void SuccessResetsTheTrustedBenchDropCounter()
+        public void SuccessResetsTheQuarantineStreak()
         {
             var pool = new CapturingDropPool();
             using var bundle = InMemoryChainStoreBundle.Open();
-            var backfiller = new ParallelBlockBackfiller(new UnusedScheduler(), pool, new UnusedWorker(), bundle);
+            var backfiller = new ParallelBlockBackfiller(new FetchRequestScheduler(pool, new UnusedWorker(), new FetchRequestSchedulerOptions()), pool, new UnusedWorker(), bundle);
             var peer = new FakeEthPeer(isTrusted: true);
 
-            for (int i = 0; i < ParallelBlockBackfiller.PeerFailureDropThreshold; i++)
+            for (int i = 0; i < TrustedDropAfter - 1; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: true);
             Assert.Empty(pool.DropCalls);
 
             backfiller.RecordPeerRequestSuccessForTest(peer);
 
-            for (int i = 0; i < ParallelBlockBackfiller.PeerFailureDropThreshold - 1; i++)
+            for (int i = 0; i < UntrustedDropAfter - 1; i++)
                 backfiller.RecordPeerRequestFailureForTest(peer, "body", wasTimeout: true);
             Assert.Empty(pool.DropCalls);
         }
@@ -204,18 +204,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             public Task<StorageRangesMessage> GetStorageRangesAsync(IEthPeer peer, byte[] stateRoot, List<byte[]> accountHashes, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
             public Task<ByteCodesMessage> GetByteCodesAsync(IEthPeer peer, List<byte[]> codeHashes, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
             public Task<TrieNodesMessage> GetTrieNodesAsync(IEthPeer peer, byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
-        }
-
-        private sealed class UnusedScheduler : IFetchRequestScheduler
-        {
-            public Task<List<BlockHeader>> FetchHeadersAsync(ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false) => throw new NotImplementedException();
-            public Task<List<BlockBody>> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct) => throw new NotImplementedException();
-            public Task<BodyFetchResult> FetchBodiesAsync(IReadOnlyList<byte[]> blockHashes, IReadOnlyCollection<Guid> excludePeers, CancellationToken ct) => throw new NotImplementedException();
-            public Task<List<List<Receipt>>> FetchReceiptsAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct) => throw new NotImplementedException();
-            public Task<AccountRangeMessage> FetchAccountRangeAsync(byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
-            public Task<StorageRangesMessage> FetchStorageRangesAsync(byte[] stateRoot, List<byte[]> accountHashes, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
-            public Task<ByteCodesMessage> FetchByteCodesAsync(List<byte[]> codeHashes, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
-            public Task<TrieNodesMessage> FetchTrieNodesAsync(byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, CancellationToken ct) => throw new NotImplementedException();
         }
     }
 }

@@ -30,8 +30,6 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
 
         public BigInteger ExecutedHeight => _node.Bundle.Metadata.GetLastBlock();
 
-        public Task StartAsync(Microsoft.Extensions.Logging.ILogger logger = null) => StartAsync(_node.PushedBlocks, logger);
-
         public async Task<Nethereum.DevP2P.Sync.Snap.Bootstrap.SnapBootstrapper.Result> SnapBootstrapAsync(
             CancellationToken ct = default,
             Microsoft.Extensions.Logging.ILogger logger = null,
@@ -59,7 +57,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                 ct).ConfigureAwait(false);
         }
 
-        public Task StartCatchUpAsync(Microsoft.Extensions.Logging.ILogger logger = null)
+        public Task StartAsync(Microsoft.Extensions.Logging.ILogger logger = null)
         {
             var scheduler = new Scheduling.FetchRequestScheduler(
                 _node.DialPool,
@@ -73,7 +71,8 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
                     ? Task.FromResult<byte[]>(null)
                     : _node.Bundle.Blocks.GetHashByNumberAsync((BigInteger)(number - 1)));
 
-            return StartAsync(new FullSync.CatchUpThenFollowBlockSource(pull, _node.PushedBlocks), logger);
+            return StartAsync(new FullSync.FollowingBlockSource(
+                pull, _node.DialPool, number => _node.Bundle.Blocks.GetHashByNumberAsync((BigInteger)number)), logger);
         }
 
         private Task StartAsync(IBlockSource source, Microsoft.Extensions.Logging.ILogger logger = null)

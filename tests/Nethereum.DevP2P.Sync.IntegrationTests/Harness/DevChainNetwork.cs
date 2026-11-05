@@ -23,6 +23,20 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests.Harness
             return (a, b);
         }
 
+        public static async Task<(DevChainNode A, DevChainNode B)> TwoNodesWithASingleSessionFromAToBAsync(
+            CancellationToken ct = default)
+        {
+            var a = DevChainNode.Create();
+            var b = DevChainNode.Create();
+            await a.StartAsync(ct).ConfigureAwait(false);
+            await b.StartAsync(ct).ConfigureAwait(false);
+            await a.ConnectToAsync(b, ct).ConfigureAwait(false);
+            var registered = await WaitUntilAsync(() => a.BroadcastPool.Count == 1, TimeSpan.FromSeconds(20), ct).ConfigureAwait(false);
+            if (!registered)
+                throw new TimeoutException($"DevChainNode {a.Enode} did not register its session to {b.Enode} for broadcast");
+            return (a, b);
+        }
+
         public static async Task<(DevChainNode A, DevChainNode B, DevChainNode C)> HubWithTwoPeersAsync(
             CancellationToken ct = default)
         {

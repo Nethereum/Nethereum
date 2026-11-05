@@ -1,51 +1,39 @@
-using System;
 using System.IO;
+using Nethereum.Testing;
 
 namespace Nethereum.DevP2P.IntegrationTests.Helpers
 {
     public static class GethToolLocator
     {
-        public const string DevP2PToolRelativePath = "geth-tools/devp2p.exe";
+        private const string EthTestTestdataSubPath = "cmd/devp2p/internal/ethtest/testdata";
 
-        public const string EthTestTestdataRelativePath = "go-ethereum/cmd/devp2p/internal/ethtest/testdata";
+        private const string SnapTestTestdataSubPath = "cmd/devp2p/internal/snaptest/testdata";
 
-        public const string SnapTestTestdataRelativePath = "go-ethereum/cmd/devp2p/internal/snaptest/testdata";
+        public static string FindDevp2pTool() => RequireTool("Devp2p", "the devp2p conformance tool");
 
-        public const string GethBinaryRelativePath = "geth-tools/geth-windows-amd64-1.13.15-c5ba367e/geth.exe";
+        public static string FindEthTestTestdata() => RequireGoEthereumDirectory(EthTestTestdataSubPath);
 
-        public static string FindDevp2pTool() =>
-            ProbeUpFromBaseDirectory(DevP2PToolRelativePath, isDirectory: false)
-            ?? throw new FileNotFoundException(
-                $"devp2p.exe not found. Expected at <repo-root>/{DevP2PToolRelativePath} — " +
-                "see tests/Nethereum.DevP2P.IntegrationTests/README.md for rebuild instructions.");
+        public static string FindSnapTestTestdata() => RequireGoEthereumDirectory(SnapTestTestdataSubPath);
 
-        public static string FindEthTestTestdata() =>
-            ProbeUpFromBaseDirectory(EthTestTestdataRelativePath, isDirectory: true)
-            ?? throw new DirectoryNotFoundException(
-                $"Geth eth-test testdata not found. Expected at a sibling go-ethereum checkout: <repo-parent>/{EthTestTestdataRelativePath}.");
+        public static string FindGethBinary() => RequireTool("Geth1_13", "the full geth 1.13.15 node");
 
-        public static string FindSnapTestTestdata() =>
-            ProbeUpFromBaseDirectory(SnapTestTestdataRelativePath, isDirectory: true)
-            ?? throw new DirectoryNotFoundException(
-                $"Geth snap-test testdata not found. Expected at a sibling go-ethereum checkout: <repo-parent>/{SnapTestTestdataRelativePath}.");
-
-        public static string FindGethBinary() =>
-            ProbeUpFromBaseDirectory(GethBinaryRelativePath, isDirectory: false)
-            ?? throw new FileNotFoundException(
-                $"Geth 1.13.15 binary not found. Expected at <repo-root>/{GethBinaryRelativePath} - " +
-                "this is the full Geth node, distinct from the devp2p conformance tool.");
-
-        private static string ProbeUpFromBaseDirectory(string relativePath, bool isDirectory)
+        private static string RequireTool(string key, string description)
         {
-            var probe = AppContext.BaseDirectory;
-            while (probe != null)
-            {
-                var candidate = Path.GetFullPath(Path.Combine(probe, relativePath));
-                if (isDirectory ? Directory.Exists(candidate) : File.Exists(candidate))
-                    return candidate;
-                probe = Path.GetDirectoryName(probe);
-            }
-            return null;
+            var path = TestEnvironment.Tool(key);
+            if (!File.Exists(path))
+                throw new FileNotFoundException(
+                    $"Tools:{key} ({description}) not found at '{path}'. " +
+                    $"Run dotnet run ci/fetch-externals.cs, or set Tools:{key} in {TestEnvironment.LocalSettingsRelativePath}.");
+            return path;
+        }
+
+        private static string RequireGoEthereumDirectory(string subPath)
+        {
+            var path = Path.Combine(TestEnvironment.RequireExternalPath("GoEthereum"), subPath);
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException(
+                    $"'{subPath}' not found under ExternalPaths:GoEthereum at '{path}'; it must be a go-ethereum source checkout.");
+            return path;
         }
     }
 }

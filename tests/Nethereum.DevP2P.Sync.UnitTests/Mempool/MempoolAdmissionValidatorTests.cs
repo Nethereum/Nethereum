@@ -84,6 +84,26 @@ namespace Nethereum.DevP2P.Sync.UnitTests.Mempool
             Assert.Equal(MempoolRejectReason.InvalidSignature, result.Reason);
         }
 
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(27)]
+        [InlineData(28)]
+        public async Task Given_TypedTransactionWithYParityAboveOne_When_Validated_Then_RejectedInvalidSignature(int v)
+        {
+            var validator = Validator();
+            using var bundle = await FundedBundleAsync(nonce: 0, balance: 1_000_000_000_000_000_000);
+
+            var tx = new Transaction1559((EvmUInt256)NodeChainId, 0, 1, 1, 21_000, Recipient, 1000, "", new List<AccessListItem>());
+            var sig = new EthECKey(PrivateKey).SignAndCalculateYParityV(tx.RawHash);
+            tx.SetSignature(new Signature(sig.R, sig.S, new[] { (byte)v }));
+
+            var result = await validator.ValidateAsync(tx, bundle, new TxPool());
+
+            Assert.False(result.Accepted);
+            Assert.Equal(MempoolRejectReason.InvalidSignature, result.Reason);
+        }
+
         [Fact]
         public async Task Given_TransactionSignedForWrongChain_When_Validated_Then_RejectedWrongChainId()
         {
@@ -172,9 +192,8 @@ namespace Nethereum.DevP2P.Sync.UnitTests.Mempool
             var validator = Validator();
             using var bundle = await FundedBundleAsync(nonce: 0, balance: 0);
             var huge = (EvmUInt256)(BigInteger.One << 128);
-            var tx1559 = new Transaction1559((EvmUInt256)NodeChainId, 0, 0, huge, huge, Recipient, 0, "", new List<AccessListItem>());
-            var signedHex = new Transaction1559Signer().SignTransaction(PrivateKey, tx1559);
-            var tx = TransactionFactory.CreateTransaction(signedHex);
+            var tx = new Transaction1559((EvmUInt256)NodeChainId, 0, 0, huge, huge, Recipient, 0, "", new List<AccessListItem>());
+            new Transaction1559Signer().SignTransaction(PrivateKey, tx);
 
             var result = await validator.ValidateAsync(tx, bundle, new TxPool());
 

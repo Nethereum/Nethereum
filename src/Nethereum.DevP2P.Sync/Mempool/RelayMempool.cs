@@ -63,9 +63,10 @@ namespace Nethereum.DevP2P.Sync.Mempool
                 return MempoolSubmitResult.FromRejected(admission);
             }
 
+            var alreadyKnown = tx.Hash != null && await _txPool.ContainsAsync(tx.Hash).ConfigureAwait(false);
             var hash = await _txPool.AddAsync(tx).ConfigureAwait(false);
 
-            if (_relay != MempoolRelay.None)
+            if (_relay != MempoolRelay.None && !alreadyKnown)
                 await PropagateAsync(tx, hash, exceptPeer: null, cancellationToken).ConfigureAwait(false);
 
             return MempoolSubmitResult.FromAccepted(hash, admission.Sender);

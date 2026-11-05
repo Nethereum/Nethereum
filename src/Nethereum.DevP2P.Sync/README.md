@@ -1,8 +1,6 @@
 # Nethereum.DevP2P.Sync
 
-> **PREVIEW** — This package is in preview. APIs may change between releases.
-
-The block and state sync engine for a Nethereum node syncing Ethereum over `eth/68`–`eth/71` and `snap/1`.
+The block and state sync engine for a Nethereum node syncing Ethereum over `eth/68`–`eth/71`, `snap/1` and `snap/2`.
 
 ## Overview
 
@@ -42,7 +40,7 @@ SyncNode                             the "start here" facade — one object: ser
              └─ TrieHealer                Phase 3: BFS re-fetch of missing trie nodes until root matches
 ```
 
-`SyncNode` is the discoverable top-level entry point — construct it once and reach every sync capability from it. Under it, `SnapSyncOrchestrator` and `SnapBootstrapper` remain usable directly for advanced control, and the phase workers can be driven on their own (e.g. Phase 1 only). `SnapBootstrapper` and its partials live under `Snap/Bootstrap/`.
+`SyncNode` is the discoverable top-level entry point — construct it once and reach every sync capability from it. Under it, `SnapSyncOrchestrator` and `SnapBootstrapper` remain usable directly for advanced control, and the phase workers can be driven on their own (e.g. Phase 1 only). `SnapBootstrapper` is a facade over the run classes under `Snap/Bootstrap/`.
 
 ## Public entry points
 
@@ -91,10 +89,10 @@ Optional mode/tuning lives on `SnapSyncOrchestratorOptions`:
 | `Phase1First` | `bool` | `false` |
 | `AccountConcurrency` | `int?` | `null` |
 | `LargeContractConcurrency` | `int?` | `null` |
-| `EnableFlatReconcile` | `bool` | `false` |
-| `FinalizeVerify` | `bool` | `true` |
 | `HeaderFollow` | `HeaderFollowService?` | `null` |
 | `BalHealEnabled` | `bool` | `false` |
+
+`PivotStaleDistanceBlocks` defaults to 120 blocks. When the bundle implements `IFlatStateReconciler`, the flat state is always certified after the heal with one reconcile run against the converged root, so `EnableFlatReconcile` and `FinalizeVerify` are obsolete: they are still accepted and ignored.
 
 **`SnapBootstrapper`** (static) — sequences the cold-start for a single pivot: skip if state is already committed, run the Phase-2 stream, heal on root mismatch, persist the pivot and completion sentinel. It also exposes pure, unit-tested decision helpers:
 
@@ -163,23 +161,23 @@ Concrete infrastructure impls are also provided: `FetchRequestScheduler` (`IFetc
 
 | Type | Role |
 |---|---|
-| `PeerPoolManager` (`IPeerPool`) | The concrete peer pool: score-ordered candidate prioritisation, ban tracking, dial-out and the useless-peer floor. |
+| `PeerPoolManager` (`IPeerPool`) | The concrete peer pool: score-ordered candidate prioritisation, ban tracking, dial-out and the useless-peer floor. Raises `PeerHeadAdvanced` when a pooled peer's announced head moves. |
 | `PeerPoolOptions` | Peer-pool tuning record (`TargetPeerCount` 16, dial concurrency/cooldown, subnet-diversity caps, trusted-redial interval). |
-| `SyncPeerSession` (`IEthPeer`) | Live per-peer session for any chain: dial → RLPx + Hello → eth handshake (Status with EIP-2124 fork-ID) → header/body/receipt requests over the negotiated `eth/68`–`eth/71`. |
-| `PeerListener` / `PeerListenerOptions` | Inbound RLPx serving composition: binds a port, drives the eth server handshake and serves `eth` + `snap/1` to peers syncing *from* this node. |
-| `RelayMempool` | Good-citizen relay tx pool: admits locally-submitted signed txs (via `MempoolAdmissionValidator`), holds them in the `ITxPool`, and announces hashes to peers. Leaf-only by default (`MempoolRelay.Ours`) — it does not re-gossip remote txs unless `MempoolRelay.All` opts in. |
-| `MempoolAdmission` / `MempoolRejectReason` | Admission decision and its reject reasons for a submitted transaction. |
-| `Eth68PeerPool` / `Eth68PeerSession` | Broadcast peer registry for block/tx publishing (distinct from `IPeerPool`; used by `DevP2PBlockPublisher`). |
-| `Eip2124ForkIdCalculator` / `Eip2124ValidationResult` | EIP-2124 fork-ID compute (CRC32 over the fork schedule) and peer-compatibility validation (mirrors geth's stale/incompatible outcomes). *Defined in Nethereum.EVM.Core.* |
+| `SyncPeerSession` (`IEthPeer`) | Live per-peer session for any chain: dial → RLPx + Hello → eth handshake (Status checked by `EthStatusValidator`) → header/body/receipt requests over the negotiated `eth/68`–`eth/71`. A `BlockRangeUpdate` is validated and moves the peer's head (`HeadAdvanced`); eth/70+ partial receipts are bounded by the header's gas used (`GetReceiptsAsync(blockHashes, gasUsedByBlock, ct)`). |
+| `PeerListener` / `PeerListenerOptions` | Inbound RLPx serving composition: binds a port, drives the eth server handshake and serves `eth`, and `snap` only when `PeerListenerOptions.ServeSnap` is set and a snap handler is supplied to peers syncing *from* this node. A peer whose Status fails `EthStatusValidator` is refused before it is registered or served (with `MirrorRemoteStatus` set only the Status version is checked). Defaults: `HandshakeTimeoutMs` 5000 and `IdleTimeout` 30 s, the per-frame read deadline. `ForkBlockNumbers` / `ForkTimestamps` give the fork schedule the Status is checked against, `DecodeLimiter` the in-flight decode budget, and `OnBlockRangeUpdateReceived` receives a peer's validated head announcement. |
+| `RelayMempool` | Good-citizen relay tx pool: admits locally-submitted signed txs (via `MempoolAdmissionValidator`), holds them in the `ITxPool`, and announces hashes to peers. Leaf-only by default (`MempoolRelay.Ours`) — it does not re-gossip remote txs unless `MempoolRelay.All` opts in, and a transaction already pending is not announced again. |
+| `MempoolAdmission` / `MempoolRejectReason` | Admission decision and its reject reasons for a submitted transaction. `MempoolAdmissionValidator` applies the shared `TransactionAdmissionRules`: size, gas limit, chain id, signature, fee caps, and for a blob transaction a sidecar, 1 to 6 blobs and a `DefaultMaxBlobTransactionSizeBytes` (1 MiB) cap. |
+| `Eth68PeerPool` / `Eth68PeerSession` | Broadcast peer registry for block-range/tx publishing (distinct from `IPeerPool`; used by `BlockRangeAnnouncer`). |
+| `Eip2124ForkIdCalculator` / `Eip2124ValidationResult` | EIP-2124 fork-ID compute (CRC32 over the fork schedule) and peer-compatibility validation (returns the accepted, stale or incompatible outcome). *Defined in Nethereum.EVM.Core.* |
 
 ### Fetch pipeline (Phase 1)
 
 | Type | Role |
 |---|---|
-| `FetchRequestScheduler` (`IFetchRequestScheduler`) | Concrete scheduler that fans and retries fetch requests across the peer pool, with per-peer in-flight caps and body/receipt fan-out chunking. |
-| `PeerRequestWorker` (`IPeerRequestWorker`) | Executes a single fetch against a single peer; the scheduler's per-attempt unit. |
+| `FetchRequestScheduler` (`IFetchRequestScheduler`) | Concrete scheduler that fans and retries fetch requests across the peer pool, with per-peer in-flight caps and body/receipt fan-out chunking. A reply counts as served only when it delivers validated items (see *Holding peers to account*). |
+| `PeerRequestWorker` (`IPeerRequestWorker`) | Executes a single fetch against a single peer; the scheduler's per-attempt unit. `GetReceiptsAsync(peer, blockHashes, gasUsedByBlock, ct)` passes the headers' gas used so partial eth/70+ receipts can be bounded. |
 | `BackwardBlockWalker` (`IBackwardBlockWalker`) | Lays a header skeleton backward from a trusted-tip hash, validating parent-hash chains (optionally bodies). |
-| `TipBandBodyFollowService` | Standing catch-up that keeps `[execution-head+1 .. trusted-tip]` supplied with bodies + receipts so the executor never starves. |
+| `TipBandBodyFollowService` | Standing catch-up that keeps `[execution-head+1 .. trusted-tip]` supplied with bodies + receipts so the executor never starves. A body hole goes back into the band with `RequeueFrom(fromBlock)` / `RequeueAndWaitAsync(fromBlock, ct)` (through `IBodyFillCursor.Requeue`) instead of a second fetcher; `BodyRepairer` is obsolete. |
 | `ReceiptBackfillService` | Background scrub that fills missing receipts behind the executor head as blocks become eligible. |
 | `DevP2PBlockSource` (`IBlockSource`) | Multi-peer block source (pool + scheduler) a follower pulls from, reporting chain breaks for auto-rewind. |
 
@@ -190,14 +188,129 @@ Concrete infrastructure impls are also provided: `FetchRequestScheduler` (`IFetc
 | `SnapRunOptions` / `SnapSyncOrchestratorOptions` | Optional collaborators, mode selection and tuning for `SnapBootstrapper.RunAsync` / `SnapSyncOrchestrator.RunAsync`. |
 | `SchedulerSnapPeer` / `Eth68SnapPeer` (`ISnapPeer`) | Snap request transports — scheduler-backed and direct-eth/68-session-backed. |
 | `TrieSnapSyncSink` / `InMemorySnapSyncSink` (`ISnapSyncSink`) | Phase-2 sinks: durable Patricia-trie + bytecode writer, and an in-memory sink for tests. |
+| `FlatSnapSyncSink` (`ISnapSyncSink`) | The snap/2 sink: account and storage pages go to flat state only (`ISnapFlatStateWriter`), code to the `IStateStore`. |
+| `NeedsHealAccountsCodec` / `NeedsHealCodeCodec` | Encode and decode the persisted lists of accounts (account hash + expected storage root) and code hashes the heal must visit. They replace the obsolete `DeferredHealAccountsCodec` / `DeferredHealCodeCodec`. |
+| `SnapSyncResetRequiredException` | Thrown when a snap/2 catch-up cannot continue (`Reason`); the run abandons the attempt and resets the snap state. |
 | `SnapSyncMetrics` | Phase 2/3 progress counters (accounts/slots/bytecodes, rates). |
 
-## Snap/2 bootstrap (`SnapBootstrapper.Snap2.cs`)
+```csharp
+public static class NeedsHealAccountsCodec
+{
+    public static byte[] Encode(IReadOnlyList<SnapSyncClient.AccountNeedingHeal> accounts);
+    public static List<SnapSyncClient.AccountNeedingHeal> Decode(byte[] blob);
+}
 
-`SnapBootstrapper.RunAsync` picks the mode once per run: when `BalHealEnabled` is set, the run is not `BackfillOnly`, and the boot pivot resolves to Amsterdam or later (`ShouldBalHeal`), it runs `RunSnap2Async`; otherwise it runs the snap/1 path (trie + flat download, heal, reconcile). snap/2 follows go-ethereum's `syncv2`:
+public static class NeedsHealCodeCodec
+{
+    public static byte[] Encode(IReadOnlyList<byte[]> codeHashes);
+    public static List<byte[]> Decode(byte[] blob);
+}
+
+public sealed class SnapSyncResetRequiredException : InvalidOperationException
+{
+    public SnapSyncResetRequiredException(string reason, string message);
+    public string Reason { get; }
+}
+```
+
+## Following the head
+
+Blocks reach a follower by pull. A serving node announces its head with `BlockRangeUpdate` and its peers pull the block; there is no block push path, so `NewBlock` and `NewBlockHashes` on `eth/69` and later, and `BlockRangeUpdate` on `eth/68`, disconnect the sender with `ProtocolBreach`.
+
+- **`BlockRangeAnnouncer`** sends `(earliest, latest, hash)` to every connected peer whose negotiated version is `eth/69` or later (through an `Eth68PeerPool`) when the head has moved `AnnounceInterval` blocks since the last announcement (`DefaultAnnounceInterval` = 32) or has moved back. `Signal()` wakes the loop before the `DefaultPollInterval` (500 ms) poll.
+- **`SyncPeerSession`** validates each `BlockRangeUpdate`, stores the peer's head and raises `HeadAdvanced`; `PeerPoolManager.PeerHeadAdvanced` re-raises it for the pool.
+- **`FollowingBlockSource`** wraps a pull source such as `DevP2PBlockSource`. When the pull source runs out it waits for `PeerHeadAdvanced` (or `DefaultFallbackPoll`, 1 s) and pulls again. A peer that announces a head below ours with a hash we do not hold is followed only when the announcement is confirmed: an announced head at the height of our own head (a sibling) is pulled at once, a deeper one needs its header fetched by hash from the scheduler with the announced number and a parent we hold, within `maxRewindDepth` (`DefaultMaxRewindDepth` = 1024). A header no peer can serve quarantines the announcer for headers. Head-advanced wake-ups coalesce into one pending signal, so a flood of announcements costs a handful of pulls.
+- **`FetchAnnouncedHeadersAsync(startBlock, limit, ct)`** asks the peers whose announced head covers the range first, one at a time; a peer that answers empty is skipped, then every other peer is tried. Claimants that answered empty while another peer served are demoted for `FetchRequestScheduler.HeaderBatchQuarantineDuration` (2 minutes) and stay a last resort. When nobody serves, the range is exhausted.
+
+```csharp
+public sealed class BlockRangeAnnouncer : IAsyncDisposable
+{
+    public const int DefaultAnnounceInterval = 32;
+    public static readonly TimeSpan DefaultPollInterval = TimeSpan.FromMilliseconds(500);
+
+    public BlockRangeAnnouncer(
+        Eth68PeerPool pool, Func<Task<BlockRangeUpdateMessage>> head,
+        int announceInterval = DefaultAnnounceInterval, TimeSpan? pollInterval = null, ILogger logger = null);
+
+    public int AnnounceInterval { get; set; }
+    public Task StartAsync();
+    public void Signal();
+    public Task AnnounceIfDueAsync(CancellationToken ct = default);
+    public ValueTask DisposeAsync();
+}
+
+public sealed class FollowingBlockSource : IBlockSource
+{
+    public const ulong DefaultMaxRewindDepth = 1024;
+    public static readonly TimeSpan DefaultFallbackPoll = TimeSpan.FromSeconds(1);
+
+    public FollowingBlockSource(
+        IBlockSource pull, PeerPoolManager pool, Func<ulong, Task<byte[]>> localHashAt,
+        IFetchRequestScheduler scheduler, ulong maxRewindDepth, TimeSpan? fallbackPoll = null);
+    public FollowingBlockSource(
+        IBlockSource pull, PeerPoolManager pool, Func<ulong, Task<byte[]>> localHashAt,
+        TimeSpan? fallbackPoll = null);
+
+    public DivergenceSignal LastChainBreak { get; }
+    public IAsyncEnumerable<BlockBundle> StreamAsync(ulong fromBlock, CancellationToken ct);
+    public Task<BlockSourceHealth> GetHealthAsync(CancellationToken ct);
+    public Task ReportBadBundleAsync(ulong blockNumber, BadBundleReason reason, CancellationToken ct);
+}
+```
+
+## Status checks
+
+One rule checks the `Status` of every peer, inbound, outbound and the sequencer client. `EthStatusValidator.Violation` returns the first broken rule, or `null`: the network id, the Status version against the negotiated `eth` version, the genesis hash and the EIP-2124 fork id against the local fork schedule. `Decode` reads an `eth/68` or `eth/69+` Status and refuses an `eth/69+` block range whose earliest block is above its latest or whose latest hash is zero.
+
+```csharp
+public sealed class EthStatusExpectation
+{
+    public ulong NetworkId { get; set; }
+    public byte[] GenesisHash { get; set; }
+    public ulong[] ForkBlocks { get; set; }
+    public ulong[] ForkTimestamps { get; set; }
+    public ulong HeadBlock { get; set; }
+    public ulong HeadTimestamp { get; set; }
+}
+
+public sealed class DecodedEthStatus
+{
+    public Eth68StatusMessage Status { get; set; }
+    public ulong LatestBlock { get; set; }
+}
+
+public static class EthStatusValidator
+{
+    public static DecodedEthStatus Decode(int ethVersion, byte[] payload);
+    public static string Violation(EthStatusExpectation expected, int negotiatedVersion, Eth68StatusMessage remote);
+}
+```
+
+```csharp
+var violation = EthStatusValidator.Violation(expected, negotiatedVersion: 68, remote);
+// null when network, version, genesis and fork id all match; otherwise the reason
+```
+
+## Holding peers to account
+
+- **A reply is served only when it delivers.** The scheduler counts validated items. A zero-item reply earns no latency or success credit and does not reset the peer's timeout streak; the request goes to the next peer, and the peers that answered empty are demoted (ranked last, still usable as a last resort) only when a later peer in the same call served, so honest peers answering empty at the tip are never demoted. A partial reply is accepted. A `DevP2PBlockSource` pass that makes no progress ends its stream, and body and receipt requests honour the header quarantine.
+- **Header replies are checked.** Headers by number must be at most the requested count, start at the requested number and be contiguous in the requested direction; headers by hash must hash to the requested hash and chain from it (`BlockBatchValidator.ValidateHeadersByHashReply`). A violation throws `PeerMisbehaviourException` and quarantines the peer for headers. Header numbers are compared without narrowing, so a number above 2^64 is refused instead of wrapping, and `BackwardBlockWalker` quarantines the sender of any peer data that throws.
+- **Receipts are bounded while they are assembled.** `eth/70` and later split a large block's receipts across messages. `SyncPeerSession.GetReceiptsAsync(blockHashes, gasUsedByBlock, ct)` refuses, with `PeerMisbehaviourException`, partial receipts that number more than the header's gas used divided by 4500, or whose logs are larger than the gas used divided by 8 bytes.
+- **Snap catch-up drops faulty peers.** A peer that times out, throws or returns undecodable block access lists twice in a row is excluded from the rest of that fetch round when another serviceable peer exists.
+
+```csharp
+public sealed class PeerMisbehaviourException : Exception
+{
+    public PeerMisbehaviourException(string message);
+}
+```
+
+## Snap/2 bootstrap (`Snap2Run`)
+
+`SnapBootstrapper.RunAsync` picks the mode once per run: when `BalHealEnabled` is set, the run is not `BackfillOnly`, and the boot pivot resolves to Amsterdam or later (`ShouldBalHeal`), it runs `Snap2Run.RunAsync`; otherwise it runs the snap/1 path (trie + flat download, heal, reconcile). snap/2 downloads flat state, replays each block's access list and then generates the trie:
 
 - **Preconditions.** A scheduler, a peer pool, a bundle implementing `IFlatStateTrieGenerator`, and `ExternalHeaderFollow`; any missing one throws `InvalidOperationException` before any state is touched.
-- **Resume or reset.** `RouteSnap2ResumeAsync` resumes a saved `Generating` state whose pivot is still canonical, or a saved `Phase2Running` state whose pivot is canonical, Amsterdam, and has tasks. Every other saved state (another phase, a non-canonical or pre-Amsterdam pivot, no tasks, or none) is wiped with `ResetSnapBootstrapStateAsync` and the run starts fresh; the log line is `snap.bootstrap.snap2_reset reason=<phase|not_canonical|pre_amsterdam|no_tasks>`.
+- **Resume or reset.** `Snap2Run.RouteResumeAsync` resumes a saved `Generating` state whose pivot is still canonical, or a saved `Phase2Running` state whose pivot is canonical, Amsterdam, and has tasks. Every other saved state (another phase, a non-canonical or pre-Amsterdam pivot, no tasks, or none) is wiped with `ResetSnapBootstrapStateAsync` and the run starts fresh; the log line is `snap.bootstrap.snap2_reset reason=<phase|not_canonical|pre_amsterdam|no_tasks>`.
 - **Flat-only download.** Phase 2 writes through `FlatSnapSyncSink`: account and storage pages go to flat state only (each page is still range-proof verified), and large storage accounts are fetched as cursored subtasks. No trie node is written before generation.
 - **BAL catch-up.** `BalCatchUp` owns the pivot the flat state is at (`Applied`), and checkpoints are stamped with it. At start, and on every mid-flight pivot move (after draining the attempt, discarding parked range advances and checkpointing), it reads headers from the local canonical chain in windows of 512, fetches and verifies each block's BAL, applies it inside the downloaded frontier, and persists the pivot after every block. A target not ahead of `Applied`, an `Applied` no longer canonical, or a gap above 90,000 blocks throws `SnapSyncResetRequiredException`; the Phase-2 handler then abandons the attempt, cancels the backfill and wipes the snap state.
 - **Generation.** After Phase 2 the storage completeness gate runs, `SnapPhase.Generating` is persisted at `Applied`, and `IFlatStateTrieGenerator.GenerateTrieFromFlatAsync` builds the state trie from flat state and checks it against the pivot's state root. A mismatch throws and leaves the phase at `Generating`, so the next attempt regenerates against the same pivot. On success the bytecode backstop runs and the pivot is committed as for snap/1.
@@ -205,7 +318,7 @@ Concrete infrastructure impls are also provided: `FetchRequestScheduler` (`IFetc
 
 ## Snap-v2 BAL heal (`Snap/CatchUp`)
 
-When the pivot moves while Phase 2 is still in flight, the account/storage ranges already streamed can fall behind the blocks produced since the old pivot. The `Snap/CatchUp` types close that gap by fetching each intervening block's **Block Access List** (`snap/2`'s per-block account/storage/code/nonce/balance change set) from a peer, verifying it against the block header's BAL-hash commitment, and applying only the changes that land inside the frontier of state already fetched. This path is gated by `SnapSyncOrchestratorOptions.BalHealEnabled` (`SnapSyncOrchestratorOptions.cs:39`, default `false`).
+When the pivot moves while Phase 2 is still in flight, the account/storage ranges already streamed can fall behind the blocks produced since the old pivot. The `Snap/CatchUp` types close that gap by fetching each intervening block's **Block Access List** (`snap/2`'s per-block account/storage/code/nonce/balance change set) from a peer, verifying it against the block header's BAL-hash commitment, and applying only the changes that land inside the frontier of state already fetched. This path is gated by `SnapSyncOrchestratorOptions.BalHealEnabled` (`SnapSyncOrchestratorOptions.cs:36`, default `false`).
 
 | Type | Role |
 |---|---|

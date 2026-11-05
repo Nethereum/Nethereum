@@ -461,10 +461,10 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     if (checkpoint.DeferredCodeHashes.Count > 0)
                     {
                         var union = new HashSet<byte[]>(ByteArrayComparer.Current);
-                        foreach (var h in DeferredHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob()))
+                        foreach (var h in NeedsHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob()))
                             union.Add(h);
                         foreach (var h in checkpoint.DeferredCodeHashes) union.Add(h);
-                        batch.SaveDeferredHealCodeBlob(DeferredHealCodeCodec.Encode(new List<byte[]>(union)));
+                        batch.SaveDeferredHealCodeBlob(NeedsHealCodeCodec.Encode(new List<byte[]>(union)));
                     }
                     batch.SaveSnapSyncState(checkpoint.State);
                     batch.CommitAsync().GetAwaiter().GetResult();
@@ -472,7 +472,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                     if (firstCheckpoint == null)
                     {
                         firstCheckpoint = checkpoint;
-                        var blob = DeferredHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob());
+                        var blob = NeedsHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob());
                         sawBlobAtFirstCommit = blob.Exists(h => ByteUtil.AreEqual(h, codeHash));
                     }
                 });
@@ -483,7 +483,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 "the deferred code hash must be durable in the SAME commit that advanced the cursor, " +
                 "not only after Phase 2's own end-of-run persist.");
 
-            var finalBlob = DeferredHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob());
+            var finalBlob = NeedsHealCodeCodec.Decode(bundle.Metadata.GetDeferredHealCodeBlob());
             Assert.Contains(finalBlob, h => ByteUtil.AreEqual(h, codeHash));
         }
     }

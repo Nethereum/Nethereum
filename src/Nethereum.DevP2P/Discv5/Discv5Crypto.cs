@@ -85,6 +85,7 @@ namespace Nethereum.DevP2P.Discv5
             if (signerPubKey == null) return false;
             var r = new BigInteger(1, sigRs, 0, 32);
             var s = new BigInteger(1, sigRs, 32, 32);
+            if (s.CompareTo(ECKey.HALF_CURVE_ORDER) > 0) return false;
 
             byte[] xy;
             try { xy = NormalizeToXy(signerPubKey); }

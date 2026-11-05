@@ -1,11 +1,12 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Nethereum.DevP2P.Sync.FullSync;
 using Nethereum.Model;
 using Nethereum.Model.P2P;
 using Nethereum.Model.P2P.Snap;
@@ -26,54 +27,24 @@ namespace Nethereum.DevP2P.Sync.Scheduling
         private readonly Func<string, PeerScore>? _scoreLookup;
         private readonly ILogger<FetchRequestScheduler> _logger;
 
-        private readonly ConcurrentDictionary<Guid, int> _inFlight = new();
-
-        private readonly ConcurrentDictionary<Guid, double> _latencyEmaMs = new();
-        private const double LatencyEmaAlpha = 0.2;
-        private const double AdaptiveTimeoutFactor = 5.0;
-        private static readonly TimeSpan MinAdaptiveTimeout = TimeSpan.FromSeconds(2);
-        private const long TrustedTimeoutMultiplier = 4;
-
-        private const double UnknownPeerLatencyMs = 1_000.0;
-
-        private readonly ConcurrentDictionary<(Guid PeerId, TimeoutStreakKind Kind), int> _consecutiveTimeouts = new();
-        private const int RepeatedTimeoutQuarantineThreshold = 3;
-
-        private const int TrustedRepeatedTimeoutQuarantineThreshold = 20;
+        private readonly PeerBoard _board;
+        private readonly PeerQuarantine _quarantine;
+        private readonly SnapReplyPolicy _replyPolicy;
 
         public bool RegisterTimeoutForQuarantine(Guid peerId, TimeoutStreakKind kind, bool isTrusted, out int triggeredAtCount)
-        {
-            var key = (peerId, kind);
-            var count = _consecutiveTimeouts.AddOrUpdate(key, 1, (_, prev) => prev + 1);
-            triggeredAtCount = count;
-            var threshold = isTrusted ? TrustedRepeatedTimeoutQuarantineThreshold : RepeatedTimeoutQuarantineThreshold;
-            if (count < threshold) return false;
-            _consecutiveTimeouts[key] = 0;
-            return true;
-        }
+            => _quarantine.RegisterTimeout(peerId, kind, isTrusted, out triggeredAtCount);
 
         public void RegisterSuccessForQuarantine(Guid peerId, TimeoutStreakKind kind)
-        {
-            _consecutiveTimeouts.TryRemove((peerId, kind), out _);
-            if (kind == TimeoutStreakKind.Snap) _snapQuarantineCycles.TryRemove(peerId, out _);
-        }
-
-        private void DropOnRepeatedEthTimeout(IEthPeer peer)
-        {
-            _logger.LogWarning(
-                "eth.peer.timeout.drop peer={Host} — repeated eth timeout, dropping for redial",
-                SyncPeerSession.ParseHost(peer.Enode));
-            _ = _pool.DropAsync(peer.Id, "repeated eth timeout", CancellationToken.None);
-        }
+            => _quarantine.RegisterSuccess(peerId, kind);
 
         public int GetConsecutiveTimeoutsForTest(Guid peerId, TimeoutStreakKind kind)
-            => _consecutiveTimeouts.TryGetValue((peerId, kind), out var n) ? n : 0;
+            => _quarantine.ConsecutiveTimeouts(peerId, kind);
 
         public int GetSnapQuarantineCyclesForTest(Guid peerId)
-            => _snapQuarantineCycles.TryGetValue(peerId, out var n) ? n : 0;
+            => _quarantine.SnapQuarantineCycles(peerId);
 
         public TimeSpan GetAdaptiveTimeoutForTest(Guid peerId, bool isTrusted)
-            => AdaptiveTimeout(peerId, isTrusted);
+            => _board.AdaptiveTimeout(peerId, isTrusted);
 
         public FetchRequestScheduler(
             IPeerPool pool,
@@ -88,48 +59,94 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             _scoreLookup = scoreLookup;
             _logger = logger ?? NullLogger<FetchRequestScheduler>.Instance;
 
+            _quarantine = new PeerQuarantine(_pool, _logger, () => HeaderBatchQuarantineDuration);
+            _board = new PeerBoard(_pool, _options, _scoreLookup, _quarantine, _logger);
+            _replyPolicy = new SnapReplyPolicy(_quarantine, _logger);
+
             _pool.PeerRemoved += OnPeerRemoved;
         }
 
         public async Task<List<BlockHeader>> FetchHeadersAsync(
             ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
+            => (await FetchHeadersWithPeerAsync(startBlock, limit, ct, reverse).ConfigureAwait(false)).Headers;
+
+        public async Task<List<BlockHeader>> FetchAnnouncedHeadersAsync(
+            ulong startBlock, ulong limit, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"headers {startBlock}+{limit}{(reverse ? " rev" : string.Empty)}",
-                (peer, attemptCt) => _worker.GetHeadersAsync(peer, startBlock, limit, reverse, attemptCt),
-                initialExcluded: null,
-                ct,
-                peerFilter: HeaderServingFilter,
-                onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-            return result;
+            var claimants = _pool.ActivePeers
+                .Where(peer => peer.PeerLatestBlock >= startBlock && IsPreferredHeaderPeer(peer))
+                .Select(peer => peer.Id)
+                .ToHashSet();
+            if (claimants.Count == 0)
+                return await FetchHeadersAsync(startBlock, limit, ct).ConfigureAwait(false);
+
+            var (claimed, _) = await FetchHeadersFilteredAsync(
+                startBlock, limit, false, null, peer => claimants.Contains(peer.Id), ct).ConfigureAwait(false);
+            if (claimed.Count > 0) return claimed;
+
+            if (!_pool.ActivePeers.Any(peer => !claimants.Contains(peer.Id) && _quarantine.HeaderServingFilter(peer)))
+                return claimed;
+
+            var (others, _) = await FetchHeadersFilteredAsync(
+                startBlock, limit, false, claimants, _quarantine.HeaderServingFilter, ct).ConfigureAwait(false);
+            if (others.Count > 0)
+                foreach (var claimant in claimants) _quarantine.DemoteClaim(claimant);
+            return others;
         }
 
-        public async Task<(List<BlockHeader> Headers, Guid PeerId)> FetchHeadersWithPeerAsync(
+        private bool IsPreferredHeaderPeer(IEthPeer peer)
+            => _quarantine.HeaderServingFilter(peer) && !_quarantine.IsClaimDemoted(peer.Id);
+
+        public Task<(List<BlockHeader> Headers, Guid PeerId)> FetchHeadersWithPeerAsync(
             ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
+            => FetchHeadersFilteredAsync(startBlock, limit, reverse, null, _quarantine.HeaderServingFilter, ct);
+
+        private Task<(List<BlockHeader> Headers, Guid PeerId)> FetchHeadersFilteredAsync(
+            ulong startBlock, ulong limit, bool reverse,
+            IReadOnlyCollection<Guid> excluded, Func<IEthPeer, bool> filter, CancellationToken ct)
+            => ExecuteAsync(
+                FetchRequest.Eth(
+                    $"headers {startBlock}+{limit}{(reverse ? " rev" : string.Empty)}",
+                    async (peer, attemptCt) => AcceptHeadersByNumber(
+                        peer, startBlock, limit, reverse,
+                        await _worker.GetHeadersAsync(peer, startBlock, limit, reverse, attemptCt).ConfigureAwait(false)),
+                    excluded,
+                    filter,
+                    _quarantine.DropOnRepeatedEthTimeout,
+                    headers => headers.Count),
+                ct);
+
+        private List<BlockHeader> AcceptHeadersByNumber(
+            IEthPeer peer, ulong startBlock, ulong limit, bool reverse, List<BlockHeader> headers)
         {
-            var (result, peerId) = await ExecuteWithRetryAsync(
-                $"headers {startBlock}+{limit}{(reverse ? " rev" : string.Empty)}",
-                (peer, attemptCt) => _worker.GetHeadersAsync(peer, startBlock, limit, reverse, attemptCt),
-                initialExcluded: null,
-                ct,
-                peerFilter: HeaderServingFilter,
-                onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-            return (result, peerId);
+            if (BlockBatchValidator.ValidateHeadersByNumberReply(headers, startBlock, limit, reverse)) return headers;
+
+            throw new PeerMisbehaviourException(
+                $"peer {SyncPeerSession.ParseHost(peer.Enode)} answered headers from {startBlock} with headers that are not the requested contiguous numbers");
         }
 
         public async Task<List<BlockHeader>> FetchHeadersByHashAsync(
             byte[] startHash, ulong limit, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"headers-by-hash+{limit}",
-                (peer, attemptCt) => _worker.GetHeadersByHashAsync(peer, startHash, limit, attemptCt),
-                initialExcluded: null,
-                ct,
-                onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
+            var (result, _) = await ExecuteAsync(
+                FetchRequest.Eth(
+                    $"headers-by-hash+{limit}",
+                    async (peer, attemptCt) => AcceptHeadersByHash(
+                        peer, startHash, await _worker.GetHeadersByHashAsync(peer, startHash, limit, attemptCt).ConfigureAwait(false)),
+                    null,
+                    _quarantine.HeaderServingFilter,
+                    _quarantine.DropOnRepeatedEthTimeout,
+                    headers => headers.Count),
+                ct).ConfigureAwait(false);
             return result;
+        }
+
+        private List<BlockHeader> AcceptHeadersByHash(IEthPeer peer, byte[] startHash, List<BlockHeader> headers)
+        {
+            if (BlockBatchValidator.ValidateHeadersByHashReply(headers, startHash)) return headers;
+
+            throw new PeerMisbehaviourException(
+                $"peer {SyncPeerSession.ParseHost(peer.Enode)} answered headers-by-hash with headers that do not chain from the requested hash");
         }
 
         public async Task<List<BlockBody>> FetchBodiesAsync(
@@ -148,60 +165,21 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             if (blockHashes.Count == 0)
                 return new BodyFetchResult(new List<BlockBody>(), Array.Empty<Guid>());
 
-            var chunkSize = _options.EffectiveBodyFetchChunkSize;
-            var maxParallel = _options.EffectiveMaxParallelBodyFetches;
-
-            if (blockHashes.Count <= chunkSize || maxParallel <= 1)
-            {
-                var (single, singlePeer) = await ExecuteWithRetryAsync(
-                    $"bodies x{blockHashes.Count}",
-                    (peer, attemptCt) => _worker.GetBodiesAsync(peer, blockHashes, attemptCt),
-                    excludePeers,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-                return new BodyFetchResult(single, new[] { singlePeer });
-            }
-
-            var activePeerCount = _pool.ActivePeers.Count;
-            if (activePeerCount <= 1)
-            {
-                var (single, singlePeer) = await ExecuteWithRetryAsync(
-                    $"bodies x{blockHashes.Count}",
-                    (peer, attemptCt) => _worker.GetBodiesAsync(peer, blockHashes, attemptCt),
-                    excludePeers,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-                return new BodyFetchResult(single, new[] { singlePeer });
-            }
-
-            var effectiveParallel = Math.Min(maxParallel, activePeerCount);
-            var chunks = SplitIntoChunks(blockHashes, chunkSize, effectiveParallel);
-
-            var chunkTasks = new Task<(List<BlockBody> Bodies, Guid PeerId)>[chunks.Count];
-            for (int i = 0; i < chunks.Count; i++)
-            {
-                var chunk = chunks[i];
-                chunkTasks[i] = ExecuteWithRetryAsync(
-                    $"bodies x{chunk.Count}",
-                    (peer, attemptCt) => _worker.GetBodiesAsync(peer, chunk, attemptCt),
-                    excludePeers,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                    kind: TimeoutStreakKind.Eth);
-            }
-
-            var results = await Task.WhenAll(chunkTasks).ConfigureAwait(false);
-
-            var merged = new List<BlockBody>(blockHashes.Count);
-            var servingPeerIds = new HashSet<Guid>();
-            foreach (var part in results)
-            {
-                if (part.Bodies is not null) merged.AddRange(part.Bodies);
-                servingPeerIds.Add(part.PeerId);
-            }
-            return new BodyFetchResult(merged, servingPeerIds);
+            var (bodies, servingPeerIds) = await ChunkedFetch.RunAsync(
+                blockHashes,
+                _options.EffectiveBodyFetchChunkSize,
+                _options.EffectiveMaxParallelBodyFetches,
+                () => _pool.ActivePeers.Count,
+                chunk => ExecuteAsync(
+                    FetchRequest.Eth(
+                        $"bodies x{chunk.Count}",
+                        (peer, attemptCt) => _worker.GetBodiesAsync(peer, chunk, attemptCt),
+                        excludePeers,
+                        _quarantine.HeaderServingFilter,
+                        _quarantine.DropOnRepeatedEthTimeout,
+                        reply => reply.Count),
+                    ct)).ConfigureAwait(false);
+            return new BodyFetchResult(bodies, servingPeerIds);
         }
 
         public async Task<List<List<Receipt>>> FetchReceiptsAsync(
@@ -210,376 +188,80 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             if (blockHashes is null) throw new ArgumentNullException(nameof(blockHashes));
             if (blockHashes.Count == 0) return new List<List<Receipt>>();
 
-            var chunkSize = _options.EffectiveReceiptFetchChunkSize;
-            var maxParallel = _options.EffectiveMaxParallelReceiptFetches;
-
-            if (blockHashes.Count <= chunkSize || maxParallel <= 1)
-            {
-                var (single, _) = await ExecuteWithRetryAsync(
-                    $"receipts x{blockHashes.Count}",
-                    (peer, attemptCt) => _worker.GetReceiptsAsync(peer, blockHashes, attemptCt),
-                    initialExcluded: null,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-                return single;
-            }
-
-            var activePeerCount = _pool.ActivePeers.Count;
-            if (activePeerCount <= 1)
-            {
-                var (single, _) = await ExecuteWithRetryAsync(
-                    $"receipts x{blockHashes.Count}",
-                    (peer, attemptCt) => _worker.GetReceiptsAsync(peer, blockHashes, attemptCt),
-                    initialExcluded: null,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                kind: TimeoutStreakKind.Eth).ConfigureAwait(false);
-                return single;
-            }
-
-            var effectiveParallel = Math.Min(maxParallel, activePeerCount);
-            var chunks = SplitIntoChunks(blockHashes, chunkSize, effectiveParallel);
-
-            var chunkTasks = new Task<(List<List<Receipt>>, Guid)>[chunks.Count];
-            for (int i = 0; i < chunks.Count; i++)
-            {
-                var chunk = chunks[i];
-                chunkTasks[i] = ExecuteWithRetryAsync(
-                    $"receipts x{chunk.Count}",
-                    (peer, attemptCt) => _worker.GetReceiptsAsync(peer, chunk, attemptCt),
-                    initialExcluded: null,
-                    ct,
-                    onRepeatedTimeout: DropOnRepeatedEthTimeout,
-                    kind: TimeoutStreakKind.Eth);
-            }
-
-            var results = await Task.WhenAll(chunkTasks).ConfigureAwait(false);
-            var merged = new List<List<Receipt>>(blockHashes.Count);
-            foreach (var part in results)
-            {
-                if (part.Item1 is not null) merged.AddRange(part.Item1);
-            }
-            return merged;
+            var (receipts, _) = await ChunkedFetch.RunAsync(
+                blockHashes,
+                _options.EffectiveReceiptFetchChunkSize,
+                _options.EffectiveMaxParallelReceiptFetches,
+                () => _pool.ActivePeers.Count,
+                chunk => ExecuteAsync(
+                    FetchRequest.Eth(
+                        $"receipts x{chunk.Count}",
+                        (peer, attemptCt) => _worker.GetReceiptsAsync(peer, chunk, attemptCt),
+                        null,
+                        _quarantine.HeaderServingFilter,
+                        _quarantine.DropOnRepeatedEthTimeout,
+                        reply => reply.Count),
+                    ct)).ConfigureAwait(false);
+            return receipts;
         }
 
-        private static List<IReadOnlyList<byte[]>> SplitIntoChunks(
-            IReadOnlyList<byte[]> hashes, int chunkSize, int maxChunks)
+        private Task<(T Result, Guid PeerId)> ExecuteAsync<T>(FetchRequest<T> request, CancellationToken ct)
+            => new RetryingRequest<T>(request, _board, _quarantine, _pool, _options, _logger).RunAsync(ct);
+
+        private async Task<TMsg> FetchSnapAsync<TMsg>(
+            SnapReply<TMsg> reply,
+            Func<IEthPeer, CancellationToken, Task<TMsg>> send,
+            CancellationToken ct)
         {
-            var targetChunkCount = Math.Min(maxChunks, (hashes.Count + chunkSize - 1) / chunkSize);
-            if (targetChunkCount <= 1)
-                return new List<IReadOnlyList<byte[]>> { hashes };
-
-            var perChunk = (hashes.Count + targetChunkCount - 1) / targetChunkCount;
-            var chunks = new List<IReadOnlyList<byte[]>>(targetChunkCount);
-            for (int start = 0; start < hashes.Count; start += perChunk)
-            {
-                var end = Math.Min(start + perChunk, hashes.Count);
-                var slice = new byte[end - start][];
-                for (int j = start; j < end; j++) slice[j - start] = hashes[j];
-                chunks.Add(slice);
-            }
-            return chunks;
-        }
-
-        private async Task<(T Result, Guid PeerId)> ExecuteWithRetryAsync<T>(
-            string label,
-            Func<IEthPeer, CancellationToken, Task<T>> sendOnce,
-            IReadOnlyCollection<Guid>? initialExcluded,
-            CancellationToken ct,
-            Func<IEthPeer, bool>? peerFilter = null,
-            Action<IEthPeer>? onRepeatedTimeout = null,
-            TimeoutStreakKind kind = TimeoutStreakKind.Eth)
-        {
-            var attempts = 0;
-            Exception? lastError = null;
-            var triedPeers = initialExcluded is null
-                ? new HashSet<Guid>()
-                : new HashSet<Guid>(initialExcluded);
-
-            while (attempts < _options.MaxRetriesPerRequest)
-            {
-                ct.ThrowIfCancellationRequested();
-                var peer = await ClaimBestPeerAsync(triedPeers, ct, peerFilter).ConfigureAwait(false);
-                if (peer is null)
-                {
-                    if (triedPeers.Count > 0)
-                    {
-                        _logger.LogInformation("fetch: {Request} — all {Tried} tried peers exhausted, clearing exclusion and retrying after pool refresh", label, triedPeers.Count);
-                        triedPeers.Clear();
-                        try { await Task.Delay(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false); }
-                        catch (OperationCanceledException) { throw; }
-                        continue;
-                    }
-
-                    lastError = new InvalidOperationException(
-                        $"No peer available for {label} after {attempts} attempts.");
-                    break;
-                }
-
-                var counted = true;
-                triedPeers.Add(peer.Id);
-                attempts++;
-                try
-                {
-                    using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                    attemptCts.CancelAfter(AdaptiveTimeout(peer.Id, peer.IsTrusted));
-                    var sw = System.Diagnostics.Stopwatch.StartNew();
-                    var result = await sendOnce(peer, attemptCts.Token).ConfigureAwait(false);
-                    RecordLatency(peer.Id, sw.Elapsed.TotalMilliseconds);
-                    if (onRepeatedTimeout != null) RegisterSuccessForQuarantine(peer.Id, kind);
-                    _pool.ReportSuccess(peer.Id);
-                    return (result, peer.Id);
-                }
-                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-                {
-                    lastError = new TimeoutException(
-                        $"{label}: peer {SyncPeerSession.ParseHost(peer.Enode)} timed out");
-                    _logger.LogWarning(
-                        "snap.peer.timeout request={Request} peer={Host} attempt={Attempt}; reassigning",
-                        label, SyncPeerSession.ParseHost(peer.Enode), attempts);
-
-                    if (onRepeatedTimeout != null && RegisterTimeoutForQuarantine(peer.Id, kind, peer.IsTrusted, out var timeoutCount))
-                    {
-                        _logger.LogWarning(
-                            "snap.peer.timeout.quarantine request={Request} peer={Host} consecutive={Count} — peer never responds, quarantining",
-                            label, SyncPeerSession.ParseHost(peer.Enode), timeoutCount);
-                        onRepeatedTimeout(peer);
-                    }
-                }
-                catch (TimeoutException tex)
-                {
-                    lastError = tex;
-                    _logger.LogWarning(
-                        "snap.peer.timeout.hard request={Request} peer={Host} attempt={Attempt}; reassigning",
-                        label, SyncPeerSession.ParseHost(peer.Enode), attempts);
-
-                    if (onRepeatedTimeout != null && RegisterTimeoutForQuarantine(peer.Id, kind, peer.IsTrusted, out var hardTimeoutCount))
-                    {
-                        _logger.LogWarning(
-                            "snap.peer.timeout.quarantine request={Request} peer={Host} consecutive={Count} — peer never responds, quarantining",
-                            label, SyncPeerSession.ParseHost(peer.Enode), hardTimeoutCount);
-                        onRepeatedTimeout(peer);
-                    }
-                }
-                catch (SnapPeerCapabilityMismatchException ex)
-                {
-                    _logger.LogError(
-                        "snap.peer.capability_mismatch request={Request} peer={Host} error={Error}; permanent — failing fast without reassigning",
-                        label, SyncPeerSession.ParseHost(peer.Enode), ex.Message);
-                    throw;
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    lastError = ex;
-                    _logger.LogWarning(
-                        "snap.peer.error request={Request} peer={Host} error={ErrorType}: {Error}; reassigning",
-                        label, SyncPeerSession.ParseHost(peer.Enode), ex.GetType().Name, ex.Message);
-                }
-                finally
-                {
-                    if (counted)
-                    {
-                        _inFlight.AddOrUpdate(peer.Id, 0, (_, prev) => Math.Max(0, prev - 1));
-                    }
-                }
-            }
-
-            throw new FetchRequestFailedException(
-                $"{label} failed after {attempts} attempts across {triedPeers.Count} peers.",
-                lastError);
-        }
-
-        private async Task<IEthPeer?> ClaimBestPeerAsync(
-            HashSet<Guid> excluded, CancellationToken ct, Func<IEthPeer, bool>? peerFilter = null)
-        {
-            var deadline = DateTime.UtcNow.AddMinutes(5);
-            var nextSpinDiag = DateTime.UtcNow.AddSeconds(30);
-            while (DateTime.UtcNow < deadline)
-            {
-                ct.ThrowIfCancellationRequested();
-                var candidate = SelectBestPeer(excluded, peerFilter);
-                if (candidate is not null)
-                {
-                    _inFlight.AddOrUpdate(candidate.Id, 1, (_, prev) => prev + 1);
-                    return candidate;
-                }
-                if (DateTime.UtcNow >= nextSpinDiag)
-                {
-                    nextSpinDiag = DateTime.UtcNow.AddSeconds(30);
-                    LogClaimSpin(excluded, peerFilter);
-                }
-                try { await Task.Delay(_options.EffectiveNoPeerAvailableBackoff, ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { return null; }
-            }
-            return null;
-        }
-
-        private void LogClaimSpin(HashSet<Guid> excluded, Func<IEthPeer, bool>? peerFilter)
-        {
-            int total = 0, excludedCount = 0, filteredOut = 0, quarantined = 0, atCapacity = 0;
-            foreach (var peer in _pool.ActivePeers)
-            {
-                total++;
-                if (excluded.Contains(peer.Id)) { excludedCount++; continue; }
-                if (peerFilter is not null && !peerFilter(peer))
-                {
-                    filteredOut++;
-                    if (peer is SyncPeerSession ms && ms.SupportsSnap && IsSnapStateQuarantined(ms.Id))
-                        quarantined++;
-                    continue;
-                }
-                var inFlight = _inFlight.TryGetValue(peer.Id, out var n) ? n : 0;
-                if (inFlight >= _options.MaxInFlightPerPeer) atCapacity++;
-            }
-            _logger.LogWarning(
-                "fetch.claim.spin no eligible peer for 30s+: total={Total} excluded={Excluded} filtered_out={FilteredOut} (quarantined={Quarantined}) at_inflight_cap={AtCapacity} max_inflight={Max}",
-                total, excludedCount, filteredOut, quarantined, atCapacity, _options.MaxInFlightPerPeer);
+            var (result, _) = await ExecuteAsync(
+                FetchRequest.Snap(
+                    reply.Label,
+                    async (peer, attemptCt) => _replyPolicy.Accept(
+                        peer, await send(peer, attemptCt).ConfigureAwait(false), reply),
+                    _replyPolicy.ServingAt(reply.Root),
+                    _quarantine.QuarantineSnapState,
+                    reply.Root,
+                    reply.StopWhenAllStateless ? () => _quarantine.EverySnapPeerIsStateless(reply.Root) : null),
+                ct).ConfigureAwait(false);
+            return result;
         }
 
         private void OnPeerRemoved(object? sender, IEthPeer peer)
         {
-            _inFlight.TryRemove(peer.Id, out int _);
-            _latencyEmaMs.TryRemove(peer.Id, out _);
-            _headerQuarantineUntilTicks.TryRemove(peer.Id, out _);
-            _consecutiveTimeouts.TryRemove((peer.Id, TimeoutStreakKind.Eth), out _);
-            _consecutiveTimeouts.TryRemove((peer.Id, TimeoutStreakKind.Snap), out _);
-            _snapQuarantineCycles.TryRemove(peer.Id, out _);
+            _board.Forget(peer.Id);
+            _quarantine.Forget(peer.Id);
         }
 
         public int GetInFlightCountForTest(Guid peerId)
-            => _inFlight.TryGetValue(peerId, out var n) ? n : 0;
-
-        private void RecordLatency(Guid id, double ms)
-        {
-            if (ms <= 0) ms = 0.1;
-            _latencyEmaMs.AddOrUpdate(id, ms, (_, prev) => LatencyEmaAlpha * ms + (1 - LatencyEmaAlpha) * prev);
-        }
-
-        private TimeSpan AdaptiveTimeout(Guid id, bool isTrusted = false)
-        {
-            var max = isTrusted
-                ? TimeSpan.FromTicks(_options.EffectivePerRequestTimeout.Ticks * TrustedTimeoutMultiplier)
-                : _options.EffectivePerRequestTimeout;
-            if (!_latencyEmaMs.TryGetValue(id, out var ema)) return max;
-            var ms = Math.Clamp(ema * AdaptiveTimeoutFactor, MinAdaptiveTimeout.TotalMilliseconds, max.TotalMilliseconds);
-            return TimeSpan.FromMilliseconds(ms);
-        }
+            => _board.InFlightOf(peerId);
 
         public double GetLatencyEmaForTest(Guid peerId)
-            => _latencyEmaMs.TryGetValue(peerId, out var v) ? v : 0;
+            => _board.LatencyEma(peerId);
 
-        public TimeSpan GetAdaptiveTimeoutForTest(Guid peerId) => AdaptiveTimeout(peerId);
-
-        private IEthPeer? SelectBestPeer(HashSet<Guid> excluded, Func<IEthPeer, bool>? peerFilter = null)
-        {
-            IEthPeer? best = null;
-            bool bestTrusted = false;
-            int bestInFlight = int.MaxValue;
-            double bestLatency = double.MaxValue;
-            double bestScore = double.NegativeInfinity;
-
-            foreach (var peer in _pool.ActivePeers)
-            {
-                if (excluded.Contains(peer.Id)) continue;
-                if (peerFilter is not null && !peerFilter(peer)) continue;
-                var inFlight = _inFlight.TryGetValue(peer.Id, out var n) ? n : 0;
-                if (inFlight >= _options.MaxInFlightPerPeer) continue;
-
-                var score = _scoreLookup is not null
-                    ? _scoreLookup(peer.Enode).ComputedScore
-                    : 0.0;
-                var latency = _latencyEmaMs.TryGetValue(peer.Id, out var l) ? l : UnknownPeerLatencyMs;
-
-                bool better = peer.IsTrusted != bestTrusted
-                    ? peer.IsTrusted
-                    : inFlight != bestInFlight ? inFlight < bestInFlight
-                    : latency != bestLatency ? latency < bestLatency
-                    : score > bestScore;
-
-                if (best is null || better)
-                {
-                    best = peer;
-                    bestTrusted = peer.IsTrusted;
-                    bestInFlight = inFlight;
-                    bestLatency = latency;
-                    bestScore = score;
-                }
-            }
-            return best;
-        }
-
-        private readonly ConcurrentDictionary<Guid, long> _snapStateQuarantineUntilTicks = new();
-        private static readonly TimeSpan SnapStateQuarantineDuration = TimeSpan.FromMinutes(2);
-        private static readonly TimeSpan TrustedSnapStateCooldown = TimeSpan.FromSeconds(20);
-
-        private static readonly TimeSpan BehindSnapStateCooldown = TimeSpan.FromSeconds(6);
-        private const ulong SnapStateBehindMargin = 4;
-
-        private ulong NetworkHeadBlock() => _pool.ActivePeers
-            .OfType<SyncPeerSession>()
-            .Select(s => s.PeerLatestBlock)
-            .DefaultIfEmpty(0UL)
-            .Max();
+        public TimeSpan GetAdaptiveTimeoutForTest(Guid peerId) => _board.AdaptiveTimeout(peerId);
 
         public static TimeSpan ChooseSnapStateCooldown(ulong peerLatestBlock, ulong networkHeadBlock, bool isTrusted)
-        {
-            bool behind = networkHeadBlock > SnapStateBehindMargin
-                          && peerLatestBlock + SnapStateBehindMargin < networkHeadBlock;
-            if (behind) return BehindSnapStateCooldown;
-            return isTrusted ? TrustedSnapStateCooldown : SnapStateQuarantineDuration;
-        }
+            => PeerQuarantine.ChooseSnapStateCooldown(peerLatestBlock, networkHeadBlock, isTrusted);
 
-        private readonly ConcurrentDictionary<Guid, long> _headerQuarantineUntilTicks = new();
         public TimeSpan HeaderBatchQuarantineDuration = TimeSpan.FromMinutes(2);
 
-        public void QuarantineHeaderPeer(Guid peerId) =>
-            _headerQuarantineUntilTicks[peerId] = DateTime.UtcNow.Add(HeaderBatchQuarantineDuration).Ticks;
+        public void QuarantineHeaderPeer(Guid peerId) => _quarantine.QuarantineHeaderPeer(peerId);
 
-        public bool IsHeaderPeerQuarantined(Guid peerId) =>
-            _headerQuarantineUntilTicks.TryGetValue(peerId, out var untilTicks)
-            && DateTime.UtcNow.Ticks < untilTicks;
+        public bool IsHeaderPeerQuarantined(Guid peerId) => _quarantine.IsHeaderPeerQuarantined(peerId);
 
-        private bool HeaderServingFilter(IEthPeer p) => !IsHeaderPeerQuarantined(p.Id);
+        public void QuarantineSnapState(IEthPeer peer) => _quarantine.QuarantineSnapState(peer);
 
-        private readonly ConcurrentDictionary<Guid, int> _snapQuarantineCycles = new();
-        private const int SnapQuarantineDropThreshold = 3;
-        private const int TrustedSnapQuarantineDropThreshold = 20;
-
-        public void QuarantineSnapState(IEthPeer peer)
-        {
-            _snapStateQuarantineUntilTicks[peer.Id] = DateTime.UtcNow
-                .Add(ChooseSnapStateCooldown(peer.PeerLatestBlock, NetworkHeadBlock(), peer.IsTrusted)).Ticks;
-
-            var threshold = peer.IsTrusted ? TrustedSnapQuarantineDropThreshold : SnapQuarantineDropThreshold;
-            var cycles = _snapQuarantineCycles.AddOrUpdate(peer.Id, 1, (_, prev) => prev + 1);
-            if (cycles < threshold) return;
-
-            _snapQuarantineCycles.TryRemove(peer.Id, out _);
-            _logger.LogWarning(
-                "snap.peer.quarantine.drop peer={Host} — repeated snap quarantine with no intervening success, dropping for redial",
-                SyncPeerSession.ParseHost(peer.Enode));
-            _ = _pool.DropAsync(peer.Id, "repeated snap quarantine", CancellationToken.None);
-        }
-
-        public bool IsSnapStateQuarantined(Guid peerId) =>
-            _snapStateQuarantineUntilTicks.TryGetValue(peerId, out var untilTicks)
-            && DateTime.UtcNow.Ticks < untilTicks;
+        public bool IsSnapStateQuarantined(Guid peerId) => _quarantine.IsSnapStateQuarantined(peerId);
 
         public void OnTargetRootChanged()
         {
-            if (_snapStateQuarantineUntilTicks.IsEmpty) return;
-            var benched = _snapStateQuarantineUntilTicks.Count;
-            _snapStateQuarantineUntilTicks.Clear();
-            _logger.LogInformation(
-                "snap.quarantine.cleared count={Count} — target root rotated; benched peers re-evaluated against the new root",
-                benched);
+            _quarantine.ClearStateless();
+            _quarantine.ClearSnapStateBenches();
         }
 
-        private bool SnapStateServingFilter(IEthPeer p) =>
-            p is SyncPeerSession ms && ms.SupportsSnap && !IsSnapStateQuarantined(ms.Id);
+        public void ClearStatelessMarks() => _quarantine.ClearStateless();
 
-        public bool IsSnapStateServing(IEthPeer peer) => SnapStateServingFilter(peer);
+        public bool IsSnapStateServing(IEthPeer peer) => _quarantine.SnapStateServingFilter(peer);
 
         public Task<AccountRangeMessage> FetchAccountRangeAsync(
             byte[] stateRoot, byte[] startingHash, byte[] limitHash,
@@ -590,39 +272,20 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             byte[] stateRoot, byte[] startingHash, byte[] limitHash,
             ulong responseBytes, Func<AccountRangeMessage, bool> verifyResponse, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"snap account-range root=0x{HexShort(stateRoot)} start=0x{HexShort(startingHash)}",
-                async (peer, attemptCt) =>
-                {
-                    var resp = await _worker.GetAccountRangeAsync(
-                        peer, stateRoot, startingHash, limitHash, responseBytes, attemptCt)
-                        .ConfigureAwait(false);
-
-                    var hasAccounts = resp?.Accounts != null && resp.Accounts.Count > 0;
-                    var hasProof = resp?.Proof != null && resp.Proof.Count > 0;
-                    if (!hasAccounts && !hasProof)
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap account-range root=0x{HexShort(stateRoot)} start=0x{HexShort(startingHash)}: " +
-                            "peer returned empty accounts AND empty proof (cannot serve this root — quarantined)");
-                    }
-
-                    if (verifyResponse != null && !RunVerify(verifyResponse, resp, "account-range", peer))
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap account-range root=0x{HexShort(stateRoot)} start=0x{HexShort(startingHash)}: " +
-                            "peer returned a proof-INVALID response (tampered/malformed — quarantined)");
-                    }
-                    return resp;
-                },
-                initialExcluded: null,
-                ct,
-                peerFilter: SnapStateServingFilter,
-                onRepeatedTimeout: QuarantineSnapState,
-                kind: TimeoutStreakKind.Snap).ConfigureAwait(false);
-            return result;
+            _quarantine.NoteRequestRoot(stateRoot);
+            var label = $"snap account-range root=0x{HexShort(stateRoot)} start=0x{HexShort(startingHash)}";
+            var reply = new SnapReply<AccountRangeMessage>(
+                label, stateRoot, "account-range",
+                resp => HasNoEntriesAndNoProof(resp?.Accounts, resp?.Proof),
+                verifyResponse,
+                $"snap account-range root=0x{HexShort(stateRoot)} start=0x{HexShort(startingHash)}: " +
+                ProofInvalidQuarantined,
+                StopWhenAllStateless: false);
+            return await FetchSnapAsync(
+                reply,
+                (peer, attemptCt) => _worker.GetAccountRangeAsync(
+                    peer, stateRoot, startingHash, limitHash, responseBytes, attemptCt),
+                ct).ConfigureAwait(false);
         }
 
         public Task<StorageRangesMessage> FetchStorageRangesAsync(
@@ -636,39 +299,20 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             byte[] startingHash, byte[] limitHash,
             ulong responseBytes, Func<StorageRangesMessage, bool> verifyResponse, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"snap storage-range root=0x{HexShort(stateRoot)} acct=0x{(accountHashes.Count > 0 ? HexShort(accountHashes[0]) : "")} accounts={accountHashes.Count} start=0x{HexShort(startingHash)}",
-                async (peer, attemptCt) =>
-                {
-                    var resp = await _worker.GetStorageRangesAsync(
-                        peer, stateRoot, accountHashes, startingHash, limitHash, responseBytes, attemptCt)
-                        .ConfigureAwait(false);
-
-                    var hasSlots = resp?.Slots != null && resp.Slots.Count > 0;
-                    var hasProof = resp?.Proof != null && resp.Proof.Count > 0;
-                    if (!hasSlots && !hasProof)
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap storage-range root=0x{HexShort(stateRoot)} accounts={accountHashes.Count}: " +
-                            "peer returned empty slots AND empty proof (cannot serve this root — quarantined)");
-                    }
-
-                    if (verifyResponse != null && !RunVerify(verifyResponse, resp, "storage-range", peer))
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap storage-range root=0x{HexShort(stateRoot)} accounts={accountHashes.Count}: " +
-                            "peer returned a proof-INVALID response (tampered/malformed — quarantined)");
-                    }
-                    return resp;
-                },
-                initialExcluded: null,
-                ct,
-                peerFilter: SnapStateServingFilter,
-                onRepeatedTimeout: QuarantineSnapState,
-                kind: TimeoutStreakKind.Snap).ConfigureAwait(false);
-            return result;
+            _quarantine.NoteRequestRoot(stateRoot);
+            var label = $"snap storage-range root=0x{HexShort(stateRoot)} acct=0x{(accountHashes.Count > 0 ? HexShort(accountHashes[0]) : "")} accounts={accountHashes.Count} start=0x{HexShort(startingHash)}";
+            var reply = new SnapReply<StorageRangesMessage>(
+                label, stateRoot, "storage-range",
+                resp => HasNoEntriesAndNoProof(resp?.Slots, resp?.Proof),
+                verifyResponse,
+                $"snap storage-range root=0x{HexShort(stateRoot)} accounts={accountHashes.Count}: " +
+                ProofInvalidQuarantined,
+                StopWhenAllStateless: false);
+            return await FetchSnapAsync(
+                reply,
+                (peer, attemptCt) => _worker.GetStorageRangesAsync(
+                    peer, stateRoot, accountHashes, startingHash, limitHash, responseBytes, attemptCt),
+                ct).ConfigureAwait(false);
         }
 
         public Task<ByteCodesMessage> FetchByteCodesAsync(
@@ -678,28 +322,18 @@ namespace Nethereum.DevP2P.Sync.Scheduling
         public async Task<ByteCodesMessage> FetchByteCodesAsync(
             List<byte[]> codeHashes, ulong responseBytes, Func<ByteCodesMessage, bool> verifyResponse, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"snap bytecodes x{codeHashes.Count}",
-                async (peer, attemptCt) =>
-                {
-                    var resp = await _worker.GetByteCodesAsync(peer, codeHashes, responseBytes, attemptCt)
-                        .ConfigureAwait(false);
-
-                    if (verifyResponse != null && !RunVerify(verifyResponse, resp, "bytecodes", peer))
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap bytecodes x{codeHashes.Count}: peer returned a code whose keccak matches no " +
-                            "requested hash (unrequested/over-length — quarantined)");
-                    }
-                    return resp;
-                },
-                initialExcluded: null,
-                ct,
-                peerFilter: SnapStateServingFilter,
-                onRepeatedTimeout: QuarantineSnapState,
-                kind: TimeoutStreakKind.Snap).ConfigureAwait(false);
-            return result;
+            var root = _quarantine.RootOfLastRootRequest;
+            var label = $"snap bytecodes x{codeHashes.Count}";
+            var reply = new SnapReply<ByteCodesMessage>(
+                label, root, "bytecodes",
+                resp => codeHashes.Count > 0 && (resp?.Codes == null || resp.Codes.Count == 0),
+                verifyResponse,
+                $"snap bytecodes x{codeHashes.Count}: peer returned a code " + UnrequestedQuarantined,
+                StopWhenAllStateless: true);
+            return await FetchSnapAsync(
+                reply,
+                (peer, attemptCt) => _worker.GetByteCodesAsync(peer, codeHashes, responseBytes, attemptCt),
+                ct).ConfigureAwait(false);
         }
 
         public Task<TrieNodesMessage> FetchTrieNodesAsync(
@@ -711,46 +345,28 @@ namespace Nethereum.DevP2P.Sync.Scheduling
             byte[] stateRoot, List<List<byte[]>> paths,
             ulong responseBytes, Func<TrieNodesMessage, bool> verifyResponse, CancellationToken ct)
         {
-            var (result, _) = await ExecuteWithRetryAsync(
-                $"snap trie-nodes root=0x{HexShort(stateRoot)} paths={paths.Count}",
-                async (peer, attemptCt) =>
-                {
-                    var resp = await _worker.GetTrieNodesAsync(peer, stateRoot, paths, responseBytes, attemptCt)
-                        .ConfigureAwait(false);
-
-                    if (verifyResponse != null && !RunVerify(verifyResponse, resp, "trie-nodes", peer))
-                    {
-                        QuarantineSnapState(peer);
-                        throw new InvalidOperationException(
-                            $"snap trie-nodes paths={paths.Count}: peer returned a node whose keccak matches no " +
-                            "requested hash (unrequested/over-length — quarantined)");
-                    }
-                    return resp;
-                },
-                initialExcluded: null,
-                ct,
-                peerFilter: SnapStateServingFilter,
-                onRepeatedTimeout: QuarantineSnapState,
-                kind: TimeoutStreakKind.Snap).ConfigureAwait(false);
-            return result;
+            _quarantine.NoteRequestRoot(stateRoot);
+            var label = $"snap trie-nodes root=0x{HexShort(stateRoot)} paths={paths.Count}";
+            var reply = new SnapReply<TrieNodesMessage>(
+                label, stateRoot, "trie-nodes",
+                resp => paths.Count > 0 && (resp?.Nodes == null || resp.Nodes.Count == 0),
+                verifyResponse,
+                $"snap trie-nodes paths={paths.Count}: peer returned a node " + UnrequestedQuarantined,
+                StopWhenAllStateless: true);
+            return await FetchSnapAsync(
+                reply,
+                (peer, attemptCt) => _worker.GetTrieNodesAsync(peer, stateRoot, paths, responseBytes, attemptCt),
+                ct).ConfigureAwait(false);
         }
 
-        private bool RunVerify<TMsg>(Func<TMsg, bool> verify, TMsg resp, string kind, IEthPeer peer)
-        {
-            try
-            {
-                return verify(resp);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(
-                    "snap.peer.verify.faulted request={Kind} peer={Host} error={ErrorType}: {Error} — treating as verification failure (quarantine+rotate)",
-                    kind, SyncPeerSession.ParseHost(peer.Enode), ex.GetType().Name, ex.Message);
-                return false;
-            }
-        }
+        private const string ProofInvalidQuarantined = "peer returned a proof-INVALID response (tampered/malformed — quarantined)";
 
-        private static string HexShort(byte[] hash)
+        private const string UnrequestedQuarantined = "whose keccak matches no requested hash (unrequested/over-length — quarantined)";
+
+        private static bool HasNoEntriesAndNoProof(System.Collections.ICollection? entries, System.Collections.ICollection? proof)
+            => (entries == null || entries.Count == 0) && (proof == null || proof.Count == 0);
+
+        internal static string HexShort(byte[] hash)
         {
             if (hash == null || hash.Length == 0) return "(empty)";
             var n = System.Math.Min(8, hash.Length);

@@ -133,7 +133,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_CursorAt100_When_BodiesRequestedForMixOfKnownAndUnknown_Then_OmitsUnknownHashes()
+        public async Task Given_CursorAt100_When_BodiesRequestedForMixOfKnownAndUnknown_Then_ServingStopsAtTheFirstUnknownHash()
         {
             var (blockStore, txStore, receiptStore) = await PrimeChainAsync(upToBlock: 100);
             var handler = new StorageBackedEth68Handler(blockStore, txStore, receiptStore);
@@ -146,7 +146,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             };
             var bodies = await handler.GetBodiesAsync(requested, CancellationToken.None);
 
-            Assert.Equal(2, bodies.Count);
+            Assert.Single(bodies);
         }
 
         [Fact]
@@ -176,7 +176,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_CursorAt100_When_ReceiptsRequestedForMixOfKnownAndUnknown_Then_OmitsUnknownHashes()
+        public async Task Given_CursorAt100_When_ReceiptsRequestedForMixOfKnownAndUnknown_Then_ServingStopsAtTheFirstUnknownHash()
         {
             var (blockStore, txStore, receiptStore) = await PrimeChainAsync(upToBlock: 100);
             var handler = new StorageBackedEth68Handler(blockStore, txStore, receiptStore);
@@ -188,7 +188,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             };
             var receipts = await handler.GetReceiptsAsync(requested, CancellationToken.None);
 
-            Assert.Equal(2, receipts.Count);
+            Assert.Single(receipts);
         }
 
         [Fact]

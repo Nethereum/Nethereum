@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Nethereum.DevP2P.Sync.Abstractions;
-using Nethereum.DevP2P.Sync.Peering;
 
 namespace Nethereum.DevP2P.Sync.Snap.CatchUp
 {

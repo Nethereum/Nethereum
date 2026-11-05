@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.DevP2P;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.Enr;
 using Nethereum.Signer;
@@ -127,11 +128,11 @@ namespace Nethereum.DevP2P.Discv5
 
             TryEnqueueEnrAsEnode(enr);
 
-            await FindNodeAndHarvestAsync(peerNodeId, endpoint, enr.Secp256k1, ct)
+            await TryFindNodeAndHarvestAsync(peerNodeId, endpoint, enr.Secp256k1, ct)
                 .ConfigureAwait(false);
         }
 
-        private async Task FindNodeAndHarvestAsync(
+        private async Task<bool> TryFindNodeAndHarvestAsync(
             byte[] peerNodeId, IPEndPoint endpoint, byte[] peerStaticPubKey, CancellationToken ct)
         {
             try
@@ -143,11 +144,13 @@ namespace Nethereum.DevP2P.Discv5
                 {
                     TryEnqueueEnrAsEnode(enr);
                 }
+                return true;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 _log($"discv5 findnode to {endpoint}: {ex.GetType().Name}: {ex.Message}");
+                return false;
             }
         }
 
@@ -184,8 +187,10 @@ namespace Nethereum.DevP2P.Discv5
                 if (enr?.Secp256k1 == null || enr.Secp256k1.Length != 33) continue;
                 if (peer.Address == null) continue;
 
-                await FindNodeAndHarvestAsync(peer.NodeId, peer.Address, enr.Secp256k1, ct)
+                var answered = await TryFindNodeAndHarvestAsync(peer.NodeId, peer.Address, enr.Secp256k1, ct)
                     .ConfigureAwait(false);
+                if (answered) _listener.Routing.RecordSuccess(peer.NodeId);
+                else _listener.Routing.RecordFailure(peer.NodeId);
             }
         }
 
@@ -232,7 +237,7 @@ namespace Nethereum.DevP2P.Discv5
             {
                 return null;
             }
-            if (IPAddress.IsLoopback(ip) || ip.Equals(IPAddress.Any)) return null;
+            if (IPAddress.IsLoopback(ip) || ip.Equals(IPAddress.Any) || ip.Equals(IPAddress.IPv6Any) || ip.IsSpecialNetwork()) return null;
             return EnodeUrl.Format(uncompressed, ip, tcp.Value);
         }
     }

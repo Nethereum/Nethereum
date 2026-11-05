@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,24 +50,55 @@ namespace Nethereum.DevP2P.Peering
 
             PruneExpiredHistory();
 
-            if (IsInHistory(candidate))
+            if (!TryClaimHistory(candidate, out var claimedAt))
                 return false;
 
-            if (!candidate.IsTrusted && !CanReserveOutboundSlot())
-                return false;
-
-            if (!candidate.IsTrusted)
+            var reserved = false;
+            try
             {
-                await _activeDialSlots.WaitAsync(ct).ConfigureAwait(false);
-                if (!TryClaimOutboundUnderRatio())
-                {
-                    _activeDialSlots.Release();
+                if (!candidate.IsTrusted && !CanReserveOutboundSlot())
                     return false;
+
+                if (!candidate.IsTrusted)
+                {
+                    await _activeDialSlots.WaitAsync(ct).ConfigureAwait(false);
+                    if (!TryClaimOutboundUnderRatio())
+                    {
+                        _activeDialSlots.Release();
+                        return false;
+                    }
+                }
+
+                reserved = true;
+                return true;
+            }
+            finally
+            {
+                if (!reserved)
+                    _history.TryRemove(new KeyValuePair<string, DateTimeOffset>(candidate.Key, claimedAt));
+            }
+        }
+
+        private bool TryClaimHistory(DialCandidate candidate, out DateTimeOffset claimedAt)
+        {
+            var ttl = candidate.IsTrusted
+                ? _options.TrustedHistoryExpiration
+                : _options.DialHistoryExpiration;
+            while (true)
+            {
+                claimedAt = _now();
+                if (_history.TryGetValue(candidate.Key, out var lastDialed))
+                {
+                    if (ttl > TimeSpan.Zero && (claimedAt - lastDialed) < ttl)
+                        return false;
+                    if (_history.TryUpdate(candidate.Key, claimedAt, lastDialed))
+                        return true;
+                }
+                else if (_history.TryAdd(candidate.Key, claimedAt))
+                {
+                    return true;
                 }
             }
-
-            _history[candidate.Key] = _now();
-            return true;
         }
 
         public void ReleaseSlot(DialCandidate candidate, DialOutcome outcome)
@@ -112,17 +144,6 @@ namespace Nethereum.DevP2P.Peering
                 if (Interlocked.Decrement(ref _inboundPeersLive) < 0)
                     Interlocked.Increment(ref _inboundPeersLive);
             }
-        }
-
-        private bool IsInHistory(DialCandidate candidate)
-        {
-            if (!_history.TryGetValue(candidate.Key, out var lastDialed))
-                return false;
-            var ttl = candidate.IsTrusted
-                ? _options.TrustedHistoryExpiration
-                : _options.DialHistoryExpiration;
-            if (ttl <= TimeSpan.Zero) return false;
-            return (_now() - lastDialed) < ttl;
         }
 
         private bool CanReserveOutboundSlot()

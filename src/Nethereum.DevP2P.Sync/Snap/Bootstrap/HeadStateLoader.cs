@@ -54,41 +54,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 count++;
 
                 var accountKey = ParseHex(entry["key"].ToString());
-                var balance = BigInteger.Parse(entry["balance"].ToString());
-                var nonce = entry["nonce"].ToObject<ulong>();
-
-                var storageRoot = DefaultValues.EMPTY_TRIE_HASH;
-                if (entry["storage"] is JObject slots && slots.Count > 0)
-                {
-                    var keccak = Sha3KeccackHashProvider.Instance;
-                    var storageTrie = new PatriciaTrie(storage);
-                    foreach (var slotProp in slots.Properties())
-                    {
-                        var rawSlotKey = ParseHex(slotProp.Name);
-                        var trieKey = keccak.ComputeHash(rawSlotKey);
-                        var slotValue = ParseHex(slotProp.Value.ToString());
-                        var stripped = slotValue.TrimZeroBytes();
-                        var rlpEncoded = RLP.RLP.EncodeElement(stripped);
-                        storageTrie.Put(trieKey, rlpEncoded);
-                    }
-                    storageTrie.SaveDirtyNodesToStorage();
-                    storageRoot = storageTrie.Root.GetHash();
-                }
-
-                var codeHash = ParseHex(entry["codeHash"].ToString());
-                if (entry["code"] != null)
-                {
-                    var code = ParseHex(entry["code"].ToString());
-                    codes.Put(codeHash, code);
-                }
-
-                var account = new Account
-                {
-                    Nonce = (EvmUInt256)nonce,
-                    Balance = (EvmUInt256)balance,
-                    StateRoot = storageRoot,
-                    CodeHash = codeHash
-                };
+                var account = ParseAccount(entry, storage, codes);
                 stateTrie.Put(accountKey, new AccountEncoder().Encode(account));
             }
             stateTrie.SaveDirtyNodesToStorage();
@@ -101,6 +67,48 @@ namespace Nethereum.DevP2P.Sync.Snap.Bootstrap
                 ComputedRoot = stateTrie.Root.GetHash(),
                 ExpectedRoot = expectedRoot,
                 AccountCount = count
+            };
+        }
+
+        private static byte[] StorageRootOf(JObject slots, InMemoryContentNodeStore storage)
+        {
+            var keccak = Sha3KeccackHashProvider.Instance;
+            var storageTrie = new PatriciaTrie(storage);
+            foreach (var slotProp in slots.Properties())
+            {
+                var rawSlotKey = ParseHex(slotProp.Name);
+                var trieKey = keccak.ComputeHash(rawSlotKey);
+                var slotValue = ParseHex(slotProp.Value.ToString());
+                var stripped = slotValue.TrimZeroBytes();
+                var rlpEncoded = RLP.RLP.EncodeElement(stripped);
+                storageTrie.Put(trieKey, rlpEncoded);
+            }
+            storageTrie.SaveDirtyNodesToStorage();
+            return storageTrie.Root.GetHash();
+        }
+
+        private static Account ParseAccount(JObject entry, InMemoryContentNodeStore storage, BytecodeStore codes)
+        {
+            var balance = BigInteger.Parse(entry["balance"].ToString());
+            var nonce = entry["nonce"].ToObject<ulong>();
+
+            var storageRoot = DefaultValues.EMPTY_TRIE_HASH;
+            if (entry["storage"] is JObject slots && slots.Count > 0)
+                storageRoot = StorageRootOf(slots, storage);
+
+            var codeHash = ParseHex(entry["codeHash"].ToString());
+            if (entry["code"] != null)
+            {
+                var code = ParseHex(entry["code"].ToString());
+                codes.Put(codeHash, code);
+            }
+
+            return new Account
+            {
+                Nonce = (EvmUInt256)nonce,
+                Balance = (EvmUInt256)balance,
+                StateRoot = storageRoot,
+                CodeHash = codeHash
             };
         }
 

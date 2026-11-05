@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Numerics;
 using System.Threading;
@@ -89,7 +90,7 @@ namespace Nethereum.DevP2P.UnitTests.Eth
                 {
                     EarliestBlock = 100,
                     LatestBlock = 50,
-                    LatestBlockHash = new byte[32]
+                    LatestBlockHash = Enumerable.Repeat((byte)7, 32).ToArray()
                 });
 
                 await session.HandleEthMessageAsync(EthMessageIds.BlockRangeUpdate, payload);
@@ -133,7 +134,7 @@ namespace Nethereum.DevP2P.UnitTests.Eth
         }
 
         [Fact]
-        public async Task Given_EmptyTransactionsMessage_When_HandleEthMessageAsync_Then_DisconnectsWithProtocolBreach()
+        public async Task Given_EmptyTransactionsMessage_When_HandleEthMessageAsync_Then_PeerStaysConnected()
         {
             var (listener, serverConn, clientConn) = await HandshakeOverLoopbackAsync();
             try
@@ -147,8 +148,8 @@ namespace Nethereum.DevP2P.UnitTests.Eth
 
                 await session.HandleEthMessageAsync(EthMessageIds.Transactions, payload);
 
-                Assert.False(serverConn.IsConnected,
-                    "empty Transactions message is a ProtocolBreach per spec body rule");
+                Assert.True(serverConn.IsConnected,
+                    "geth accepts an empty Transactions broadcast (eth/handler_eth.go:90-125)");
             }
             finally
             {
@@ -169,7 +170,7 @@ namespace Nethereum.DevP2P.UnitTests.Eth
                 {
                     EarliestBlock = 0,
                     LatestBlock = 100,
-                    LatestBlockHash = new byte[32]
+                    LatestBlockHash = Enumerable.Repeat((byte)7, 32).ToArray()
                 });
 
                 await session.HandleEthMessageAsync(EthMessageIds.BlockRangeUpdate, payload);
@@ -199,7 +200,7 @@ namespace Nethereum.DevP2P.UnitTests.Eth
                 {
                     EarliestBlock = 0,
                     LatestBlock = 1000,
-                    LatestBlockHash = new byte[32]
+                    LatestBlockHash = Enumerable.Repeat((byte)7, 32).ToArray()
                 });
 
                 await session.HandleEthMessageAsync(EthMessageIds.BlockRangeUpdate, payload);

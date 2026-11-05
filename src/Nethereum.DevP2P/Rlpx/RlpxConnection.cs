@@ -26,6 +26,7 @@ namespace Nethereum.DevP2P.Rlpx
         private Timer _pingTimer;
 
         private readonly RlpxPushChannel _pushChannel;
+        private readonly InFlightDecodeLimiter _decodeLimiter;
 
         public bool IsConnected { get; private set; }
         public bool IsDisconnected => Volatile.Read(ref _disconnectedRaised) != 0;
@@ -59,15 +60,46 @@ namespace Nethereum.DevP2P.Rlpx
         {
             _localKey = localKey;
             _config = config ?? new DevP2PConfig();
-            _pushChannel = new RlpxPushChannel(args => PushMessageReceived?.Invoke(this, args));
+            _decodeLimiter = _config.DecodeLimiter ?? InFlightDecodeLimiter.Shared;
+            _pushChannel = new RlpxPushChannel(args => PushMessageReceived?.Invoke(this, args), _decodeLimiter);
             _dispatcher = new RlpxRequestDispatcher(
                 readFrame: ReadFrameAsync,
                 sendFrame: SendFrameAsync,
                 handleControlFrame: HandleControlFrameOrContinueAsync,
-                onUnsolicited: (msgId, payload) => EnqueuePush(new RlpxPushMessageEventArgs(msgId, payload)),
+                onUnsolicited: (msgId, payload, ct) => EnqueuePushAsync(new RlpxPushMessageEventArgs(msgId, payload), ct),
                 onDisconnected: MarkDisconnected,
                 readTimeoutMs: () => _config.ReadTimeoutMs,
-                onFrameReceived: StampLastFrameReceived);
+                abandonedTrackingMs: () => _config.AbandonedRequestTrackingMs,
+                onFrameReceived: StampLastFrameReceived,
+                isFrameAccepted: IsFrameAccepted,
+                onProtocolError: () => DisconnectAsync(DisconnectReason.ProtocolBreach),
+                isResponseMessage: IsResponseMessage,
+                decodeLimiter: _decodeLimiter);
+        }
+
+        private bool IsResponseMessage(int msgId)
+        {
+            var shared = SharedCapabilities;
+            if (shared == null || msgId < BaseProtocolLength) return false;
+            foreach (var capability in shared)
+                if (msgId >= capability.Offset && msgId < capability.Offset + capability.Length)
+                    return RlpxResponseCodes.IsResponse(capability.Name, msgId - capability.Offset);
+            return false;
+        }
+
+        private const int BaseProtocolLength = 0x10;
+        public const int MaxSubProtocolMessageSize = 10 * 1024 * 1024;
+
+        private bool IsFrameAccepted(int msgId, int payloadLength)
+        {
+            if (msgId < BaseProtocolLength) return true;
+            var shared = SharedCapabilities;
+            if (shared == null) return true;
+            foreach (var capability in shared)
+                if (msgId >= capability.Offset && msgId < capability.Offset + capability.Length)
+                    return payloadLength <= MaxSubProtocolMessageSize
+                           || (capability.Name != "eth" && capability.Name != "snap");
+            return false;
         }
 
         [NethereumDocExample(DocSection.DevP2P, "devp2p", "RlpxConnection.ConnectAsync — outbound encrypted connection")]
@@ -135,14 +167,11 @@ namespace Nethereum.DevP2P.Rlpx
 
         private HelloMessage BuildLocalHello()
         {
-            var capabilities = new List<P2PCapability>
-            {
-                new() { Name = "eth", Version = 68 },
-                new() { Name = "eth", Version = 69 },
-                new() { Name = "eth", Version = 70 },
-                new() { Name = "eth", Version = 71 },
-                new() { Name = "snap", Version = 1 }
-            };
+            var capabilities = new List<P2PCapability>();
+            for (var ethVersion = 68; ethVersion <= 71 && ethVersion <= _config.MaxEthVersion; ethVersion++)
+                capabilities.Add(new P2PCapability { Name = "eth", Version = ethVersion });
+            if (_config.AdvertiseSnap1)
+                capabilities.Add(new P2PCapability { Name = "snap", Version = 1 });
 
             if (_config.AdvertiseSnap2)
                 capabilities.Add(new P2PCapability { Name = "snap", Version = 2 });
@@ -197,11 +226,44 @@ namespace Nethereum.DevP2P.Rlpx
                 throw new InvalidOperationException(
                     $"Expected Hello (0x00), got 0x{remoteMsgId:x2}");
             }
-            return HelloMessageEncoder.Decode(remotePayload);
+            HelloMessage hello;
+            try
+            {
+                hello = HelloMessageEncoder.Decode(remotePayload);
+            }
+            catch (Exception ex)
+            {
+                await SendRejectDisconnectAsync(DisconnectReason.ProtocolBreach);
+                throw new InvalidOperationException("Malformed Hello", ex);
+            }
+
+            var rejection = ValidateHello(hello);
+            if (rejection.HasValue)
+            {
+                await SendRejectDisconnectAsync(rejection.Value);
+                throw new InvalidOperationException($"Invalid Hello from peer ({rejection.Value})");
+            }
+            return hello;
         }
+
+        private DisconnectReason? ValidateHello(HelloMessage hello)
+        {
+            if (hello.NodeId == null || hello.NodeId.Length != 64)
+                return DisconnectReason.NullIdentity;
+            if (!ByteUtil.AreEqual(hello.NodeId, RemoteNodeId))
+                return DisconnectReason.UnexpectedIdentity;
+            if (hello.Capabilities.Count > MaxHelloCapabilities
+                || hello.ClientId.Length > MaxHelloClientIdLength)
+                return DisconnectReason.ProtocolBreach;
+            return null;
+        }
+
+        private const int MaxHelloCapabilities = 64;
+        private const int MaxHelloClientIdLength = 256;
 
         private async Task CompleteHandshakeAsync(HelloMessage localHello)
         {
+            _frameChannel.LiftHandshakeFrameLimit();
             await NegotiateSharedCapabilitiesOrDisconnectAsync(localHello);
             IsConnected = true;
             StartPingKeepalive();
@@ -252,7 +314,8 @@ namespace Nethereum.DevP2P.Rlpx
             return new RlpxFrameChannel(
                 _stream,
                 new RlpxFrameWriter(secrets.AesSecret, secrets.MacSecret, secrets.EgressMac),
-                new RlpxFrameReader(secrets.AesSecret, secrets.MacSecret, secrets.IngressMac));
+                new RlpxFrameReader(secrets.AesSecret, secrets.MacSecret, secrets.IngressMac),
+                _config.FrameWriteTimeoutMs);
         }
 
         public int GetCapabilityOffset(string name)
@@ -287,11 +350,17 @@ namespace Nethereum.DevP2P.Rlpx
         }
 
         private async Task<(int msgId, byte[] payload)> ReadNextSubProtocolFrameAsync(
-            CancellationToken readCt, CancellationToken controlCt)
+            TimeSpan frameReadTimeout, CancellationToken readCt, CancellationToken controlCt)
         {
             while (true)
             {
-                var (msgId, payload) = await ReadFrameAsync(readCt);
+                var (msgId, payload) = await ReadFrameWithinAsync(frameReadTimeout, readCt);
+
+                if (!IsFrameAccepted(msgId, payload.Length))
+                {
+                    await DisconnectAsync(DisconnectReason.ProtocolBreach);
+                    throw new IOException($"message id 0x{msgId:x} with {payload.Length} bytes is outside every negotiated capability or over its size cap");
+                }
 
                 var action = await HandleControlFrameOrContinueAsync(msgId, controlCt);
                 if (action == RlpxControlFrameAction.Continue) continue;
@@ -305,15 +374,41 @@ namespace Nethereum.DevP2P.Rlpx
             }
         }
 
+        public TimeSpan FrameReadTimeout => TimeSpan.FromMilliseconds(_config.ReadTimeoutMs);
+
         public async Task<(int msgId, byte[] payload)> ReceiveMessageAsync(CancellationToken ct = default)
+        {
+            ThrowIfDispatched();
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(_config.ReadTimeoutMs);
+
+            return await ReadNextSubProtocolFrameAsync(FrameReadTimeout, timeoutCts.Token, ct);
+        }
+
+        public async Task<(int msgId, byte[] payload)> ReceiveMessageAsync(
+            TimeSpan frameReadTimeout, CancellationToken ct = default)
+        {
+            ThrowIfDispatched();
+            return await ReadNextSubProtocolFrameAsync(frameReadTimeout, ct, ct);
+        }
+
+        public ValueTask<InFlightDecodeLease> AcquireDecodeLeaseAsync(int payloadBytes, CancellationToken ct = default)
+            => _decodeLimiter.AcquireAsync(payloadBytes, ct);
+
+        public async Task<(int msgId, byte[] payload)> ReceiveStatusAsync(CancellationToken ct = default)
+        {
+            ThrowIfDispatched();
+            using var statusCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            statusCts.CancelAfter(_config.StatusHandshakeTimeoutMs);
+
+            return await ReadNextSubProtocolFrameAsync(FrameReadTimeout, statusCts.Token, ct);
+        }
+
+        private void ThrowIfDispatched()
         {
             if (_dispatcher.IsLoopStarted)
                 throw new InvalidOperationException(
                     "Connection is in dispatched mode (SendRequestAsync); pull-based ReceiveMessageAsync is disabled on it.");
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(_config.ReadTimeoutMs);
-
-            return await ReadNextSubProtocolFrameAsync(timeoutCts.Token, ct);
         }
 
         public async Task<(int msgId, byte[] payload)> RequestAsync(
@@ -330,19 +425,20 @@ namespace Nethereum.DevP2P.Rlpx
 
             while (true)
             {
-                var (msgId, payload) = await ReadNextSubProtocolFrameAsync(timeoutCts.Token, ct);
+                var (msgId, payload) = await ReadNextSubProtocolFrameAsync(
+                    FrameReadTimeout, timeoutCts.Token, ct);
 
                 if (msgId == expectedResponseMsgId)
                     return (msgId, payload);
 
-                EnqueuePush(new RlpxPushMessageEventArgs(msgId, payload));
+                await EnqueuePushAsync(new RlpxPushMessageEventArgs(msgId, payload), timeoutCts.Token);
             }
         }
 
-        private void EnqueuePush(RlpxPushMessageEventArgs args)
+        private Task EnqueuePushAsync(RlpxPushMessageEventArgs args, CancellationToken ct)
         {
-            if (PushMessageReceived == null) return;
-            _pushChannel.Enqueue(args);
+            if (PushMessageReceived == null) return Task.CompletedTask;
+            return _pushChannel.EnqueueAsync(args, ct);
         }
 
         public void StartPushReceiving() => _dispatcher.EnsureLoopStarted();
@@ -350,7 +446,20 @@ namespace Nethereum.DevP2P.Rlpx
         public Task<byte[]> SendRequestAsync(
             int sendMsgId, byte[] payload, int expectedResponseMsgId, ulong requestId,
             TimeSpan timeout, CancellationToken ct = default)
-            => _dispatcher.SendRequestAsync(sendMsgId, payload, expectedResponseMsgId, requestId, timeout, ct);
+            => _dispatcher.SendRequestAsync(
+                sendMsgId, payload, expectedResponseMsgId, requestId, timeout, RlpxResponseBound.Unbounded, ct);
+
+        [NethereumDocExample(DocSection.DevP2P, "devp2p", "RlpxConnection.SendRequestAsync — request with a bounded response")]
+        public Task<byte[]> SendRequestAsync(
+            int sendMsgId, byte[] payload, int expectedResponseMsgId, ulong requestId,
+            TimeSpan timeout, RlpxResponseBound bound, CancellationToken ct = default)
+            => _dispatcher.SendRequestAsync(sendMsgId, payload, expectedResponseMsgId, requestId, timeout, bound, ct);
+
+        public Task<T> SendRequestAsync<T>(
+            int sendMsgId, byte[] payload, int expectedResponseMsgId, ulong requestId,
+            TimeSpan timeout, RlpxResponseBound bound, Func<byte[], T> decode, CancellationToken ct = default)
+            => _dispatcher.SendRequestAsync(
+                sendMsgId, payload, expectedResponseMsgId, requestId, timeout, bound, decode, ct);
 
         public void StartDispatching() => _dispatcher.EnsureLoopStarted();
 
@@ -397,11 +506,30 @@ namespace Nethereum.DevP2P.Rlpx
             catch { MarkDisconnected(); _pingTimer?.Dispose(); }
         }
 
-        private Task SendFrameAsync(int msgId, byte[] payload, CancellationToken ct = default)
-            => _frameChannel.SendFrameAsync(msgId, payload, ct);
+        private async Task SendFrameAsync(int msgId, byte[] payload, CancellationToken ct = default)
+        {
+            try
+            {
+                await _frameChannel.SendFrameAsync(msgId, payload, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is TimeoutException || ex is IOException)
+            {
+                MarkDisconnected();
+                Dispose();
+                throw;
+            }
+        }
 
         private Task<(int msgId, byte[] payload)> ReadFrameAsync(CancellationToken ct = default)
             => _frameChannel.ReadFrameAsync(ct);
+
+        private async Task<(int msgId, byte[] payload)> ReadFrameWithinAsync(
+            TimeSpan frameReadTimeout, CancellationToken ct)
+        {
+            using var frameCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            frameCts.CancelAfter(frameReadTimeout);
+            return await ReadFrameAsync(frameCts.Token);
+        }
 
         private static async Task<List<IPAddress>> ResolveTargetIpsAsync(string host, CancellationToken ct)
         {

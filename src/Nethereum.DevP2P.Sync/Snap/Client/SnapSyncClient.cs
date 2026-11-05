@@ -1,3 +1,4 @@
+#pragma warning disable CS0618
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,25 +8,23 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Documentation;
-using Nethereum.DevP2P.Sync.Metrics;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Merkle.Patricia;
-using Nethereum.Model;
-using Nethereum.Model.P2P.Snap;
-using Nethereum.Util;
 using Nethereum.Merkle.Patricia.Storage;
-using Nethereum.Merkle.Patricia.ProofVerification;
+using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Sync.Snap.Client
 {
-    public partial class SnapSyncClient
+    public class SnapSyncClient
     {
-        private readonly ISnapPeer _peer;
-        private readonly ISnapSyncSink _sink;
-        private readonly int _accountsPerRequest;
-        private readonly ulong _responseBytesBudget;
-        private readonly ILogger _logger;
-        private readonly SnapSyncMetrics _metrics;
+        private readonly StateBackpressureGate _backpressureGate;
+
+        internal ISnapPeer Peer { get; }
+        internal ISnapSyncSink Sink { get; }
+        internal ulong ResponseBytesBudget { get; }
+        internal ILogger Logger { get; }
+        internal SnapSyncMetrics Metrics { get; }
+        internal SnapPeerRequests Requests { get; }
 
         public SnapSyncClient(ISnapPeer peer, int accountsPerRequest = 256, ulong responseBytesBudget = 524_288UL)
             : this(peer, sink: null, accountsPerRequest, responseBytesBudget) { }
@@ -38,18 +37,14 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             ILogger logger = null,
             SnapSyncMetrics metrics = null)
         {
-            _peer = peer ?? throw new ArgumentNullException(nameof(peer));
-            _sink = sink ?? new InMemorySnapSyncSink();
-            _accountsPerRequest = accountsPerRequest;
-            _responseBytesBudget = responseBytesBudget;
-            _logger = logger ?? NullLogger.Instance;
-            _metrics = metrics;
+            Peer = peer ?? throw new ArgumentNullException(nameof(peer));
+            Sink = sink ?? new InMemorySnapSyncSink();
+            ResponseBytesBudget = responseBytesBudget;
+            Logger = logger ?? NullLogger.Instance;
+            Metrics = metrics;
+            Requests = new SnapPeerRequests(Peer, ResponseBytesBudget);
+            _backpressureGate = new StateBackpressureGate(this);
         }
-
-        private Action<int, int> _undersizedResumeWarning => (count, conc) =>
-            _logger.LogWarning(
-                "snap.resume.degraded tasks={Count} expected_concurrency={Conc}",
-                count, conc);
 
         public Func<CancellationToken, Task<byte[]>> PivotRefresher { get; set; }
 
@@ -61,21 +56,15 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
         public Func<string> StateWriteBackpressure { get; set; }
 
-        private const int SnapAccountRangeRetryDelayMs = 1_000;
         public int BytecodeDeadEndNoProgressRounds { get; set; } = 600;
-        private const int MaxEmptyDispatchBackoffMs = 30_000;
 
-        private const int SnapConsumerIdleDelayMs = 20;
-        private const int StorageSubtaskRetryBackoffMs = 100;
         public int StateBackpressurePollMs { get; set; } = 5_000;
 
         public TimeSpan StateBackpressureWarnAfter { get; set; } = TimeSpan.FromMinutes(10);
 
-        private long _stateBackpressurePausedSinceMs;
-
         public TimeSpan Phase2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
-        public int RootRefreshIntervalMs { get; set; } = 12_000;
+        public int RootRefreshIntervalMs { get; set; } = (int)PivotTiming.PollInterval.TotalMilliseconds;
 
         public int AccountConcurrency { get; set; } = 16;
 
@@ -90,8 +79,6 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
 
         public Action FlushBulkFlatBeforeCheckpoint { get; set; }
 
-        private const int MaxCodeRequestCount = 84;
-
         public async Task<SyncResult> SyncStateAsync(
             byte[] targetRoot,
             SnapSyncState resumeFrom,
@@ -103,35 +90,6 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
                 checkpointSink == null ? null : cp => checkpointSink(cp.State),
                 ct).ConfigureAwait(false);
 
-        private List<SnapSyncAccountTask> BuildSeedTasks(SnapSyncState resumeFrom, int concurrency)
-        {
-            List<SnapSyncAccountTask> seedTasks;
-            if (resumeFrom != null && resumeFrom.Tasks != null && resumeFrom.Tasks.Count > 0)
-            {
-                seedTasks = new List<SnapSyncAccountTask>(resumeFrom.Tasks);
-                if (seedTasks.Count < concurrency)
-                {
-                    _undersizedResumeWarning?.Invoke(seedTasks.Count, concurrency);
-                }
-            }
-            else
-            {
-                seedTasks = new List<SnapSyncAccountTask>(concurrency);
-                var ranges = SnapHashRanges.SplitHashRange(new byte[32], SnapHashRanges.FilledHash(0xff), concurrency);
-                foreach (var range in ranges)
-                {
-                    seedTasks.Add(new SnapSyncAccountTask
-                    {
-                        Next = range.Start,
-                        Last = range.End,
-                        StorageCompleted = Array.Empty<byte[]>(),
-                        SubTasks = new Dictionary<byte[], IReadOnlyList<SnapSyncStorageSubTask>>(),
-                    });
-                }
-            }
-            return seedTasks;
-        }
-
         [NethereumDocExample(DocSection.DevP2P, "devp2p-sync", "SnapSyncClient.SyncStateWithCheckpointAsync — resumable Phase-2 stream")]
         public async Task<SyncResult> SyncStateWithCheckpointAsync(
             byte[] targetRoot,
@@ -139,30 +97,52 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             Action<SnapSyncCheckpoint> checkpointSink,
             CancellationToken ct = default)
         {
+            var result = await StreamLeavesAsync(targetRoot, resumeFrom, checkpointSink, ct).ConfigureAwait(false);
+            ThrowIfRootMismatched(result, PivotCatchUp != null);
+            return result;
+        }
+
+        internal static void ThrowIfRootMismatched(SyncResult result, bool pivotCatchUpActive)
+        {
+            if (!result.RootMatchesTarget && !pivotCatchUpActive)
+                throw new SnapRootMismatchException(
+                    $"Snap-sync result root {result.ComputedRoot.ToHex()} does not match target {result.FinalTargetRoot.ToHex()} — peer returned tampered or incomplete data",
+                    result.AccountsNeedingHeal,
+                    result.CodeHashesNeedingHeal);
+        }
+
+        internal async Task<SyncResult> StreamLeavesAsync(
+            byte[] targetRoot,
+            SnapSyncState resumeFrom,
+            Action<SnapSyncCheckpoint> checkpointSink,
+            CancellationToken ct)
+        {
             if (targetRoot == null || targetRoot.Length != 32)
                 throw new ArgumentException("targetRoot must be 32 bytes", nameof(targetRoot));
             if (PivotCatchUp != null && checkpointSink == null)
                 throw new InvalidOperationException(
                     "A snap/2 pivot catch-up persists the durable task frontier before it runs; Phase 2 needs a checkpoint sink.");
 
-            await _sink.BeginAsync(targetRoot, ct).ConfigureAwait(false);
+            await Sink.BeginAsync(targetRoot, ct).ConfigureAwait(false);
 
             var concurrency = Math.Max(1, AccountConcurrency);
             var largeContractConcurrency = Math.Max(1, LargeContractConcurrency);
 
-            var seedTasks = BuildSeedTasks(resumeFrom, concurrency);
+            var seedTasks = SnapPhase2Seed.Build(resumeFrom, concurrency, SnapPhase2Seed.UndersizedResumeWarning(Logger));
 
-            _logger.LogInformation(
+            Logger.LogInformation(
                 "snap.phase2.concurrency account_workers={AccountWorkers} whale_partitions={WhalePartitions}",
                 concurrency, largeContractConcurrency);
 
-            var state = new SnapPhase2State(resumeFrom?.Counters, _metrics);
+            var state = new SnapPhase2State(resumeFrom?.Counters, Metrics);
 
             var taskSet = new SnapTaskSet(seedTasks)
             {
-                MaxRequestSizeBytes = _responseBytesBudget,
+                MaxRequestSizeBytes = ResponseBytesBudget,
                 LargeContractConcurrency = largeContractConcurrency,
             };
+            if (Sink is Nethereum.DevP2P.Sync.Snap.Sinks.IStorageRootSource rootSource)
+                rootSource.OnStorageRootCompleted = (account, local, expected) => taskSet.MarkNeedHealIfRootMismatch(account, local, expected);
 
             var checkpointer = new SnapPhase2Checkpointer(
                 state, taskSet, resumeFrom, checkpointSink, CheckpointBytesThreshold, FlushBulkFlatBeforeCheckpoint);
@@ -171,271 +151,271 @@ namespace Nethereum.DevP2P.Sync.Snap.Client
             return await run.RunAsync(ct);
         }
 
-        private async Task RunFrozenRootDriverAsync(
-            CancellationTokenSource rootRollCts,
-            Func<CancellationToken, Task<byte[]>> rootRefresher,
-            int[] pivotRefresherLock,
-            byte[][] frozenRootHolder,
-            byte[][] pendingFrozenRootHolder,
-            object attemptCtsLock,
-            CancellationTokenSource[] currentAttemptCtsHolder)
-        {
-            while (!rootRollCts.Token.IsCancellationRequested)
-            {
-                try { await Task.Delay(RootRefreshIntervalMs, rootRollCts.Token).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
-                if (Interlocked.Exchange(ref pivotRefresherLock[0], 1) != 0) continue;
-                try
-                {
-                    using var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(rootRollCts.Token);
-                    refreshCts.CancelAfter(RootRefreshIntervalMs);
-                    byte[] fresh;
-                    try
-                    {
-                        fresh = await rootRefresher(refreshCts.Token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (!rootRollCts.Token.IsCancellationRequested)
-                    {
-                        _logger.LogWarning("snap.pivot.refresh_timeout after {Ms}ms — retrying next tick", RootRefreshIntervalMs);
-                        continue;
-                    }
-                    if (fresh != null && fresh.Length == 32
-                        && !ByteUtil.AreEqual(Volatile.Read(ref frozenRootHolder[0]), fresh))
-                    {
-                        lock (attemptCtsLock)
-                        {
-                            Volatile.Write(ref pendingFrozenRootHolder[0], fresh);
-                            currentAttemptCtsHolder[0]?.Cancel();
-                        }
-                        _logger.LogInformation("snap.pivot.move_detected new_root=0x{Root}", fresh.ToHex());
-                    }
-                }
-                catch (OperationCanceledException) { break; }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "snap.pivot.refresh_error after_ms={Ms} error_type={ErrorType}", RootRefreshIntervalMs, ex.GetType().Name);
-                }
-                finally { Volatile.Write(ref pivotRefresherLock[0], 0); }
-            }
-        }
+        public static Task<Task> WaitForFirstFaultedConsumerAsync(IReadOnlyList<Task> consumers)
+            => Phase2Watchdog.WaitForFirstFaultedConsumerAsync(consumers);
 
-        public static async Task<Task> WaitForFirstFaultedConsumerAsync(IReadOnlyList<Task> consumers)
-        {
-            var pending = new List<Task>(consumers);
-            while (pending.Count > 0)
-            {
-                var completed = await Task.WhenAny(pending).ConfigureAwait(false);
-                pending.Remove(completed);
-                if (completed.IsFaulted || completed.IsCanceled)
-                    return completed;
-            }
-
-            return null;
-        }
-        public async Task RunPhase2LivenessSupervisorAsync(
+        public Task RunPhase2LivenessSupervisorAsync(
             SnapTaskSet taskSet,
             ConcurrentDictionary<int, ActiveSnapLeaseInfo> activeAccountRangeLeases,
             Func<long> getProgressSnapshot,
             CancellationToken ct)
-        {
-            var poll = GetPhase2LivenessPollInterval();
-            long lastProgress = getProgressSnapshot();
-            long ownerlessSince = Environment.TickCount64;
+            => new Phase2Watchdog(this).RunSupervisorAsync(taskSet, activeAccountRangeLeases, getProgressSnapshot, ct);
 
-            while (true)
-            {
-                await Task.Delay(poll, ct).ConfigureAwait(false);
-                var now = Environment.TickCount64;
-                var diagnostics = taskSet.GetDiagnostics();
-                if (diagnostics.AllDone) return;
+        public Task WaitWhileStateBackpressuredAsync(int consumerIdx, CancellationToken ct)
+            => _backpressureGate.WaitAsync(consumerIdx, ct);
 
-                var activeLeases = SnapshotActiveLeases(activeAccountRangeLeases);
-                var progress = getProgressSnapshot();
-                var ownerlessNoWork = !diagnostics.HasLeasableWork
-                    && activeLeases.Count == 0;
-
-                if (!ownerlessNoWork || progress != lastProgress)
-                {
-                    ownerlessSince = now;
-                    lastProgress = progress;
-                }
-                else if (TaskSetStallTimeout > TimeSpan.Zero
-                    && TimeSpan.FromMilliseconds(Math.Max(0, now - ownerlessSince)) >= TaskSetStallTimeout)
-                {
-                    var idleFor = TimeSpan.FromMilliseconds(Math.Max(0, now - ownerlessSince));
-                    _logger.LogError(
-                        "snap.phase2.supervisor.taskset_stalled ownerless_idle_sec={IdleSec} progress={Progress} all_done={AllDone} has_leasable={HasLeasable} range_inflight={RangeInFlight} range_pending={RangePending} state_tasks={StateTasks} large_pending={LargePending} large_inflight={LargeInFlight} code_queue={CodeQueue}",
-                        (long)idleFor.TotalSeconds, progress, diagnostics.AllDone, diagnostics.HasLeasableWork,
-                        diagnostics.RangeInFlightCount, diagnostics.RangePendingCount, diagnostics.StateTaskCount,
-                        diagnostics.LargeSubtaskPendingCount, diagnostics.LargeSubtaskInFlightCount, diagnostics.CodeQueueCount);
-                    throw new SnapTaskSetStalledException(-1, idleFor, progress, diagnostics);
-                }
-
-                if (ActiveLeaseStallTimeout > TimeSpan.Zero && activeLeases.Count > 0)
-                {
-                    var activeIdle = TimeSpan.FromSeconds(activeLeases.OldestAgeSeconds);
-                    if (activeIdle >= ActiveLeaseStallTimeout)
-                    {
-                        _logger.LogError(
-                            "snap.phase2.supervisor.active_lease_stalled active_idle_sec={IdleSec} active_leases={ActiveLeases} oldest_owner={OldestOwner} oldest_task={OldestTask} oldest_origin=0x{OldestOrigin} oldest_limit=0x{OldestLimit} progress={Progress} all_done={AllDone} has_leasable={HasLeasable} range_inflight={RangeInFlight} range_pending={RangePending}",
-                            (long)activeIdle.TotalSeconds, activeLeases.Count, activeLeases.OldestConsumer,
-                            activeLeases.OldestTaskIndex, activeLeases.OldestOrigin, activeLeases.OldestLimit,
-                            progress, diagnostics.AllDone, diagnostics.HasLeasableWork,
-                            diagnostics.RangeInFlightCount, diagnostics.RangePendingCount);
-                        throw new SnapTaskLeaseStalledException(activeIdle, activeLeases, diagnostics);
-                    }
-                }
-            }
-        }
-
-        private TimeSpan GetPhase2LivenessPollInterval()
-        {
-            var timeout = ActiveLeaseStallTimeout > TimeSpan.Zero ? ActiveLeaseStallTimeout : TaskSetStallTimeout;
-            if (TaskSetStallTimeout > TimeSpan.Zero && (timeout <= TimeSpan.Zero || TaskSetStallTimeout < timeout))
-                timeout = TaskSetStallTimeout;
-            if (timeout <= TimeSpan.Zero) return TimeSpan.FromSeconds(5);
-            var ms = Math.Max(50, Math.Min(30_000, timeout.TotalMilliseconds / 6));
-            return TimeSpan.FromMilliseconds(ms);
-        }
-
-        public async Task WaitWhileStateBackpressuredAsync(int consumerIdx, CancellationToken ct)
-        {
-            var backpressure = StateWriteBackpressure;
-            if (backpressure == null) return;
-
-            string pressure; int pausePolls = 0;
-            while ((pressure = backpressure()) != null)
-            {
-                ct.ThrowIfCancellationRequested();
-                var pausedFor = MarkPausedAndPublishBackpressureGauge();
-                if (consumerIdx == 0 && pausePolls % 6 == 0)
-                    LogStateBackpressurePause(pausedFor, pressure);
-                pausePolls++;
-                await Task.Delay(StateBackpressurePollMs, ct).ConfigureAwait(false);
-            }
-
-            var pausedSince = Interlocked.Exchange(ref _stateBackpressurePausedSinceMs, 0);
-            if (pausedSince != 0 || pausePolls > 0)
-                _metrics?.SetPhase2BackpressurePausedFor(TimeSpan.Zero);
-            if (pausedSince == 0) return;
-            _logger.LogInformation(
-                "Phase 2 leaf stream: resumed after {PausedSec}s of storage backpressure",
-                (long)ElapsedSince(pausedSince).TotalSeconds);
-        }
-
-        private TimeSpan MarkPausedAndPublishBackpressureGauge()
-        {
-            var now = Environment.TickCount64;
-            var since = Interlocked.CompareExchange(ref _stateBackpressurePausedSinceMs, now, 0);
-            var pausedFor = since == 0 ? TimeSpan.Zero : ElapsedSince(since);
-            _metrics?.SetPhase2BackpressurePausedFor(pausedFor);
-            return pausedFor;
-        }
-
-        private static TimeSpan ElapsedSince(long sinceMs)
-            => TimeSpan.FromMilliseconds(Math.Max(0, Environment.TickCount64 - sinceMs));
-
-        private void LogStateBackpressurePause(TimeSpan pausedFor, string pressure)
-        {
-            if (pausedFor >= StateBackpressureWarnAfter)
-                _logger.LogWarning(
-                    "Phase 2 leaf stream: paused for {PausedSec}s — storage backpressure has not released for over {WarnAfterSec}s: {Pressure}. " +
-                    "State download stays paused until the store's write valve releases; check the store's compaction and the pressure figures.",
-                    (long)pausedFor.TotalSeconds, (long)StateBackpressureWarnAfter.TotalSeconds, pressure);
-            else
-                _logger.LogInformation(
-                    "Phase 2 leaf stream: paused for {PausedSec}s — storage backpressure: {Pressure}",
-                    (long)pausedFor.TotalSeconds, pressure);
-        }
-
-        public async Task DrainPhase2AttemptAsync(Task consumersTask, Exception supervisorFailure, CancellationToken outerCt)
-        {
-            var drainTask = await Task.WhenAny(consumersTask, Task.Delay(Phase2DrainTimeout, outerCt)).ConfigureAwait(false);
-            if (drainTask == consumersTask)
-            {
-                try { await consumersTask.ConfigureAwait(false); }
-                catch { }
-                return;
-            }
-
-            int drainSec = (int)Phase2DrainTimeout.TotalSeconds;
-            _logger.LogError(supervisorFailure,
-                "snap.phase2.recycle_failed reason=undrained_attempt drain_timeout_sec={DrainTimeoutSec} — " +
-                "consumers did not drain (blocked in uncancellable native calls); ABANDONING this attempt and " +
-                "recycling with a fresh sink/client", drainSec);
-            ObserveOrphanedConsumers(consumersTask);
-            throw new SnapPhase2UndrainedException(
-                "Snap Phase 2 liveness supervisor cancelled the attempt, but consumers did not drain within the bounded timeout.",
-                Phase2DrainTimeout, supervisorFailure);
-        }
-
-        private static void ThrowConsumersFault(Task consumersTask)
-        {
-            var flattened = consumersTask.Exception!.Flatten();
-            if (flattened.InnerExceptions.Count == 1)
-                throw flattened.InnerExceptions[0];
-            throw flattened;
-        }
-
-        private void ObserveOrphanedConsumers(Task consumersTask)
-        {
-            _ = consumersTask.ContinueWith(t =>
-            {
-                if (t.IsFaulted)
-                    _logger.LogWarning(t.Exception?.Flatten(),
-                        "snap.phase2.orphaned_consumers.completed_faulted — an abandoned Phase 2 consumer finally unblocked and faulted (attempt already recycled)");
-                else
-                    _logger.LogInformation(
-                        "snap.phase2.orphaned_consumers.completed outcome={Outcome} — an abandoned Phase 2 consumer finally unblocked (attempt already recycled)",
-                        t.Status);
-            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-        }
-
-        private void FlushAccountTrieForCheckpoint()
-        {
-            if (_sink is TrieSnapSyncSink trieSink)
-            {
-                trieSink.FlushAccountTrieForCheckpoint();
-                _logger.LogDebug("snap.phase2.account_obligation.completed state=account_trie_nodes_written");
-            }
-        }
+        public Task DrainPhase2AttemptAsync(Task consumersTask, Exception supervisorFailure, CancellationToken outerCt)
+            => new Phase2Watchdog(this).DrainAttemptAsync(consumersTask, supervisorFailure, outerCt);
 
         public int LargeContractConcurrency { get; set; } = 16;
 
-        private static ActiveLeaseSnapshot SnapshotActiveLeases(ConcurrentDictionary<int, ActiveSnapLeaseInfo> activeLeases)
+        public async Task<bool> FetchPageStorageAsync(
+            byte[] stateRoot,
+            List<(byte[] Hash, byte[] Root)> storageAccounts,
+            AccountWorkerResult page,
+            ConcurrentBag<AccountNeedingHeal> accountsNeedingHeal,
+            ConcurrentDictionary<string, DeferredStorageDebt> deferredStorageDebts,
+            ulong? fetchPivotBlock,
+            ulong reqId,
+            Action markProductive,
+            Action markFailure,
+            SnapTaskSet taskSet,
+            int taskIndex,
+            bool cursoredWhalesSupported,
+            Func<byte[]> getLiveRoot,
+            CancellationToken ct,
+            byte[][] frozenRootHolder = null)
         {
-            var now = Environment.TickCount64;
-            ActiveSnapLeaseInfo oldest = null;
-            int count = 0;
-            foreach (var lease in activeLeases.Values)
+            var inline = !cursoredWhalesSupported || taskSet == null;
+            var set = inline
+                ? new SnapTaskSet(1) { MaxRequestSizeBytes = ResponseBytesBudget, LargeContractConcurrency = LargeContractConcurrency }
+                : taskSet;
+            var frozen = FrozenRoot.Wrap(frozenRootHolder);
+            var alreadyMarked = new HashSet<byte[]>(set.AccountsNeedingHeal, ByteArrayComparer.Current);
+
+            var complete = await new BatchStorageFetch(this, new StorageFetchContext
             {
-                count++;
-                if (oldest == null || lease.LastProductiveTick < oldest.LastProductiveTick)
-                    oldest = lease;
+                Page = page,
+                TaskSet = set,
+                TaskIndex = inline ? 0 : taskIndex,
+                StorageNodeStore = StorageNodeStoreOrNull(),
+                GetLiveRoot = getLiveRoot,
+                Frozen = frozen,
+                MarkProductive = markProductive,
+                MarkFailure = markFailure,
+                ReqIds = new ulong[] { reqId },
+            }).RunAsync(stateRoot, storageAccounts, ct).ConfigureAwait(false);
+
+            if (inline)
+                await DrainLargeContractsInlineAsync(set, stateRoot, page, frozen, markFailure, ct).ConfigureAwait(false);
+
+            foreach (var account in set.AccountsNeedingHeal)
+            {
+                if (alreadyMarked.Contains(account)) continue;
+                var root = storageAccounts.Find(a => ByteArrayComparer.Current.Equals(a.Hash, account)).Root ?? new byte[32];
+                accountsNeedingHeal.Add(new AccountNeedingHeal(account, root));
+            }
+            return complete;
+        }
+
+        public async Task ProcessStorageSubtaskAsync(
+            SnapFragment.StorageSubtask frag,
+            SnapTaskSet taskSet,
+            ITrieNodeStore storageNodeStore,
+            byte[] stateRoot,
+            ConcurrentBag<AccountNeedingHeal> accountsNeedingHeal,
+            ConcurrentDictionary<string, DeferredStorageDebt> deferredStorageDebts,
+            ulong? fetchPivotBlock,
+            CancellationToken ct,
+            byte[][] frozenRootHolder = null,
+            AccountWorkerResult page = null)
+        {
+            var alreadyMarked = new HashSet<byte[]>(taskSet.AccountsNeedingHeal, ByteArrayComparer.Current);
+            await new CursoredStorageSubtask(this, taskSet, storageNodeStore, FrozenRoot.Wrap(frozenRootHolder))
+                .RunAsync(frag, stateRoot, page, ct).ConfigureAwait(false);
+            foreach (var account in taskSet.AccountsNeedingHeal)
+                if (!alreadyMarked.Contains(account))
+                    accountsNeedingHeal.Add(new AccountNeedingHeal(account, frag.StorageRoot));
+        }
+
+        private async Task DrainLargeContractsInlineAsync(
+            SnapTaskSet set, byte[] stateRoot, AccountWorkerResult page, FrozenRoot frozen, Action markFailure, CancellationToken ct)
+        {
+            CursoredStorageSubtask subtask = null;
+            while (set.LeaseLargeSubtask() is SnapFragment.StorageSubtask frag)
+            {
+                subtask ??= new CursoredStorageSubtask(this, set, RequireCursoredStorage(), frozen, markFailure);
+                await subtask.RunAsync(frag, stateRoot, page, ct).ConfigureAwait(false);
+            }
+        }
+
+        internal ITrieNodeStore StorageNodeStoreOrNull()
+            => (Sink as TrieSnapSyncSink)?.NodeStore ?? (Sink as InMemorySnapSyncSink)?.NodeStore;
+
+        internal ITrieNodeStore RequireCursoredStorage()
+        {
+            var store = StorageNodeStoreOrNull();
+            var flatWriter = (Sink as TrieSnapSyncSink)?.FlatWriter ?? (Sink as FlatSnapSyncSink)?.FlatWriter;
+            if (store == null && flatWriter == null)
+                throw new NotSupportedException(
+                    $"snap sink {Sink.GetType().Name} keeps neither a trie node store nor a flat writer; " +
+                    "large contracts are pulled as cursored subtasks, which need one of them");
+            return store;
+        }
+
+        public class SyncResult
+        {
+            public ISnapSyncSink Sink { get; set; }
+            public byte[] ComputedRoot { get; set; }
+            public bool RootMatchesTarget { get; set; }
+            public int AccountCount { get; set; }
+
+            public PatriciaTrie StateTrie { get; set; }
+            public InMemoryContentNodeStore TrieStorage { get; set; }
+            public Dictionary<string, byte[]> BytecodeByHash { get; set; } = new();
+
+            public byte[] FinalTargetRoot { get; set; }
+
+            public IReadOnlyList<AccountNeedingHeal> AccountsNeedingHeal { get; set; }
+                = Array.Empty<AccountNeedingHeal>();
+
+            public IReadOnlyList<byte[]> CodeHashesNeedingHeal { get; set; }
+                = Array.Empty<byte[]>();
+        }
+
+        public sealed record AccountNeedingHeal(byte[] AccountHash, byte[] ExpectedStorageRoot);
+
+        public sealed record SnapSyncCheckpoint(
+            SnapSyncState State,
+            [property: Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
+            IReadOnlyList<DeferredStorageDebt> DeferredStorageDebts,
+            IReadOnlyList<byte[]> DeferredCodeHashes)
+        {
+            public IReadOnlyList<AccountNeedingHeal> AccountsNeedingHeal { get; init; } = Array.Empty<AccountNeedingHeal>();
+        }
+
+        public sealed class SnapRootMismatchException : InvalidOperationException
+        {
+            public IReadOnlyList<AccountNeedingHeal> AccountsNeedingHeal { get; }
+            public IReadOnlyList<byte[]> CodeHashesNeedingHeal { get; }
+            public SnapRootMismatchException(
+                string message,
+                IReadOnlyList<AccountNeedingHeal> accountsNeedingHeal,
+                IReadOnlyList<byte[]> codeHashesNeedingHeal = null)
+                : base(message)
+            {
+                AccountsNeedingHeal = accountsNeedingHeal ?? System.Array.Empty<AccountNeedingHeal>();
+                CodeHashesNeedingHeal = codeHashesNeedingHeal ?? System.Array.Empty<byte[]>();
+            }
+        }
+
+        public sealed class SnapTaskSetStalledException : InvalidOperationException
+        {
+            public SnapTaskSetDiagnostics Diagnostics { get; }
+            public int Consumer { get; }
+            public TimeSpan IdleFor { get; }
+            public long ProgressSnapshot { get; }
+
+            public SnapTaskSetStalledException(int consumer, TimeSpan idleFor, long progressSnapshot, SnapTaskSetDiagnostics diagnostics)
+                : base($"Snap Phase 2 task set stalled: consumer={consumer} ownerless_idle_sec={(long)idleFor.TotalSeconds} progress={progressSnapshot} all_done={diagnostics?.AllDone} has_leasable={diagnostics?.HasLeasableWork} range_inflight={diagnostics?.RangeInFlightCount} range_pending={diagnostics?.RangePendingCount}")
+            {
+                Consumer = consumer;
+                IdleFor = idleFor;
+                ProgressSnapshot = progressSnapshot;
+                Diagnostics = diagnostics;
+            }
+        }
+
+        public sealed class SnapPhase2UndrainedException : InvalidOperationException
+        {
+            public TimeSpan DrainTimeout { get; }
+            public SnapPhase2UndrainedException(string message, TimeSpan drainTimeout, Exception inner)
+                : base(message, inner) => DrainTimeout = drainTimeout;
+        }
+
+        public sealed class SnapTaskLeaseStalledException : InvalidOperationException
+        {
+            public SnapTaskSetDiagnostics Diagnostics { get; }
+            public ActiveLeaseSnapshot ActiveLease { get; }
+            public TimeSpan IdleFor { get; }
+
+            public SnapTaskLeaseStalledException(TimeSpan idleFor, ActiveLeaseSnapshot activeLease, SnapTaskSetDiagnostics diagnostics)
+                : base($"Snap Phase 2 active lease stalled: active_idle_sec={(long)idleFor.TotalSeconds} active_leases={activeLease?.Count} oldest_task={activeLease?.OldestTaskIndex} oldest_origin={activeLease?.OldestOrigin} oldest_limit={activeLease?.OldestLimit} all_done={diagnostics?.AllDone} has_leasable={diagnostics?.HasLeasableWork}")
+            {
+                IdleFor = idleFor;
+                ActiveLease = activeLease;
+                Diagnostics = diagnostics;
+            }
+        }
+
+        public sealed class ActiveSnapLeaseInfo
+        {
+            public int Consumer { get; }
+            public int TaskIndex { get; }
+            public string Origin { get; }
+            public string Limit { get; }
+            public long StartedTick { get; }
+            private long _lastActivityTick;
+            private long _lastProductiveTick;
+
+            private ActiveSnapLeaseInfo(int consumer, SnapFragment.AccountRange fragment)
+            {
+                Consumer = consumer;
+                TaskIndex = fragment.TaskIndex;
+                Origin = ShortHash(fragment.Origin);
+                Limit = ShortHash(fragment.Limit);
+                StartedTick = Environment.TickCount64;
+                _lastActivityTick = StartedTick;
+                _lastProductiveTick = StartedTick;
             }
 
-            if (oldest == null)
-                return new ActiveLeaseSnapshot(0, -1, -1, string.Empty, string.Empty, 0);
+            public long LastActivityTick => Interlocked.Read(ref _lastActivityTick);
+            public long LastProductiveTick => Interlocked.Read(ref _lastProductiveTick);
 
-            var ageSeconds = Math.Max(0, (now - oldest.LastProductiveTick) / 1000);
-            return new ActiveLeaseSnapshot(
-                count,
-                oldest.Consumer,
-                oldest.TaskIndex,
-                oldest.Origin,
-                oldest.Limit,
-                ageSeconds);
+            public void MarkActivity() => Interlocked.Exchange(ref _lastActivityTick, Environment.TickCount64);
+            public void MarkProductive()
+            {
+                var now = Environment.TickCount64;
+                Interlocked.Exchange(ref _lastActivityTick, now);
+                Interlocked.Exchange(ref _lastProductiveTick, now);
+            }
+
+            public static ActiveSnapLeaseInfo Create(int consumer, SnapFragment.AccountRange fragment)
+                => new ActiveSnapLeaseInfo(consumer, fragment);
+
+            private static string ShortHash(byte[] value)
+            {
+                if (value == null || value.Length == 0) return string.Empty;
+                var hex = value.ToHex();
+                return hex.Length <= 16 ? hex : hex.Substring(0, 16);
+            }
         }
 
-        private static string ShortHash(byte[] value)
+        public sealed record ActiveLeaseSnapshot(
+            int Count,
+            int OldestConsumer,
+            int OldestTaskIndex,
+            string OldestOrigin,
+            string OldestLimit,
+            long OldestAgeSeconds);
+
+        public sealed class AccountWorkerResult
         {
-            if (value == null || value.Length == 0) return string.Empty;
-            var hex = value.ToHex();
-            return hex.Length <= 16 ? hex : hex.Substring(0, 16);
-        }
+            public ulong AccountsSyncedDelta;
+            public ulong AccountBytesDelta;
+            public ulong StorageSlotsSyncedDelta;
+            public ulong StorageBytesDelta;
+            public List<AccountNeedingHeal> AccountsNeedingHeal = new();
+            private readonly object _storageGate = new();
 
+            public void AddStorageSlot(byte[] value)
+            {
+                lock (_storageGate)
+                {
+                    StorageSlotsSyncedDelta++;
+                    if (value != null) StorageBytesDelta += (ulong)value.Length;
+                }
+            }
+        }
     }
 }
-
-
-

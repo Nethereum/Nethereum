@@ -79,30 +79,11 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 => Task.FromResult(new TrieNodesMessage { RequestId = r.RequestId, Nodes = new List<byte[]>() });
         }
 
-        private sealed class StubSink : ISnapSyncSink
-        {
-            private byte[] _root;
-            public void SetFinaliseRoot(byte[] root) => _root = root;
-            public ValueTask BeginAsync(byte[] targetRoot, CancellationToken ct) => default;
-            public ValueTask WriteAccountAsync(byte[] accountHash, byte[] slimRlp, CancellationToken ct) => default;
-            public ValueTask<IStorageScope> BeginAccountStorageAsync(byte[] accountHash, byte[] expectedStorageRoot, CancellationToken ct)
-                => new(new Scope());
-            private sealed class Scope : IStorageScope
-            {
-                public ValueTask WriteSlotAsync(byte[] slotHash, byte[] valueRlp, CancellationToken ct) => default;
-                public ValueTask EndAsync(CancellationToken ct) => default;
-                public ValueTask AbortAsync(CancellationToken ct) => default;
-            }
-            public ValueTask WriteBytecodeAsync(byte[] codeHash, byte[] code, CancellationToken ct) => default;
-            public ValueTask<byte[]> FinaliseRootAsync(CancellationToken ct) => new(_root ?? new byte[32]);
-        }
-
         [Fact]
         public async Task Empty_AccountRange_With_Valid_AbsenceProof_Completes()
         {
             var peer = new EmptyRangePeer();
-            var sink = new StubSink();
-            sink.SetFinaliseRoot(DefaultValues.EMPTY_TRIE_HASH);
+            var sink = new InMemorySnapSyncSink();
             var client = new SnapSyncClient(peer, sink);
 
             await client.SyncStateAsync(DefaultValues.EMPTY_TRIE_HASH);
@@ -115,7 +96,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             using var cts = new CancellationTokenSource();
             var peer = new EmptyRangePeer(cts, cancelAfter: 32);
-            var client = new SnapSyncClient(peer, new StubSink());
+            var client = new SnapSyncClient(peer, new InMemorySnapSyncSink());
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(
                 () => client.SyncStateAsync(Filled(0x01), resumeFrom: null, checkpointSink: null, ct: cts.Token));
@@ -127,7 +108,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         public async Task Given_OneConsumerRepeatedlyFailingTheSameStage_When_FailureBudgetExceeded_Then_SnapTaskLeaseStalledExceptionThrown()
         {
             var peer = new EmptyRangePeer();
-            var client = new SnapSyncClient(peer, new StubSink())
+            var client = new SnapSyncClient(peer, new InMemorySnapSyncSink())
             {
                 AccountConcurrency = 1,
                 ActiveLeaseSameStageFailureBudget = 3,
@@ -143,7 +124,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         public async Task Given_StorageRangeFetchAlwaysFails_When_CallerFailureBudgetExceeded_Then_ExceptionPropagatesAndPeerStopsBeingCalled()
         {
             var peer = new AlwaysThrowsStorageRangePeer();
-            var client = new SnapSyncClient(peer, new StubSink());
+            var client = new SnapSyncClient(peer, new InMemorySnapSyncSink());
             var page = new SnapSyncClient.AccountWorkerResult();
             var owner = Filled(0x02);
             var storageRoot = Filled(0x03);

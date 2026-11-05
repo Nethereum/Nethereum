@@ -58,6 +58,7 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
         public async Task<IList<BlockHeader>> GetHeadersAsync(GetBlockHeadersMessage request, CancellationToken cancellationToken = default)
         {
             var headers = new List<BlockHeader>();
+            if (request.Limit == 0) return headers;
 
             BlockHeader origin;
             if (request.StartBlockHash != null && request.StartBlockHash.Length == 32)
@@ -73,6 +74,7 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
             }
             else
             {
+                if (request.StartBlock > long.MaxValue) return headers;
                 origin = await _blockStore.GetByNumberAsync((long)request.StartBlock);
                 if (origin == null)
                 {
@@ -88,17 +90,24 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
 
             headers.Add(origin);
 
-            var step = (long)(request.Skip + 1);
-            var direction = request.Reverse ? -1 : 1;
-            var current = (long)origin.BlockNumber + direction * step;
-
+            var current = (ulong)origin.BlockNumber;
             for (ulong i = 1; i < request.Limit; i++)
             {
-                if (current < 0) break;
-                var header = await _blockStore.GetByNumberAsync(current);
+                ulong next;
+                if (request.Reverse)
+                {
+                    next = unchecked(current - (request.Skip + 1));
+                    if (next >= current) break;
+                }
+                else
+                {
+                    next = unchecked(current + request.Skip + 1);
+                    if (next <= current || next > long.MaxValue) break;
+                }
+                var header = await _blockStore.GetByNumberAsync((long)next);
                 if (header == null) break;
                 headers.Add(header);
-                current += direction * step;
+                current = next;
             }
             return headers;
         }
@@ -119,7 +128,7 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
                 if (!exists)
                 {
                     skippedAboveCursor++;
-                    continue;
+                    break;
                 }
 
                 var txs = await _transactionStore.GetByBlockHashAsync(hash);
@@ -164,7 +173,7 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
                 if (!exists)
                 {
                     skippedAboveCursor++;
-                    continue;
+                    break;
                 }
 
                 var receipts = await _receiptStore.GetByBlockHashAsync(hash);
@@ -200,7 +209,7 @@ namespace Nethereum.DevP2P.Sync.Serving.Strategies
                 if (hash == null) continue;
 
                 var exists = await _blockStore.ExistsAsync(hash);
-                if (!exists) continue;
+                if (!exists) break;
 
                 var receipts = await _receiptStore.GetByBlockHashAsync(hash);
                 var allBlockReceipts = receipts?.ToList() ?? new List<Receipt>();

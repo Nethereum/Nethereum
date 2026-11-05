@@ -51,6 +51,8 @@ namespace Nethereum.DevP2P.Discv4
         {
             if (packet == null || packet.Length < HeaderLength + 1)
                 throw new ArgumentException("Discv4 packet too short");
+            if (packet.Length > MaxPacketSize)
+                throw new ArgumentException($"Discv4 packet size {packet.Length} exceeds maximum {MaxPacketSize}");
 
             var keccak = new Sha3Keccack();
 

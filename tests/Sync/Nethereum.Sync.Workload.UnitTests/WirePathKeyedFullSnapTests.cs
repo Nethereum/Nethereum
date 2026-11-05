@@ -70,8 +70,7 @@ namespace Nethereum.Chain.TestData.UnitTests
             return condition();
         }
 
-        [Fact]
-        public async Task Follower_FullSnapIntoPathKeyedStore_StateIsProofGradeReadable_AndHealRepairsWipedStorage()
+        private static async Task<InProcessSequencerDriver> BuildSequencerWithTailAsync()
         {
             var sequencer = await InProcessSequencerDriver.CreateAsync(generatedAccounts: 50);
             await new WorkloadV1().BuildAsync(sequencer);
@@ -80,18 +79,101 @@ namespace Nethereum.Chain.TestData.UnitTests
                 sequencer.QueueTransfer(sequencer.Accounts.All[i % 8], sequencer.Accounts.All[(i + 1) % 8].Address, Eth(1));
                 await sequencer.ProduceBlockAsync();
             }
+            return sequencer;
+        }
+
+        private static async Task<PeerPoolManager> StartSnapPoolAsync(WireServerNode server)
+        {
+            var pool = new PeerPoolManager(
+                new WorkloadHandshakeWorker(server.GenesisHash, server.NetworkId),
+                new PeerPoolOptions(TargetPeerCount: 1, MinPeerLatestBlock: 0));
+            await pool.StartAsync(CancellationToken.None);
+            pool.EnqueueCandidate(server.Enode);
+            Assert.True(await WaitUntilAsync(() => pool.ActivePeers.OfType<SyncPeerSession>().Any(p => p.SupportsSnap), TimeSpan.FromSeconds(20)), "no snap peer");
+            return pool;
+        }
+
+        private static async Task AssertCanonicalHashesMatchAsync(WireServerNode server, RocksDbChainStoreBundle bundle, ulong pivot)
+        {
+            for (var n = 0UL; n <= pivot; n++)
+                Assert.Equal(
+                    await server.Bundle.Blocks.GetHashByNumberAsync(n),
+                    await bundle.Blocks.GetHashByNumberAsync(n));
+        }
+
+        private static async Task<(byte[] OwnerHash, byte[] StorageRoot)> AssertAccountsMatchAndFindContractAsync(
+            WireServerNode server, RocksDbChainStoreBundle bundle, BlockHeader pivotHeader)
+        {
+            var stateTrie = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, bundle.StateTrieNodes);
+            var serverAtPivot = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, server.Bundle.TrieNodes);
+            var accountDecoder = new AccountEncoder();
+            (byte[] OwnerHash, byte[] StorageRoot)? contract = null;
+            foreach (var kv in await server.Bundle.State.GetAllAccountsAsync())
+            {
+                var addressHash = Sha3Keccack.Current.CalculateHash(kv.Key.HexToByteArray());
+                var leaf = stateTrie.Get(addressHash);
+                Assert.True(leaf != null, $"account {kv.Key} missing from the path-keyed state trie");
+                var synced = accountDecoder.Decode(leaf);
+                var expected = accountDecoder.Decode(serverAtPivot.Get(addressHash));
+                Assert.Equal(expected.Balance, synced.Balance);
+                Assert.Equal(expected.Nonce, synced.Nonce);
+
+                if (contract == null && synced.StateRoot != null
+                    && !ByteUtil.AreEqual(synced.StateRoot, DefaultValues.EMPTY_TRIE_HASH))
+                    contract = (addressHash, synced.StateRoot);
+            }
+            Assert.True(contract.HasValue, "workload must contain at least one contract with storage");
+            return contract.Value;
+        }
+
+        private static async Task WipeStorageAndAssertHealRepairsItAsync(
+            RocksDbChainStoreBundle bundle, FetchRequestScheduler scheduler, BlockHeader pivotHeader, ulong pivot,
+            (byte[] OwnerHash, byte[] StorageRoot) contract, CancellationToken ct)
+        {
+            var (owner, storageRoot) = contract;
+            var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, bundle.StateTrieNodes, owner);
+            Assert.Equal(storageRoot, storageTrie.Root.GetHash());
+
+            var pathStore = Assert.IsType<RocksDbPathTrieNodeStore>(bundle.StateTrieNodes);
+            pathStore.DeleteRange(owner);
+            var sink = ((IHealNodeSinkProvider)bundle).CreateHealSink();
+            Assert.False(sink.HasNode(true, owner, Array.Empty<byte>(), storageRoot), "wipe precondition");
+
+            var healer = new TrieHealer(scheduler, sink, bundle.StateTrieNodes, NullLogger.Instance);
+            var heal = await healer.HealAsync(
+                pivotHeader.StateRoot, new[] { (owner, storageRoot) }, pivotBlock: pivot, ct: ct);
+
+            Assert.True(heal.Matched, "seeded heal must converge");
+            var healedStorage = PatriciaTrie.LoadFromStorage(storageRoot, bundle.StateTrieNodes, owner);
+            Assert.Equal(storageRoot, healedStorage.Root.GetHash());
+        }
+
+        private static async Task AssertFlatStateIsCleanAsync(
+            RocksDbChainStoreBundle bundle, BlockHeader pivotHeader, CapturingLogger log, CancellationToken ct)
+        {
+            Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
+            Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
+            var reconciler = Assert.IsAssignableFrom<IFlatStateReconciler>(bundle);
+            Assert.Empty(reconciler.GetPersistedDamage());
+            var verify = await reconciler.VerifyFlatStateAsync(
+                pivotHeader.StateRoot,
+                msg => log.LogInformation("snap.flat.verify.post {Progress}", msg),
+                ct);
+            Assert.Equal(0, verify.TotalRepairs);
+            Assert.DoesNotContain(log.Messages, m => m.Contains("snap.flat.reheal attempt=", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public async Task Follower_FullSnapIntoPathKeyedStore_StateIsProofGradeReadable_AndHealRepairsWipedStorage()
+        {
+            var sequencer = await BuildSequencerWithTailAsync();
 
             await using var server = await WireServerNode.StartAsync(sequencer);
             var head = (ulong)await server.Bundle.Blocks.GetHeightAsync();
             var headHeader = await server.Bundle.Blocks.GetByNumberAsync(head);
             var headHash = await server.Bundle.Blocks.GetHashByNumberAsync(head);
 
-            await using var pool = new PeerPoolManager(
-                new WorkloadHandshakeWorker(server.GenesisHash, server.NetworkId),
-                new PeerPoolOptions(TargetPeerCount: 1, MinPeerLatestBlock: 0));
-            await pool.StartAsync(CancellationToken.None);
-            pool.EnqueueCandidate(server.Enode);
-            Assert.True(await WaitUntilAsync(() => pool.ActivePeers.OfType<SyncPeerSession>().Any(p => p.SupportsSnap), TimeSpan.FromSeconds(20)), "no snap peer");
+            await using var pool = await StartSnapPoolAsync(server);
 
             var scheduler = new FetchRequestScheduler(pool, new PeerRequestWorker(), new FetchRequestSchedulerOptions());
             var canonical = new TrustedTipSource(head, headHash, headHeader.StateRoot);
@@ -115,58 +197,10 @@ namespace Nethereum.Chain.TestData.UnitTests
                 var pivot = result.PivotBlockNumber;
                 var pivotHeader = await server.Bundle.Blocks.GetByNumberAsync(pivot);
 
-                for (var n = 0UL; n <= pivot; n++)
-                    Assert.Equal(
-                        await server.Bundle.Blocks.GetHashByNumberAsync(n),
-                        await bundle.Blocks.GetHashByNumberAsync(n));
-
-                var stateTrie = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, bundle.StateTrieNodes);
-                var serverAtPivot = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, server.Bundle.TrieNodes);
-                var accountDecoder = new AccountEncoder();
-                (byte[] OwnerHash, byte[] StorageRoot)? contract = null;
-                foreach (var kv in await server.Bundle.State.GetAllAccountsAsync())
-                {
-                    var addressHash = Sha3Keccack.Current.CalculateHash(kv.Key.HexToByteArray());
-                    var leaf = stateTrie.Get(addressHash);
-                    Assert.True(leaf != null, $"account {kv.Key} missing from the path-keyed state trie");
-                    var synced = accountDecoder.Decode(leaf);
-                    var expected = accountDecoder.Decode(serverAtPivot.Get(addressHash));
-                    Assert.Equal(expected.Balance, synced.Balance);
-                    Assert.Equal(expected.Nonce, synced.Nonce);
-
-                    if (contract == null && synced.StateRoot != null
-                        && !ByteUtil.AreEqual(synced.StateRoot, DefaultValues.EMPTY_TRIE_HASH))
-                        contract = (addressHash, synced.StateRoot);
-                }
-                Assert.True(contract.HasValue, "workload must contain at least one contract with storage");
-
-                var (owner, storageRoot) = contract.Value;
-                var storageTrie = PatriciaTrie.LoadFromStorage(storageRoot, bundle.StateTrieNodes, owner);
-                Assert.Equal(storageRoot, storageTrie.Root.GetHash());
-
-                var pathStore = Assert.IsType<RocksDbPathTrieNodeStore>(bundle.StateTrieNodes);
-                pathStore.DeleteRange(owner);
-                var sink = ((IHealNodeSinkProvider)bundle).CreateHealSink();
-                Assert.False(sink.HasNode(true, owner, Array.Empty<byte>(), storageRoot), "wipe precondition");
-
-                var healer = new TrieHealer(scheduler, sink, bundle.StateTrieNodes, NullLogger.Instance);
-                var heal = await healer.HealAsync(
-                    pivotHeader.StateRoot, new[] { (owner, storageRoot) }, pivotBlock: pivot, ct: cts.Token);
-
-                Assert.True(heal.Matched, "seeded heal must converge");
-                var healedStorage = PatriciaTrie.LoadFromStorage(storageRoot, bundle.StateTrieNodes, owner);
-                Assert.Equal(storageRoot, healedStorage.Root.GetHash());
-
-                Assert.Null(bundle.Metadata.GetDeferredHealAccountsBlob());
-                Assert.Equal(0UL, bundle.Metadata.CountOpenDeferredStorageDebts());
-                var reconciler = Assert.IsAssignableFrom<IFlatStateReconciler>(bundle);
-                Assert.Empty(reconciler.GetPersistedDamage());
-                var verify = await reconciler.VerifyFlatStateAsync(
-                    pivotHeader.StateRoot,
-                    msg => log.LogInformation("snap.flat.verify.post {Progress}", msg),
-                    cts.Token);
-                Assert.Equal(0, verify.TotalRepairs);
-                Assert.DoesNotContain(log.Messages, m => m.Contains("snap.flat.repair attempt=", StringComparison.OrdinalIgnoreCase));
+                await AssertCanonicalHashesMatchAsync(server, bundle, pivot);
+                var contract = await AssertAccountsMatchAndFindContractAsync(server, bundle, pivotHeader);
+                await WipeStorageAndAssertHealRepairsItAsync(bundle, scheduler, pivotHeader, pivot, contract, cts.Token);
+                await AssertFlatStateIsCleanAsync(bundle, pivotHeader, log, cts.Token);
             }
             finally
             {

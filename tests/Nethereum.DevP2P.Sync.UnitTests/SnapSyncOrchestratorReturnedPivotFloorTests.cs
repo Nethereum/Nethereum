@@ -23,7 +23,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
     {
         private const ulong SavedPivot = 980;
         private const ulong LaidTip = 990;
-        private const ulong CanonicalTipBlock = 1100;
+        private const ulong CanonicalTipBlock = 1020;
         private static readonly ulong TrailedBelowSaved = LaidTip - SnapSyncOrchestrator.PivotServeTrailDistance;
 
         private sealed class FixedTipSource : ICanonicalStateRootSource
@@ -127,7 +127,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_ASavedPivotAndLaidHeadersLaggingTheTip_When_TheOrchestratorFetchesAPivotWithBalHealEnabled_Then_ItWaitsInsteadOfReturningAPivotBelowTheSavedOne()
+        public async Task Given_ASavedPivotAndAFreshTrailedPivotBelowIt_When_TheOrchestratorFetchesAPivotWithBalHealEnabled_Then_ItWaitsInsteadOfReturningAPivotBelowTheSavedOne()
         {
             var messages = await FetchPivotWithSavedStateAsync(balHealEnabled: true);
 
@@ -137,11 +137,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_ASavedPivotAndLaidHeadersLaggingTheTip_When_TheOrchestratorFetchesAPivotWithBalHealDisabled_Then_ItReturnsTheLowerPivotAsToday()
+        public async Task Given_ASavedPivotAndAFreshTrailedPivotBelowIt_When_TheOrchestratorFetchesAPivotWithBalHealDisabled_Then_Snap1AlsoWaitsInsteadOfReturningAPivotBelowTheSavedOne()
         {
             var messages = await FetchPivotWithSavedStateAsync(balHealEnabled: false);
 
-            Assert.Contains(messages, m => m.Contains($"pivot anchored on verified local chain block={TrailedBelowSaved}", StringComparison.Ordinal));
+            Assert.DoesNotContain(messages, m => m.Contains("pivot anchored on verified local chain", StringComparison.Ordinal));
+            Assert.Contains(messages, m => m.Contains("snap.bootstrap.pivot_wait", StringComparison.Ordinal)
+                                           && m.Contains($"trailed_pivot={TrailedBelowSaved}", StringComparison.Ordinal));
         }
     }
 }

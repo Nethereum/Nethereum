@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.DevP2P;
 using Nethereum.DevP2P.Discv4;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
@@ -24,6 +25,7 @@ namespace Nethereum.DevP2P.Discv4
         private readonly ConcurrentDictionary<string, TaskCompletionSource<bool>> _pendingPongs = new();
 
         public const int MaxDiscoveredEntries = 4096;
+        private const int MinRelayedUdpPort = 1024;
         private bool _started;
 
         public PeerDiscoveryService(Action<string> log)
@@ -77,7 +79,7 @@ namespace Nethereum.DevP2P.Discv4
             var remote = new IPEndPoint(ip, parsed.DiscoveryPort);
 
             var expiration = await PingAndAwaitPongAsync(parsed, ip, remote, timeout, ct);
-            await SendFindNodeRoundsAsync(remote, expiration, ct);
+            await SendFindNodeRoundsAsync(remote, parsed.PublicKey, expiration, ct);
         }
 
         private async Task<long> PingAndAwaitPongAsync(
@@ -102,7 +104,7 @@ namespace Nethereum.DevP2P.Discv4
             _pendingPongs[peerKey] = pongTcs;
             try
             {
-                await _listener.SendPingAsync(remote, ping, ct);
+                await _listener.SendPingAsync(remote, ping, ct, parsed.PublicKey);
                 using var pongCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 pongCts.CancelAfter(timeout);
                 await pongTcs.Task.WaitAsync(pongCts.Token);
@@ -114,14 +116,14 @@ namespace Nethereum.DevP2P.Discv4
             return expiration;
         }
 
-        private async Task SendFindNodeRoundsAsync(IPEndPoint remote, long expiration, CancellationToken ct)
+        private async Task SendFindNodeRoundsAsync(IPEndPoint remote, byte[] remoteNodeId, long expiration, CancellationToken ct)
         {
             for (int round = 0; round < 3; round++)
             {
                 var target = new byte[64];
                 System.Security.Cryptography.RandomNumberGenerator.Fill(target);
                 var findNode = new Discv4FindNodeMessage { Target = target, Expiration = expiration };
-                await _listener.SendFindNodeAsync(remote, findNode, ct);
+                await _listener.SendFindNodeAsync(remote, findNode, ct, remoteNodeId);
             }
 
             await Task.Delay(TimeSpan.FromMilliseconds(2000), ct);
@@ -142,8 +144,8 @@ namespace Nethereum.DevP2P.Discv4
             {
                 if (n.NodeId == null || n.NodeId.Length != 64) continue;
                 if (n.TcpPort == 0) continue;
-                if (n.IP == null) continue;
-                if (n.IP.Equals(IPAddress.Any) || n.IP.Equals(IPAddress.Loopback)) continue;
+                if (n.UdpPort <= MinRelayedUdpPort) continue;
+                if (n.IP == null || !n.IP.IsValidRelayTarget(e.Sender.Address)) continue;
                 var enode = EnodeUrl.Format(n.NodeId, n.IP, n.TcpPort);
                 if (_discovered.Count >= MaxDiscoveredEntries) break;
                 _discovered.TryAdd(enode, 0);

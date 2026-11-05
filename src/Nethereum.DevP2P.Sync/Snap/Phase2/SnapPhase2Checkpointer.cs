@@ -1,3 +1,4 @@
+#pragma warning disable CS0618
 using System;
 using System.Threading;
 using Nethereum.CoreChain.Storage;
@@ -98,8 +99,11 @@ namespace Nethereum.DevP2P.Sync.Snap.Phase2
             _taskSet.FlushBulkFlatThenPromoteDurability(_flushBulkFlat);
             _sink(new SnapSyncClient.SnapSyncCheckpoint(
                 BuildCheckpointState(phase, healTargetRoot),
-                _state.SnapshotDeferredStorageDebts(),
-                _state.SnapshotDeferredCodeHashes()));
+                Array.Empty<DeferredStorageDebt>(),
+                _state.SnapshotDeferredCodeHashes())
+            {
+                AccountsNeedingHeal = _taskSet.NeedHealSnapshot(),
+            });
         }
     }
 }

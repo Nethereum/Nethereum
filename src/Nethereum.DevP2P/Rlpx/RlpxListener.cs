@@ -18,15 +18,20 @@ namespace Nethereum.DevP2P.Rlpx
         private readonly DevP2PConfig _config;
         private readonly RlpxInboundAdmission _admission;
         private readonly HashSet<string> _trustedNodeIds;
-        private int _activePeers;
+        private readonly RlpxPeerSlots _peerSlots;
         private TcpListener? _listener;
         private CancellationTokenSource? _acceptCts;
         private Task? _acceptTask;
         private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, Task> _handshakeTasks = new();
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<RlpxConnection, byte> _admittedConnections = new();
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<RlpxConnection, AdmittedPeer> _admittedConnections = new();
+        private readonly SemaphoreSlim _pendingSlots;
+        private static readonly TimeSpan AcceptFailureMinDelay = TimeSpan.FromMilliseconds(5);
+        private static readonly TimeSpan AcceptFailureMaxDelay = TimeSpan.FromSeconds(1);
+
+        private readonly record struct AdmittedPeer(IPAddress RemoteIp, string? SubnetKey);
         private static readonly TimeSpan HandshakeStopTimeout = TimeSpan.FromSeconds(5);
 
-        public int ActivePeers => Volatile.Read(ref _activePeers);
+        public int ActivePeers => _peerSlots.Active;
 
         public int CountInboundForIp(IPAddress ip)
             => _admission.CountInboundForIp(ip);
@@ -55,6 +60,8 @@ namespace Nethereum.DevP2P.Rlpx
             _localKey = localKey ?? throw new ArgumentNullException(nameof(localKey));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _admission = new RlpxInboundAdmission(_config);
+            _peerSlots = new RlpxPeerSlots(_config.MaxPeers);
+            _pendingSlots = new SemaphoreSlim(_config.MaxPendingPeers > 0 ? _config.MaxPendingPeers : int.MaxValue);
             _trustedNodeIds = new HashSet<string>(
                 (config.TrustedNodeIds ?? Array.Empty<string>())
                     .Where(s => !string.IsNullOrWhiteSpace(s))
@@ -105,20 +112,36 @@ namespace Nethereum.DevP2P.Rlpx
 
         private async Task AcceptLoopAsync(CancellationToken ct)
         {
+            var failureDelay = TimeSpan.Zero;
             while (!ct.IsCancellationRequested)
             {
-                TcpClient tcp;
                 try
                 {
-                    tcp = await _listener!.AcceptTcpClientAsync(ct);
+                    await _pendingSlots.WaitAsync(ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     return;
                 }
+
+                TcpClient tcp;
+                try
+                {
+                    tcp = await _listener!.AcceptTcpClientAsync(ct);
+                    failureDelay = TimeSpan.Zero;
+                }
+                catch (OperationCanceledException)
+                {
+                    _pendingSlots.Release();
+                    return;
+                }
                 catch (Exception ex)
                 {
+                    _pendingSlots.Release();
                     RaisePeerFailed("AcceptTcp", ex);
+                    failureDelay = NextAcceptFailureDelay(failureDelay);
+                    try { await Task.Delay(failureDelay, ct).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { return; }
                     continue;
                 }
 
@@ -126,12 +149,14 @@ namespace Nethereum.DevP2P.Rlpx
                 if (remoteIp == null)
                 {
                     try { tcp.Close(); } catch { }
+                    _pendingSlots.Release();
                     continue;
                 }
 
                 if (!_config.NetRestrict.Contains(remoteIp))
                 {
                     try { tcp.Close(); } catch { }
+                    _pendingSlots.Release();
                     RaisePeerFailed(
                         "InboundNetRestrict",
                         new InvalidOperationException(
@@ -143,6 +168,7 @@ namespace Nethereum.DevP2P.Rlpx
                 if (!reservation.Admitted)
                 {
                     try { tcp.Close(); } catch { }
+                    _pendingSlots.Release();
                     if (reservation.Reason == InboundRejectReason.PerIpCap)
                     {
                         RaisePeerFailed(
@@ -164,6 +190,13 @@ namespace Nethereum.DevP2P.Rlpx
             }
         }
 
+        private static TimeSpan NextAcceptFailureDelay(TimeSpan previous)
+        {
+            if (previous == TimeSpan.Zero) return AcceptFailureMinDelay;
+            var doubled = TimeSpan.FromTicks(previous.Ticks * 2);
+            return doubled > AcceptFailureMaxDelay ? AcceptFailureMaxDelay : doubled;
+        }
+
         private void SpawnHandshake(TcpClient tcp, IPAddress remoteIp, string? subnetKey, CancellationToken ct)
         {
             var taskId = Guid.NewGuid();
@@ -172,7 +205,11 @@ namespace Nethereum.DevP2P.Rlpx
             {
                 await registered.Task.ConfigureAwait(false);
                 try { await HandlePeerAsync(tcp, remoteIp, subnetKey, ct).ConfigureAwait(false); }
-                finally { _handshakeTasks.TryRemove(taskId, out _); }
+                finally
+                {
+                    _handshakeTasks.TryRemove(taskId, out _);
+                    _pendingSlots.Release();
+                }
             });
             try { _handshakeTasks[taskId] = handshakeTask; }
             finally { registered.TrySetResult(true); }
@@ -187,25 +224,25 @@ namespace Nethereum.DevP2P.Rlpx
         private async Task HandlePeerAsync(TcpClient tcp, IPAddress remoteIp, string? subnetKey, CancellationToken ct)
         {
             var connection = new RlpxConnection(_localKey, _config);
+            var reservationTransferred = false;
             try
             {
                 await connection.AcceptIncomingAsync(tcp, ct);
 
                 bool trusted = IsTrustedNodeId(connection.RemoteNodeId);
-                int currentPeers = Volatile.Read(ref _activePeers);
-                if (!trusted && _config.MaxPeers > 0 && currentPeers >= _config.MaxPeers)
+                if (!_peerSlots.TryAcquire(trusted))
                 {
                     try { await connection.DisconnectAsync(DisconnectReason.TooManyPeers); }
                     catch { }
                     RaisePeerFailed(
                         "MaxPeers",
                         new InvalidOperationException(
-                            $"Rejected non-trusted inbound (peer count {currentPeers} >= MaxPeers {_config.MaxPeers})."));
+                            $"Rejected non-trusted inbound (peer count >= MaxPeers {_config.MaxPeers})."));
                     return;
                 }
 
-                _admittedConnections[connection] = 0;
-                Interlocked.Increment(ref _activePeers);
+                _admittedConnections[connection] = new AdmittedPeer(remoteIp, subnetKey);
+                reservationTransferred = true;
                 connection.Disconnected += OnConnectionDisconnected;
                 if (!connection.IsConnected)
                 {
@@ -229,16 +266,18 @@ namespace Nethereum.DevP2P.Rlpx
             }
             finally
             {
-                _admission.Release(remoteIp, subnetKey);
+                if (!reservationTransferred)
+                    _admission.Release(remoteIp, subnetKey);
             }
         }
 
         private void ReleaseAdmittedPeer(RlpxConnection connection)
         {
-            if (_admittedConnections.TryRemove(connection, out _))
+            if (_admittedConnections.TryRemove(connection, out var admitted))
             {
-                Interlocked.Decrement(ref _activePeers);
+                _peerSlots.Release();
                 connection.Disconnected -= OnConnectionDisconnected;
+                _admission.Release(admitted.RemoteIp, admitted.SubnetKey);
             }
         }
 
@@ -251,7 +290,7 @@ namespace Nethereum.DevP2P.Rlpx
         private void OnConnectionDisconnected(object? sender, EventArgs e)
         {
             if (sender is RlpxConnection conn)
-                ReleaseAdmittedPeer(conn);
+                ReleaseAndDispose(conn);
         }
 
         public void Dispose()

@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Nethereum.DevP2P.Netutil;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
 using Nethereum.Util;
@@ -13,19 +14,46 @@ namespace Nethereum.DevP2P.Discv4
 {
     public class Discv4Listener : IDisposable
     {
+        private sealed class PendingPing
+        {
+            public byte[] NodeId;
+            public IPAddress Address;
+            public ushort TcpPort;
+            public DateTime CreatedUtc;
+            public TimeSpan Lifetime;
+            public PendingPingKind Kind;
+            public TaskCompletionSource Answered;
+        }
+
+        private enum PendingPingKind
+        {
+            Outbound,
+            BackPing
+        }
+
+        private sealed class PendingFindNode
+        {
+            public byte[] NodeId;
+            public int Remaining;
+            public DateTime ExpiresUtc;
+        }
+
         private readonly EthECKey _localKey;
         private readonly Discv4RoutingTable _routingTable;
         private readonly ConcurrentDictionary<string, DateTime> _bondedPeers = new();
-        private readonly ConcurrentDictionary<string, (byte[] Hash, DateTime CreatedUtc)> _pendingPings = new();
-        private readonly ConcurrentDictionary<string, DateTime> _lastBackPingByIp = new();
+        private readonly ConcurrentDictionary<string, PendingPing> _pendingPings = new();
+        private readonly Dictionary<string, PendingFindNode> _pendingFindNodes = new();
+        private readonly object _pendingFindNodesGate = new();
+        private readonly object _pendingPingsGate = new();
         private static readonly TimeSpan BondLifetime = TimeSpan.FromHours(12);
-        private static readonly TimeSpan PendingPingTtl = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan BackPingReplyTimeout = TimeSpan.FromMilliseconds(500);
+        private static readonly TimeSpan OutboundReplyTimeout = TimeSpan.FromSeconds(10);
         private static readonly TimeSpan MapSweepInterval = TimeSpan.FromMinutes(1);
-        private static readonly TimeSpan BackPingCooldown = TimeSpan.FromSeconds(30);
         private DateTime _lastMapSweepUtc = DateTime.UtcNow;
         private UdpClient _udp;
         private CancellationTokenSource _cts;
         private Task _readLoop;
+        private Task _revalidationLoop;
 
         public IPEndPoint LocalEndpoint => (IPEndPoint)_udp?.Client?.LocalEndPoint;
         public int Port => LocalEndpoint?.Port ?? 0;
@@ -35,6 +63,10 @@ namespace Nethereum.DevP2P.Discv4
         public bool AutoRespond { get; set; } = true;
         public byte[] LocalEnrEncoded { get; set; }
         public ulong LocalEnrSequence { get; set; } = 1;
+        public int MaxPendingPings { get; set; } = 1024;
+        public int MaxBondedPeers { get; set; } = 8192;
+        public TimeSpan RevalidationInterval { get; set; } = TimeSpan.FromSeconds(10);
+        public TimeSpan RevalidationTimeout { get; set; } = TimeSpan.FromSeconds(2);
 
         public event EventHandler<Discv4PingReceivedEventArgs> PingReceived;
         public event EventHandler<Discv4PongReceivedEventArgs> PongReceived;
@@ -56,8 +88,11 @@ namespace Nethereum.DevP2P.Discv4
 
             var ep = new IPEndPoint(bindAddress ?? IPAddress.Loopback, udpPort);
             _udp = new UdpClient(ep);
+            _udp.IgnoreIcmpConnectionReset();
             _cts = new CancellationTokenSource();
             _readLoop = Task.Run(() => ReadLoopAsync(_cts.Token));
+            if (RevalidationInterval > TimeSpan.Zero)
+                _revalidationLoop = Task.Run(() => RevalidationLoopAsync(_cts.Token));
         }
 
         public async Task StopAsync()
@@ -66,17 +101,33 @@ namespace Nethereum.DevP2P.Discv4
             _cts.Cancel();
             try { _udp?.Close(); } catch { }
             try { if (_readLoop != null) await _readLoop; } catch { }
+            try { if (_revalidationLoop != null) await _revalidationLoop; } catch { }
+            _revalidationLoop = null;
             _udp = null;
             _cts.Dispose();
             _cts = null;
             _readLoop = null;
         }
 
-        public async Task SendPingAsync(IPEndPoint remote, Discv4PingMessage ping, CancellationToken ct = default)
+        public Task SendPingAsync(IPEndPoint remote, Discv4PingMessage ping, CancellationToken ct = default, byte[] remoteNodeId = null)
+        {
+            return SendTrackedPingAsync(remote, ping, remoteNodeId, null, ct);
+        }
+
+        private async Task SendTrackedPingAsync(IPEndPoint remote, Discv4PingMessage ping, byte[] remoteNodeId, TaskCompletionSource answered, CancellationToken ct)
         {
             var data = Discv4MessageEncoder.EncodePing(ping);
             var packet = Discv4Packet.Encode(_localKey, Discv4MessageType.Ping, data);
-            await _udp.SendAsync(packet, packet.Length, remote);
+            RegisterPendingPing(packet, new PendingPing
+            {
+                NodeId = remoteNodeId,
+                Address = remote.Address,
+                TcpPort = ping.To.TcpPort,
+                Lifetime = OutboundReplyTimeout,
+                Kind = PendingPingKind.Outbound,
+                Answered = answered
+            }, enforceCap: false);
+            await _udp.SendAsync(packet, remote, ct).ConfigureAwait(false);
         }
 
         public async Task SendPongAsync(IPEndPoint remote, Discv4PongMessage pong, CancellationToken ct = default)
@@ -86,10 +137,11 @@ namespace Nethereum.DevP2P.Discv4
             await _udp.SendAsync(packet, packet.Length, remote);
         }
 
-        public async Task SendFindNodeAsync(IPEndPoint remote, Discv4FindNodeMessage findNode, CancellationToken ct = default)
+        public async Task SendFindNodeAsync(IPEndPoint remote, Discv4FindNodeMessage findNode, CancellationToken ct = default, byte[] remoteNodeId = null)
         {
             var data = Discv4MessageEncoder.EncodeFindNode(findNode);
             var packet = Discv4Packet.Encode(_localKey, Discv4MessageType.FindNode, data);
+            ExpectNeighbors(remote.Address, remoteNodeId);
             await _udp.SendAsync(packet, packet.Length, remote);
         }
 
@@ -98,6 +150,82 @@ namespace Nethereum.DevP2P.Discv4
             var data = Discv4MessageEncoder.EncodeNeighbors(neighbors);
             var packet = Discv4Packet.Encode(_localKey, Discv4MessageType.Neighbors, data);
             await _udp.SendAsync(packet, packet.Length, remote);
+        }
+
+        public async Task<bool> RevalidateAsync(CancellationToken ct = default)
+        {
+            var node = _routingTable.NextRevalidationCandidate();
+            if (node == null) return true;
+            var remote = new IPEndPoint(node.IP, node.UdpPort);
+            var answered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            await SendTrackedPingAsync(remote, BuildPing(remote, node.TcpPort), node.NodeId, answered, ct).ConfigureAwait(false);
+
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var expired = Task.Delay(RevalidationTimeout, timeout.Token);
+            var winner = await Task.WhenAny(answered.Task, expired).ConfigureAwait(false);
+            timeout.Cancel();
+            ct.ThrowIfCancellationRequested();
+            if (winner == answered.Task) return true;
+            _bondedPeers.TryRemove(BondKey(node.NodeId, remote), out _);
+            _routingTable.Remove(node.NodeId);
+            return false;
+        }
+
+        private async Task RevalidationLoopAsync(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try { await Task.Delay(RevalidationInterval, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+                try { await RevalidateAsync(ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return; }
+                catch (ObjectDisposedException) { return; }
+                catch (Exception ex) { RaiseError("Revalidate", ex); }
+            }
+        }
+
+        private Discv4PingMessage BuildPing(IPEndPoint to, ushort toTcpPort)
+        {
+            var localEp = LocalEndpoint;
+            return new Discv4PingMessage
+            {
+                Version = 4,
+                From = new Discv4Endpoint
+                {
+                    IP = localEp?.Address ?? IPAddress.Loopback,
+                    UdpPort = (ushort)(localEp?.Port ?? 0),
+                    TcpPort = 0
+                },
+                To = new Discv4Endpoint
+                {
+                    IP = to.Address,
+                    UdpPort = (ushort)to.Port,
+                    TcpPort = toTcpPort
+                },
+                Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds(),
+                EnrSeq = LocalEnrEncoded != null ? LocalEnrSequence : (ulong?)null
+            };
+        }
+
+        private void RaiseError(string phase, Exception ex)
+        {
+            var handlers = ErrorOccurred;
+            if (handlers == null) return;
+            foreach (EventHandler<Discv4ErrorEventArgs> handler in handlers.GetInvocationList())
+            {
+                try { handler(this, new Discv4ErrorEventArgs(phase, ex)); }
+                catch { }
+            }
+        }
+
+        private void Raise<TArgs>(EventHandler<TArgs> handlers, TArgs args)
+        {
+            if (handlers == null) return;
+            foreach (EventHandler<TArgs> handler in handlers.GetInvocationList())
+            {
+                try { handler(this, args); }
+                catch (Exception ex) { RaiseError("Handler", ex); }
+            }
         }
 
         private void MaybeSweepMaps()
@@ -111,15 +239,15 @@ namespace Nethereum.DevP2P.Discv4
                 if ((now - kv.Value) > BondLifetime)
                     _bondedPeers.TryRemove(kv.Key, out _);
             }
-            foreach (var kv in _pendingPings)
+            SweepExpiredPendingPings(now);
+            lock (_pendingFindNodesGate)
             {
-                if ((now - kv.Value.CreatedUtc) > PendingPingTtl)
-                    _pendingPings.TryRemove(kv.Key, out _);
-            }
-            foreach (var kv in _lastBackPingByIp)
-            {
-                if ((now - kv.Value) > BackPingCooldown + BackPingCooldown + BackPingCooldown)
-                    _lastBackPingByIp.TryRemove(kv.Key, out _);
+                var expired = new List<string>();
+                foreach (var kv in _pendingFindNodes)
+                {
+                    if (kv.Value.ExpiresUtc < now) expired.Add(kv.Key);
+                }
+                foreach (var key in expired) _pendingFindNodes.Remove(key);
             }
         }
 
@@ -143,7 +271,7 @@ namespace Nethereum.DevP2P.Discv4
                 }
                 catch (Exception ex)
                 {
-                    ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("Receive", ex));
+                    RaiseError("Receive", ex);
                     try { await Task.Delay(50, ct).ConfigureAwait(false); }
                     catch (OperationCanceledException) { return; }
                     continue;
@@ -156,7 +284,7 @@ namespace Nethereum.DevP2P.Discv4
                 }
                 catch (Exception ex)
                 {
-                    ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("Decode", ex));
+                    RaiseError("Decode", ex);
                 }
             }
         }
@@ -195,28 +323,28 @@ namespace Nethereum.DevP2P.Discv4
         {
             var ping = Discv4MessageEncoder.DecodePing(packet.Data);
             if (IsExpired(ping.Expiration)) return;
-            _routingTable.Add(sourceNode);
+            sourceNode.TcpPort = ping.From.TcpPort;
             if (AutoRespond)
             {
                 _ = AutoPongAsync(sender, packet.Hash);
-                _ = AutoBackPingAsync(sender, packet.SenderPubKey);
+                if (IsBonded(packet.SenderPubKey, sender))
+                    _routingTable.Add(sourceNode);
+                else
+                    _ = AutoBackPingAsync(sender, packet.SenderPubKey, sourceNode.TcpPort);
             }
-            PingReceived?.Invoke(this, new Discv4PingReceivedEventArgs(sender, ping, packet.Hash, sourceNode));
+            Raise(PingReceived, new Discv4PingReceivedEventArgs(sender, ping, packet.Hash, sourceNode));
         }
 
         private void HandlePong(Discv4Packet.DecodedPacket packet, IPEndPoint sender, Discv4Node sourceNode)
         {
             var pong = Discv4MessageEncoder.DecodePong(packet.Data);
             if (IsExpired(pong.Expiration)) return;
+            if (!TryTakePendingPing(pong.PingHash, packet.SenderPubKey, sender.Address, out var pending)) return;
+            RecordBond(BondKey(packet.SenderPubKey, sender));
+            sourceNode.TcpPort = pending.TcpPort;
             _routingTable.Add(sourceNode);
-            var key = BondKey(packet.SenderPubKey, sender);
-            if (_pendingPings.TryGetValue(key, out var pending)
-                && ByteUtil.AreEqual(pending.Hash, pong.PingHash))
-            {
-                _pendingPings.TryRemove(key, out _);
-                _bondedPeers[key] = DateTime.UtcNow;
-            }
-            PongReceived?.Invoke(this, new Discv4PongReceivedEventArgs(sender, pong, sourceNode));
+            pending.Answered?.TrySetResult();
+            Raise(PongReceived, new Discv4PongReceivedEventArgs(sender, pong, sourceNode));
         }
 
         private void HandleFindNode(Discv4Packet.DecodedPacket packet, IPEndPoint sender, Discv4Node sourceNode)
@@ -225,26 +353,69 @@ namespace Nethereum.DevP2P.Discv4
             if (IsExpired(findNode.Expiration)) return;
             if (AutoRespond && IsBonded(packet.SenderPubKey, sender))
                 _ = AutoNeighborsAsync(sender, findNode.Target);
-            FindNodeReceived?.Invoke(this, new Discv4FindNodeReceivedEventArgs(sender, findNode, sourceNode));
+            Raise(FindNodeReceived, new Discv4FindNodeReceivedEventArgs(sender, findNode, sourceNode));
         }
 
         private void HandleNeighbors(Discv4Packet.DecodedPacket packet, IPEndPoint sender, Discv4Node sourceNode)
         {
             var neighbors = Discv4MessageEncoder.DecodeNeighbors(packet.Data);
             if (IsExpired(neighbors.Expiration)) return;
-            NeighborsReceived?.Invoke(this, new Discv4NeighborsReceivedEventArgs(sender, neighbors, sourceNode));
+            if (!TryConsumeExpectedNeighbors(packet.SenderPubKey, sender.Address, neighbors.Nodes.Count)) return;
+            Raise(NeighborsReceived, new Discv4NeighborsReceivedEventArgs(sender, neighbors, sourceNode));
         }
 
         private void HandleEnrRequest(Discv4Packet.DecodedPacket packet, IPEndPoint sender, Discv4Node sourceNode)
         {
+            if (IsExpired(Discv4MessageEncoder.DecodeEnrRequestExpiration(packet.Data))) return;
             if (AutoRespond && LocalEnrEncoded != null && IsBonded(packet.SenderPubKey, sender))
                 _ = AutoEnrResponseAsync(sender, packet.Hash);
-            EnrRequestReceived?.Invoke(this, new Discv4EnrRequestReceivedEventArgs(sender, packet.Hash, sourceNode));
+            Raise(EnrRequestReceived, new Discv4EnrRequestReceivedEventArgs(sender, packet.Hash, sourceNode));
         }
 
-        private static string BondKey(byte[] nodeId, IPEndPoint endpoint)
+        private static string BondKey(byte[] nodeId, IPEndPoint endpoint) => BondKey(nodeId, endpoint.Address);
+
+        private static string BondKey(byte[] nodeId, IPAddress address)
         {
-            return nodeId.ToHex() + "|" + endpoint.Address.ToString();
+            return nodeId.ToHex() + "|" + address.ToString();
+        }
+
+        private void RecordBond(string key)
+        {
+            var now = DateTime.UtcNow;
+            if (!_bondedPeers.ContainsKey(key) && _bondedPeers.Count >= MaxBondedPeers)
+            {
+                foreach (var kv in _bondedPeers)
+                {
+                    if ((now - kv.Value) > BondLifetime)
+                        _bondedPeers.TryRemove(kv.Key, out _);
+                }
+                if (_bondedPeers.Count >= MaxBondedPeers) EvictBond();
+            }
+            _bondedPeers[key] = now;
+        }
+
+        private void EvictBond()
+        {
+            var inTable = new HashSet<string>();
+            foreach (var node in _routingTable.AllNodes())
+                inTable.Add(BondKey(node.NodeId, node.IP));
+
+            string victim = null;
+            var victimInTable = false;
+            var victimBondedUtc = DateTime.MinValue;
+            foreach (var kv in _bondedPeers)
+            {
+                var candidateInTable = inTable.Contains(kv.Key);
+                var better = victim == null
+                    || (!victimInTable && candidateInTable)
+                    || (victimInTable && candidateInTable && kv.Value < victimBondedUtc)
+                    || (!victimInTable && !candidateInTable && kv.Value > victimBondedUtc);
+                if (!better) continue;
+                victim = kv.Key;
+                victimInTable = candidateInTable;
+                victimBondedUtc = kv.Value;
+            }
+            if (victim != null) _bondedPeers.TryRemove(victim, out _);
         }
 
         private bool IsBonded(byte[] nodeId, IPEndPoint endpoint)
@@ -273,51 +444,126 @@ namespace Nethereum.DevP2P.Discv4
             }
             catch (Exception ex)
             {
-                ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("AutoPong", ex));
+                RaiseError("AutoPong", ex);
             }
         }
 
-        private async Task AutoBackPingAsync(IPEndPoint to, byte[] recipientNodeId)
+        private async Task AutoBackPingAsync(IPEndPoint to, byte[] recipientNodeId, ushort recipientTcpPort)
         {
-            var ipKey = to.Address.ToString();
-            var now = DateTime.UtcNow;
-            if (_lastBackPingByIp.TryGetValue(ipKey, out var lastSent)
-                && now - lastSent < BackPingCooldown)
-            {
-                return;
-            }
-            _lastBackPingByIp[ipKey] = now;
             try
             {
-                var localEp = LocalEndpoint;
-                var ping = new Discv4PingMessage
-                {
-                    Version = 4,
-                    From = new Discv4Endpoint
-                    {
-                        IP = localEp?.Address ?? IPAddress.Loopback,
-                        UdpPort = (ushort)(localEp?.Port ?? 0),
-                        TcpPort = 0
-                    },
-                    To = new Discv4Endpoint
-                    {
-                        IP = to.Address,
-                        UdpPort = (ushort)to.Port,
-                        TcpPort = 0
-                    },
-                    Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds(),
-                    EnrSeq = LocalEnrEncoded != null ? LocalEnrSequence : (ulong?)null
-                };
+                var ping = BuildPing(to, 0);
                 var data = Discv4MessageEncoder.EncodePing(ping);
                 var packet = Discv4Packet.Encode(_localKey, Discv4MessageType.Ping, data);
-                var pingHash = new byte[32];
-                Buffer.BlockCopy(packet, 0, pingHash, 0, 32);
-                _pendingPings[BondKey(recipientNodeId, to)] = (pingHash, DateTime.UtcNow);
+                RegisterPendingPing(packet, new PendingPing
+                {
+                    NodeId = recipientNodeId,
+                    Address = to.Address,
+                    TcpPort = recipientTcpPort,
+                    Lifetime = BackPingReplyTimeout,
+                    Kind = PendingPingKind.BackPing
+                }, enforceCap: true);
                 await _udp.SendAsync(packet, packet.Length, to);
             }
             catch (Exception ex)
             {
-                ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("AutoBackPing", ex));
+                RaiseError("AutoBackPing", ex);
+            }
+        }
+
+        private static string PendingPingKey(byte[] nodeId, IPAddress address, byte[] pingHash)
+        {
+            return (nodeId == null ? string.Empty : nodeId.ToHex()) + "|" + address + "|" + pingHash.ToHex();
+        }
+
+        private static byte[] PacketHash(byte[] packet)
+        {
+            var hash = new byte[Discv4Packet.HashLength];
+            Buffer.BlockCopy(packet, 0, hash, 0, Discv4Packet.HashLength);
+            return hash;
+        }
+
+        private void RegisterPendingPing(byte[] packet, PendingPing pending, bool enforceCap)
+        {
+            pending.CreatedUtc = DateTime.UtcNow;
+            lock (_pendingPingsGate)
+            {
+                if (enforceCap && _pendingPings.Count >= MaxPendingPings)
+                {
+                    SweepExpiredPendingPings(pending.CreatedUtc);
+                    if (_pendingPings.Count >= MaxPendingPings) EvictOldestBackPing();
+                }
+                _pendingPings[PendingPingKey(pending.NodeId, pending.Address, PacketHash(packet))] = pending;
+            }
+        }
+
+        private void EvictOldestBackPing()
+        {
+            string victim = null;
+            var victimCreatedUtc = DateTime.MaxValue;
+            foreach (var kv in _pendingPings)
+            {
+                if (kv.Value.Kind != PendingPingKind.BackPing || kv.Value.CreatedUtc >= victimCreatedUtc) continue;
+                victim = kv.Key;
+                victimCreatedUtc = kv.Value.CreatedUtc;
+            }
+            if (victim != null) _pendingPings.TryRemove(victim, out _);
+        }
+
+        private void SweepExpiredPendingPings(DateTime now)
+        {
+            foreach (var kv in _pendingPings)
+            {
+                if ((now - kv.Value.CreatedUtc) > kv.Value.Lifetime)
+                    _pendingPings.TryRemove(kv.Key, out _);
+            }
+        }
+
+        private bool TryTakePendingPing(byte[] pingHash, byte[] senderNodeId, IPAddress senderAddress, out PendingPing pending)
+        {
+            pending = null;
+            if (pingHash == null) return false;
+            return TryTakePendingPing(PendingPingKey(senderNodeId, senderAddress, pingHash), out pending)
+                || TryTakePendingPing(PendingPingKey(null, senderAddress, pingHash), out pending);
+        }
+
+        private bool TryTakePendingPing(string key, out PendingPing pending)
+        {
+            pending = null;
+            if (!_pendingPings.TryGetValue(key, out var candidate)) return false;
+            if (DateTime.UtcNow - candidate.CreatedUtc > candidate.Lifetime) return false;
+            return _pendingPings.TryRemove(key, out pending);
+        }
+
+        private void ExpectNeighbors(IPAddress address, byte[] nodeId)
+        {
+            lock (_pendingFindNodesGate)
+            {
+                var key = address.ToString();
+                _pendingFindNodes.TryGetValue(key, out var pending);
+                pending ??= new PendingFindNode();
+                pending.NodeId = nodeId;
+                pending.Remaining = Math.Min(pending.Remaining + Discv4RoutingTable.BucketSize, 3 * Discv4RoutingTable.BucketSize);
+                pending.ExpiresUtc = DateTime.UtcNow + OutboundReplyTimeout;
+                _pendingFindNodes[key] = pending;
+            }
+        }
+
+        private bool TryConsumeExpectedNeighbors(byte[] senderNodeId, IPAddress senderAddress, int nodeCount)
+        {
+            lock (_pendingFindNodesGate)
+            {
+                var key = senderAddress.ToString();
+                if (!_pendingFindNodes.TryGetValue(key, out var pending)) return false;
+                if (pending.ExpiresUtc < DateTime.UtcNow)
+                {
+                    _pendingFindNodes.Remove(key);
+                    return false;
+                }
+                if (pending.NodeId != null && !ByteUtil.AreEqual(pending.NodeId, senderNodeId)) return false;
+                pending.Remaining -= Math.Max(nodeCount, 1);
+                if (pending.Remaining <= 0) _pendingFindNodes.Remove(key);
+                return true;
             }
         }
 
@@ -326,27 +572,40 @@ namespace Nethereum.DevP2P.Discv4
             try
             {
                 var closest = _routingTable.FindClosest(target);
-                var neighbors = new Discv4NeighborsMessage
-                {
-                    Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds()
-                };
+                var neighbors = NewNeighborsMessage();
+                var sent = false;
                 foreach (var n in closest)
                 {
-                    neighbors.Nodes.Add(new Discv4Neighbor
+                    if (n.IP.IsValidRelayTarget(to.Address))
                     {
-                        IP = n.IP,
-                        UdpPort = n.UdpPort,
-                        TcpPort = n.TcpPort,
-                        NodeId = n.NodeId
-                    });
+                        neighbors.Nodes.Add(new Discv4Neighbor
+                        {
+                            IP = n.IP,
+                            UdpPort = n.UdpPort,
+                            TcpPort = n.TcpPort,
+                            NodeId = n.NodeId
+                        });
+                    }
+                    if (neighbors.Nodes.Count == Discv4NeighborsMessage.MaxNeighbors)
+                    {
+                        await SendNeighborsAsync(to, neighbors);
+                        neighbors = NewNeighborsMessage();
+                        sent = true;
+                    }
                 }
-                await SendNeighborsAsync(to, neighbors);
+                if (neighbors.Nodes.Count > 0 || !sent)
+                    await SendNeighborsAsync(to, neighbors);
             }
             catch (Exception ex)
             {
-                ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("AutoNeighbors", ex));
+                RaiseError("AutoNeighbors", ex);
             }
         }
+
+        private static Discv4NeighborsMessage NewNeighborsMessage() => new Discv4NeighborsMessage
+        {
+            Expiration = DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeSeconds()
+        };
 
         private async Task AutoEnrResponseAsync(IPEndPoint to, byte[] requestHash)
         {
@@ -360,7 +619,7 @@ namespace Nethereum.DevP2P.Discv4
             }
             catch (Exception ex)
             {
-                ErrorOccurred?.Invoke(this, new Discv4ErrorEventArgs("AutoEnrResponse", ex));
+                RaiseError("AutoEnrResponse", ex);
             }
         }
 

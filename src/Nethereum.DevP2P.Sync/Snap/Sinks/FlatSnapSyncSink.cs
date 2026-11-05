@@ -2,8 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Nethereum.CoreChain.Storage;
-using Nethereum.DevP2P.Sync.Abstractions;
-using Nethereum.DevP2P.Sync.Snap.Storage;
 using Nethereum.Model;
 
 namespace Nethereum.DevP2P.Sync.Snap.Sinks

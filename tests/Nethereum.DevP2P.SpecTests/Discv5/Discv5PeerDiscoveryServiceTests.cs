@@ -22,7 +22,7 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
             var key = EthECKey.GenerateKey();
             var enr = new EnrRecord { Sequence = 1 };
             enr.Pairs["id"] = Encoding.ASCII.GetBytes("v4");
-            enr.Pairs["ip"] = new byte[] { 203, 0, 113, 7 };
+            enr.Pairs["ip"] = new byte[] { 93, 184, 216, 7 };
             enr.Pairs["tcp"] = new byte[] { 0x76, 0x5F };
             enr.Pairs["udp"] = new byte[] { 0x76, 0x5F };
             enr.Pairs["secp256k1"] = key.GetPubKey(compresseed: true);
@@ -32,7 +32,7 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
 
             Assert.NotNull(enode);
             Assert.StartsWith("enode://", enode);
-            Assert.Contains("@203.0.113.7:30303", enode);
+            Assert.Contains("@93.184.216.7:30303", enode);
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
             boot.LocalEnrEncoded = EnrRecordEncoder.EncodeRecord(bootEnr);
             boot.LocalEnrSequence = bootEnr.Sequence;
 
-            var syntheticIp = new IPAddress(new byte[] { 203, 0, 113, 42 });
+            var syntheticIp = new IPAddress(new byte[] { 93, 184, 216, 42 });
             const ushort syntheticPort = 30444;
             var bootNodeId = boot.NodeId;
             EthECKey syntheticKey = null;
@@ -162,7 +162,7 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
             var diagnosticsText = string.Join("\n", diagnostics);
             Assert.True(discovered.Count >= 1,
                 $"Expected at least 1 discovered enode, got 0. Routing-table walk failed.\nDiagnostics:\n{diagnosticsText}\nDirect FINDNODE returned {enrs.Count} ENRs.");
-            Assert.Contains(discovered, e => e.Contains("203.0.113.42:30444"));
+            Assert.Contains(discovered, e => e.Contains("93.184.216.42:30444"));
         }
 
         private static EnrRecord BuildSignedEnr(EthECKey key, IPAddress ip, ushort tcp, ushort udp)

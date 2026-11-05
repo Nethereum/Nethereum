@@ -29,11 +29,10 @@ namespace Nethereum.DevP2P
             {
                 foreach (var rc in remote)
                 {
-                    if (lc.Name == rc.Name)
+                    if (lc.Name == rc.Name && lc.Version == rc.Version
+                        && (!shared.TryGetValue(lc.Name, out var best) || best < lc.Version))
                     {
-                        var version = System.Math.Min(lc.Version, rc.Version);
-                        if (!shared.ContainsKey(lc.Name) || shared[lc.Name] < version)
-                            shared[lc.Name] = version;
+                        shared[lc.Name] = lc.Version;
                     }
                 }
             }

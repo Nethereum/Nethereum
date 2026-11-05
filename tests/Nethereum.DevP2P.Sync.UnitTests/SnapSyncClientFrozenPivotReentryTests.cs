@@ -149,6 +149,76 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.NotEmpty(entriesB);
         }
 
+        [Fact]
+        public async Task Given_ACallThatIgnoresItsToken_When_TheLimitPasses_Then_TimedOutIsReportedAndTheCallerIsReleased()
+        {
+            var (store, owner, stateRootA, stateRootB) = TwoRoots(0x40, 0x03, 5, 6);
+            var moveGate = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var peer = new MoveAfterFirstAccountRangePeer(
+                new InProcessSnapPeer(new PatriciaSnapRequestHandler(store, new InMemoryBytecodeStore())), moveGate);
+            var log = new CharLog();
+            var refreshes = 0;
+
+            var client = new SnapSyncClient(peer, sink: null, logger: log)
+            {
+                AccountConcurrency = 1,
+                RootRefreshIntervalMs = 15,
+                PivotRefresher = _ => Interlocked.Increment(ref refreshes) == 1
+                    ? new TaskCompletionSource<byte[]>().Task
+                    : Task.FromResult(moveGate.Task.IsCompleted ? stateRootB : stateRootA),
+            };
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            var result = await client.SyncStateWithCheckpointAsync(
+                stateRootA, resumeFrom: null, checkpointSink: null, ct: cts.Token);
+
+            Assert.True(log.Saw("snap.pivot.refresh_timeout"));
+            Assert.Equal(stateRootB, result.FinalTargetRoot, ByteArrayComparer.Current);
+            Assert.True(result.RootMatchesTarget);
+        }
+
+        [Fact]
+        public async Task Given_TheOuterTokenIsCancelled_When_TheCallIsBounded_Then_TheCancellationPropagatesInsteadOfReportingATimeout()
+        {
+            var (store, _, stateRootA, _) = TwoRoots(0x40, 0x04, 7, 8);
+            var peer = new MoveAfterFirstAccountRangePeer(
+                new InProcessSnapPeer(new PatriciaSnapRequestHandler(store, new InMemoryBytecodeStore())),
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+            var log = new CharLog();
+            var refreshEntered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var client = new SnapSyncClient(peer, sink: null, logger: log)
+            {
+                AccountConcurrency = 1,
+                RootRefreshIntervalMs = 1000,
+                PivotRefresher = _ =>
+                {
+                    refreshEntered.TrySetResult(true);
+                    return new TaskCompletionSource<byte[]>().Task;
+                },
+            };
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            var sync = client.SyncStateWithCheckpointAsync(stateRootA, resumeFrom: null, checkpointSink: null, ct: cts.Token);
+            await refreshEntered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            cts.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sync);
+            Assert.False(log.Saw("snap.pivot.refresh_timeout"));
+        }
+
+        private static (InMemoryContentNodeStore Store, byte[] Owner, byte[] RootA, byte[] RootB) TwoRoots(
+            byte first, byte last, int seedA, int seedB)
+        {
+            var store = new InMemoryContentNodeStore();
+            var owner = new byte[32];
+            owner[0] = first;
+            owner[31] = last;
+            var (stateRootA, _, _) = BuildOwnerState(store, owner, count: 3, seed: seedA);
+            var (stateRootB, _, _) = BuildOwnerState(store, owner, count: 3, seed: seedB);
+            return (store, owner, stateRootA, stateRootB);
+        }
+
         private sealed class RootRecordingPeer : ISnapPeer
         {
             private readonly ISnapPeer _inner;

@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Nethereum DevP2P - RLPx transport and Ethereum peer-to-peer networking</Description>
     <AssemblyTitle>Nethereum.DevP2P</AssemblyTitle>
-    <Version>$(NethereumVersionPreview)</Version>
+    <Version>$(NethereumVersion)</Version>
     <TargetFrameworks>$(CoreChainFrameworks)</TargetFrameworks>
     <AssemblyName>Nethereum.DevP2P</AssemblyName>
     <PackageId>Nethereum.DevP2P</PackageId>
@@ -18,6 +19,18 @@
     <ProjectReference Include="..\Nethereum.RLP\Nethereum.RLP.csproj" />
     <ProjectReference Include="..\Nethereum.Signer\Nethereum.Signer.csproj" />
     <ProjectReference Include="..\Nethereum.Util\Nethereum.Util.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\NethereumKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net35' And '$(TargetUnityNet461AOT)' != 'true'">
+    <None Include="..\..\NethereumKey.snk" />
   </ItemGroup>
 
 </Project>

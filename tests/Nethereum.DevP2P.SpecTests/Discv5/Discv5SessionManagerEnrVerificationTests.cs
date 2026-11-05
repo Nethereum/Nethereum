@@ -29,11 +29,11 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
         }
 
         [Fact]
-        public void Given_HandshakeWithTamperedEnr_When_Processed_Then_ChallengeSurvivesForTheGenuineReply()
+        public void Given_HandshakeWithTamperedEnr_When_Processed_Then_ChallengeIsConsumed()
         {
             var (result, mgr, _, _) = RunHandshake(tamperSignature: true);
             Assert.Equal(Discv5SessionManager.IncomingPacketKind.Ignored, result.Kind);
-            Assert.Equal(1, mgr.PendingChallengeCount);
+            Assert.Equal(0, mgr.PendingChallengeCount);
         }
 
         [Fact]

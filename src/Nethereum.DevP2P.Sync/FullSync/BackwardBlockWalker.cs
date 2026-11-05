@@ -131,7 +131,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                     var headers = fetched.Headers!;
                     var hashes = fetched.Hashes!;
                     int last = headers.Count - 1;
-                    ulong batchBottomBlock = (ulong)headers[last].BlockNumber.ToBigInteger();
+                    ulong batchBottomBlock = (ulong)headers[last].BlockNumber;
 
                     var (localHash, localExists) = await lookupLocalBlock(batchBottomBlock, ct).ConfigureAwait(false);
                     if (localExists)
@@ -258,58 +258,109 @@ namespace Nethereum.DevP2P.Sync.FullSync
                     _logger.LogWarning(ex,
                         "BackwardBlockWalker: header fetch at top {Top} limit {Limit} failed on attempt {Attempt}",
                         currentTopBlock, limit, attempt + 1);
-                    await DelayWithCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
+                    await DelayOrThrowOnCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
                     continue;
                 }
 
-                if (headers == null || headers.Count == 0)
+                HeaderFetchOutcome? accepted;
+                try
                 {
-                    _logger.LogWarning(
-                        "BackwardBlockWalker: empty header batch at top {Top} (attempt {Attempt})",
+                    accepted = await TryAcceptHeaderBatchAsync(
+                        headers, servingPeerId, currentTopBlock, anchorHash, attempt, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex,
+                        "BackwardBlockWalker: header batch at top {Top} could not be processed on attempt {Attempt}",
                         currentTopBlock, attempt + 1);
-                    if (servingPeerId != Guid.Empty) _scheduler.QuarantineHeaderPeer(servingPeerId);
-                    await DelayWithCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
+                    await RejectHeaderBatchAsync(servingPeerId, ct).ConfigureAwait(false);
                     continue;
                 }
-
-                if (!HeadersAreDescendingContiguous(headers, currentTopBlock))
-                {
-                    _logger.LogWarning(
-                        "BackwardBlockWalker: non-descending-contiguous header batch at top {Top} (attempt {Attempt})",
-                        currentTopBlock, attempt + 1);
-                    if (servingPeerId != Guid.Empty) _scheduler.QuarantineHeaderPeer(servingPeerId);
-                    await DelayWithCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                var hashes = new byte[headers.Count][];
-                for (int i = 0; i < headers.Count; i++)
-                    hashes[i] = HashHeader(headers[i]);
-
-                if (!ByteUtil.AreEqual(hashes[0], anchorHash))
-                {
-                    _logger.LogWarning(
-                        "BackwardBlockWalker: anchor mismatch at top {Top} (attempt {Attempt})",
-                        currentTopBlock, attempt + 1);
-                    if (servingPeerId != Guid.Empty) _scheduler.QuarantineHeaderPeer(servingPeerId);
-                    await DelayWithCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (!ValidateBackwardParentChain(headers, hashes, out var brokenAt))
-                {
-                    _logger.LogWarning(
-                        "BackwardBlockWalker: backward parent-hash chain break at index {Index} of batch top {Top} (attempt {Attempt})",
-                        brokenAt, currentTopBlock, attempt + 1);
-                    if (servingPeerId != Guid.Empty) _scheduler.QuarantineHeaderPeer(servingPeerId);
-                    await DelayWithCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                return new HeaderFetchOutcome { Headers = headers, Hashes = hashes };
+                if (accepted != null) return accepted.Value;
             }
 
             return new HeaderFetchOutcome { ExitReason = WalkerExitReason.PeerPoolEmpty };
+        }
+
+        private async Task<HeaderFetchOutcome?> TryAcceptHeaderBatchAsync(
+            List<BlockHeader> headers,
+            Guid servingPeerId,
+            ulong currentTopBlock,
+            byte[] anchorHash,
+            int attempt,
+            CancellationToken ct)
+        {
+            if (!await HeaderBatchIsContiguousAsync(headers, servingPeerId, currentTopBlock, attempt, ct).ConfigureAwait(false))
+                return null;
+
+            var hashes = new byte[headers.Count][];
+            for (int i = 0; i < headers.Count; i++)
+                hashes[i] = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(headers[i]);
+
+            if (!await HeaderBatchIsLinkedAsync(headers, hashes, servingPeerId, currentTopBlock, anchorHash, attempt, ct).ConfigureAwait(false))
+                return null;
+
+            return new HeaderFetchOutcome { Headers = headers, Hashes = hashes };
+        }
+
+        private async Task<bool> HeaderBatchIsContiguousAsync(
+            List<BlockHeader> headers, Guid servingPeerId, ulong currentTopBlock, int attempt, CancellationToken ct)
+        {
+            if (headers == null || headers.Count == 0)
+            {
+                _logger.LogWarning(
+                    "BackwardBlockWalker: empty header batch at top {Top} (attempt {Attempt})",
+                    currentTopBlock, attempt + 1);
+                await RejectHeaderBatchAsync(servingPeerId, ct).ConfigureAwait(false);
+                return false;
+            }
+
+            if (!BlockBatchValidator.HeadersAreContiguous(headers, currentTopBlock, descending: true))
+            {
+                _logger.LogWarning(
+                    "BackwardBlockWalker: non-descending-contiguous header batch at top {Top} (attempt {Attempt})",
+                    currentTopBlock, attempt + 1);
+                await RejectHeaderBatchAsync(servingPeerId, ct).ConfigureAwait(false);
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task<bool> HeaderBatchIsLinkedAsync(
+            List<BlockHeader> headers,
+            byte[][] hashes,
+            Guid servingPeerId,
+            ulong currentTopBlock,
+            byte[] anchorHash,
+            int attempt,
+            CancellationToken ct)
+        {
+            if (!ByteUtil.AreEqual(hashes[0], anchorHash))
+            {
+                _logger.LogWarning(
+                    "BackwardBlockWalker: anchor mismatch at top {Top} (attempt {Attempt})",
+                    currentTopBlock, attempt + 1);
+                await RejectHeaderBatchAsync(servingPeerId, ct).ConfigureAwait(false);
+                return false;
+            }
+
+            if (!BlockBatchValidator.ValidateBackwardParentChain(headers, hashes, out var brokenAt))
+            {
+                _logger.LogWarning(
+                    "BackwardBlockWalker: backward parent-hash chain break at index {Index} of batch top {Top} (attempt {Attempt})",
+                    brokenAt, currentTopBlock, attempt + 1);
+                await RejectHeaderBatchAsync(servingPeerId, ct).ConfigureAwait(false);
+                return false;
+            }
+
+            return true;
+        }
+
+        private async Task RejectHeaderBatchAsync(Guid servingPeerId, CancellationToken ct)
+        {
+            if (servingPeerId != Guid.Empty) _scheduler.QuarantineHeaderPeer(servingPeerId);
+            await DelayOrThrowOnCancel(_options.PeerRetryDelay, ct).ConfigureAwait(false);
         }
 
         private async Task PersistHeadersAtomicAsync(
@@ -331,25 +382,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
         private async Task<ulong> PhaseB_FetchBodiesAndPersistAsync(
             IList<BlockHeader> headers, IList<byte[]> hashes, CancellationToken ct)
         {
-            var hashList = new List<byte[]>(hashes.Count);
-            for (int i = 0; i < hashes.Count; i++) hashList.Add(hashes[i]);
-
-            BodyFetchResult result;
-            try
-            {
-                result = await _scheduler.FetchBodiesAsync(hashList, excludePeers: null, ct)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex,
-                    "BackwardBlockWalker: body fetch failed for batch bottom={Bottom} top={Top} — skipping bodies, headers progress",
-                    headers[headers.Count - 1].BlockNumber.ToBigInteger(),
-                    headers[0].BlockNumber.ToBigInteger());
-                return 0;
-            }
-
+            var result = await TryFetchBodiesAsync(headers, hashes, ct).ConfigureAwait(false);
             if (result?.Bodies == null || result.Bodies.Count == 0) return 0;
 
             var realigned = BlockBatchValidator.RealignBodies(headers, result.Bodies, _rootsProvider, out var unmatchedAt);
@@ -369,33 +402,10 @@ namespace Nethereum.DevP2P.Sync.FullSync
             ulong lowestPersistedBlock = ulong.MaxValue;
             for (int i = 0; i < paired; i++)
             {
-                var header = headers[i];
-                var hash = hashes[i];
-                var body = realigned[i];
+                var blockNumber = headers[i].BlockNumber.ToBigInteger();
+                await BodyRepairer.PersistBodyAsync(_bundle, hashes[i], blockNumber, realigned[i]).ConfigureAwait(false);
 
-                await _bundle.Uncles
-                    .SaveAsync(hash, body?.Uncles ?? new List<BlockHeader>())
-                    .ConfigureAwait(false);
-
-                if (body?.Withdrawals != null)
-                {
-                    await _bundle.Withdrawals
-                        .SaveAsync(hash, body.Withdrawals)
-                        .ConfigureAwait(false);
-                }
-
-                if (body?.Transactions != null)
-                {
-                    var blockNumber = header.BlockNumber.ToBigInteger();
-                    for (int j = 0; j < body.Transactions.Count; j++)
-                    {
-                        await _bundle.Transactions
-                            .SaveAsync(body.Transactions[j], hash, j, blockNumber)
-                            .ConfigureAwait(false);
-                    }
-                }
-
-                var blkNum = (ulong)header.BlockNumber.ToBigInteger();
+                var blkNum = (ulong)blockNumber;
                 if (blkNum < lowestPersistedBlock) lowestPersistedBlock = blkNum;
                 persisted++;
             }
@@ -410,37 +420,26 @@ namespace Nethereum.DevP2P.Sync.FullSync
             return persisted;
         }
 
-        private static bool ValidateBackwardParentChain(
-            IList<BlockHeader> headers, IList<byte[]> hashes, out int brokenAt)
+        private async Task<BodyFetchResult> TryFetchBodiesAsync(
+            IList<BlockHeader> headers, IList<byte[]> hashes, CancellationToken ct)
         {
-            for (int i = 0; i < headers.Count - 1; i++)
-            {
-                if (!ByteUtil.AreEqual(headers[i].ParentHash, hashes[i + 1]))
-                {
-                    brokenAt = i;
-                    return false;
-                }
-            }
-            brokenAt = -1;
-            return true;
-        }
+            var hashList = new List<byte[]>(hashes.Count);
+            for (int i = 0; i < hashes.Count; i++) hashList.Add(hashes[i]);
 
-        private static bool HeadersAreDescendingContiguous(IList<BlockHeader> headers, ulong topBlock)
-        {
-            if ((ulong)headers[0].BlockNumber.ToBigInteger() != topBlock) return false;
-            for (int i = 1; i < headers.Count; i++)
+            try
             {
-                var prev = (long)headers[i - 1].BlockNumber.ToBigInteger();
-                var cur = (long)headers[i].BlockNumber.ToBigInteger();
-                if (cur != prev - 1) return false;
+                return await _scheduler.FetchBodiesAsync(hashList, excludePeers: null, ct)
+                    .ConfigureAwait(false);
             }
-            return true;
-        }
-
-        private byte[] HashHeader(BlockHeader header)
-        {
-            var encoded = BlockHeaderEncoder.Current.Encode(header);
-            return Sha3Keccack.Current.CalculateHash(encoded);
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "BackwardBlockWalker: body fetch failed for batch bottom={Bottom} top={Top} — skipping bodies, headers progress",
+                    headers[headers.Count - 1].BlockNumber.ToBigInteger(),
+                    headers[0].BlockNumber.ToBigInteger());
+                return null;
+            }
         }
 
         private static WalkResult Finalise(
@@ -461,7 +460,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 ExitReason: reason,
                 DivergenceBlock: divergenceBlock);
 
-        private static async Task DelayWithCancel(TimeSpan delay, CancellationToken ct)
+        private static async Task DelayOrThrowOnCancel(TimeSpan delay, CancellationToken ct)
         {
             if (delay <= TimeSpan.Zero) return;
             try { await Task.Delay(delay, ct).ConfigureAwait(false); }

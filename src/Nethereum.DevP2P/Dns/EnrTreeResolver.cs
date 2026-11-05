@@ -9,6 +9,7 @@ using Nethereum.Documentation;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.Enr;
 using Nethereum.Signer;
+using Nethereum.Signer.Enr;
 using Nethereum.Util;
 
 namespace Nethereum.DevP2P.Dns
@@ -25,13 +26,28 @@ namespace Nethereum.DevP2P.Dns
             "enrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@les.mainnet.ethdisco.net",
         };
 
+        public const int MaxTreeDepth = 32;
+
+        private const int MinHashBytes = 12;
+        private const int MinQueryBudget = 64;
+        private const int QueriesPerLeaf = 4;
+        private const string RootPrefix = "enrtree-root:v1 ";
+        private const string BranchPrefix = "enrtree-branch:";
+
         private readonly Action<string> _log;
-        private readonly DnsTxtClient _dnsTxtClient;
+        private readonly Func<string, TimeSpan, CancellationToken, Task<List<string>>> _queryTxt;
+        private readonly Dictionary<string, ulong> _highestSeqByTree = new Dictionary<string, ulong>(StringComparer.OrdinalIgnoreCase);
+        private readonly object _seqLock = new object();
 
         public EnrTreeResolver(Action<string> log)
+            : this(log, new DnsTxtClient().QueryTxtAsync)
+        {
+        }
+
+        public EnrTreeResolver(Action<string> log, Func<string, TimeSpan, CancellationToken, Task<List<string>>> queryTxt)
         {
             _log = log ?? (_ => { });
-            _dnsTxtClient = new DnsTxtClient();
+            _queryTxt = queryTxt ?? throw new ArgumentNullException(nameof(queryTxt));
         }
 
         [NethereumDocExample(DocSection.DevP2P, "devp2p", "EnrTreeResolver.ResolveAsync — DNS ENR-tree discovery")]
@@ -44,9 +60,7 @@ namespace Nethereum.DevP2P.Dns
                 var enode = Discv5PeerDiscoveryService.ConvertEnrToEnode(enr);
                 if (enode != null) enodes.Add(enode);
             }
-            var visitedTrees = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var counter = new LeafCounter();
-            await ResolveTreeAsync(enrtreeUrl, OnEnrFound, counter, visitedTrees, timeout, maxLeaves, ct);
+            await ResolveTreesAsync(enrtreeUrl, OnEnrFound, timeout, maxLeaves, ct);
             return enodes;
         }
 
@@ -55,11 +69,9 @@ namespace Nethereum.DevP2P.Dns
         {
             var enrs = new List<EnrRecord>();
             void OnEnrFound(EnrRecord enr) => enrs.Add(enr);
-            var visitedTrees = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var counter = new LeafCounter();
             try
             {
-                await ResolveTreeAsync(enrtreeUrl, OnEnrFound, counter, visitedTrees, timeout, maxLeaves, ct);
+                await ResolveTreesAsync(enrtreeUrl, OnEnrFound, timeout, maxLeaves, ct);
             }
             catch (OperationCanceledException)
             {
@@ -67,23 +79,61 @@ namespace Nethereum.DevP2P.Dns
             return enrs;
         }
 
-        private sealed class LeafCounter
+        private sealed class ResolveState
         {
-            public int Count;
+            public Action<EnrRecord> OnEnrFound;
+            public TimeSpan Timeout;
+            public int MaxLeaves;
+            public long MaxQueries;
+            public int Leaves;
+            public long Queries;
+            public HashSet<string> VisitedTrees = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public Queue<string> PendingTrees = new Queue<string>();
+
+            public bool Exhausted => Leaves >= MaxLeaves || Queries >= MaxQueries;
         }
 
-        private async Task ResolveTreeAsync(
-            string enrtreeUrl, Action<EnrRecord> onEnrFound, LeafCounter counter,
-            HashSet<string> visitedTrees, TimeSpan timeout, int maxLeaves, CancellationToken ct)
+        private async Task ResolveTreesAsync(
+            string enrtreeUrl, Action<EnrRecord> onEnrFound, TimeSpan timeout, int maxLeaves, CancellationToken ct)
         {
-            if (counter.Count >= maxLeaves) return;
-            if (!visitedTrees.Add(enrtreeUrl)) return;
+            var state = new ResolveState
+            {
+                OnEnrFound = onEnrFound,
+                Timeout = timeout,
+                MaxLeaves = maxLeaves,
+                MaxQueries = Math.Max(MinQueryBudget, (long)maxLeaves * QueriesPerLeaf)
+            };
+            state.PendingTrees.Enqueue(enrtreeUrl);
+            var isRequestedTree = true;
+            while (state.PendingTrees.Count > 0 && !state.Exhausted)
+            {
+                var url = state.PendingTrees.Dequeue();
+                if (!state.VisitedTrees.Add(url)) continue;
+                if (isRequestedTree)
+                {
+                    await ResolveTreeAsync(url, state, ct);
+                    isRequestedTree = false;
+                    continue;
+                }
+                try
+                {
+                    await ResolveTreeAsync(url, state, ct);
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _log($"  enrtree link {url} failed: {ex.GetType().Name}");
+                }
+            }
+        }
 
-            var (pubkeyBase32, domain) = ParseEnrTreeUrl(enrtreeUrl);
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private async Task ResolveTreeAsync(string enrtreeUrl, ResolveState state, CancellationToken ct)
+        {
+            if (!TryParseEnrTreeUrl(enrtreeUrl, out var pubkeyBase32, out var domain))
+                throw new ArgumentException("Not an enrtree URL", nameof(enrtreeUrl));
 
-            var rootTxts = await _dnsTxtClient.QueryTxtAsync(domain, timeout, ct);
-            var root = rootTxts.FirstOrDefault(t => t.StartsWith("enrtree-root:", StringComparison.Ordinal));
+            state.Queries++;
+            var rootTxts = await _queryTxt(domain, state.Timeout, ct);
+            var root = rootTxts.FirstOrDefault(t => t.StartsWith(RootPrefix, StringComparison.Ordinal));
             if (root == null)
             {
                 _log($"  enrtree root not found for {domain}");
@@ -96,77 +146,148 @@ namespace Nethereum.DevP2P.Dns
                 return;
             }
 
+            if (!TryAcceptSequence(enrtreeUrl, root, domain)) return;
+
+            var roots = new List<string>();
             var eHash = ExtractField(root, " e=");
             var lHash = ExtractField(root, " l=");
+            if (eHash != null) roots.Add(eHash);
+            if (lHash != null) roots.Add(lHash);
 
-            if (eHash != null)
-            {
-                await WalkSubtreeAsync(eHash, domain, onEnrFound, counter, visited, visitedTrees, timeout, maxLeaves, ct);
-            }
+            await WalkTreeAsync(roots, domain, state, ct);
+        }
 
-            if (lHash != null && counter.Count < maxLeaves)
+        private async Task WalkTreeAsync(List<string> roots, string domain, ResolveState state, CancellationToken ct)
+        {
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var stack = new Stack<(string Hash, int Depth)>();
+            for (var i = roots.Count - 1; i >= 0; i--) stack.Push((roots[i], 0));
+
+            while (stack.Count > 0 && !state.Exhausted)
             {
-                await WalkSubtreeAsync(lHash, domain, onEnrFound, counter, visited, visitedTrees, timeout, maxLeaves, ct);
+                ct.ThrowIfCancellationRequested();
+                var (hash, depth) = stack.Pop();
+                if (depth > MaxTreeDepth)
+                {
+                    _log($"  enrtree entry {hash}.{domain} is deeper than {MaxTreeDepth} levels - ignoring");
+                    continue;
+                }
+                if (!visited.Add(hash)) continue;
+
+                state.Queries++;
+                List<string> txts;
+                try
+                {
+                    txts = await _queryTxt($"{hash}.{domain}", state.Timeout, ct);
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _log($"  enrtree DNS error for {hash}.{domain}: {ex.GetType().Name}");
+                    continue;
+                }
+
+                var record = string.Concat(txts);
+                if (!MatchesLabel(hash, record))
+                {
+                    _log($"  enrtree entry {hash}.{domain} does not hash to its label - ignoring");
+                    continue;
+                }
+
+                if (record.StartsWith(BranchPrefix, StringComparison.Ordinal))
+                {
+                    var children = record.Substring(BranchPrefix.Length).Split(',');
+                    for (var i = children.Length - 1; i >= 0; i--)
+                    {
+                        var child = children[i].Trim();
+                        if (child.Length > 0) stack.Push((child, depth + 1));
+                    }
+                }
+                else if (record.StartsWith("enr:", StringComparison.Ordinal))
+                {
+                    AcceptEnrLeaf(record, hash, domain, state);
+                }
+                else if (record.StartsWith("enrtree://", StringComparison.Ordinal))
+                {
+                    var link = record.Trim();
+                    if (TryParseEnrTreeUrl(link, out _, out _))
+                        state.PendingTrees.Enqueue(link);
+                    else
+                        _log($"  enrtree link {hash}.{domain} is malformed - ignoring");
+                }
             }
         }
 
-        private async Task WalkSubtreeAsync(
-            string hash, string domain, Action<EnrRecord> onEnrFound, LeafCounter counter,
-            HashSet<string> visited, HashSet<string> visitedTrees,
-            TimeSpan timeout, int maxLeaves, CancellationToken ct)
+        private void AcceptEnrLeaf(string record, string hash, string domain, ResolveState state)
         {
-            if (counter.Count >= maxLeaves) return;
-            if (!visited.Add(hash)) return;
-
-            List<string> txts;
             try
             {
-                txts = await _dnsTxtClient.QueryTxtAsync($"{hash}.{domain}", timeout, ct);
+                var enr = EnrRecordEncoder.ParseUrl(record);
+                if (!EnrRecordSigner.Verify(enr))
+                {
+                    _log($"  enr signature invalid for {hash}.{domain} - ignoring");
+                    return;
+                }
+                state.OnEnrFound(enr);
+                state.Leaves++;
             }
             catch (Exception ex)
             {
-                _log($"  enrtree DNS error for {hash}.{domain}: {ex.GetType().Name}");
-                return;
-            }
-
-            var record = string.Concat(txts);
-            if (record.StartsWith("enrtree-branch:", StringComparison.Ordinal))
-            {
-                var inner = record.Substring("enrtree-branch:".Length);
-                foreach (var h in inner.Split(','))
-                {
-                    if (counter.Count >= maxLeaves) break;
-                    ct.ThrowIfCancellationRequested();
-                    await WalkSubtreeAsync(h.Trim(), domain, onEnrFound, counter, visited, visitedTrees, timeout, maxLeaves, ct);
-                }
-            }
-            else if (record.StartsWith("enr:", StringComparison.Ordinal))
-            {
-                try
-                {
-                    var enr = EnrRecordEncoder.ParseUrl(record);
-                    onEnrFound(enr);
-                    counter.Count++;
-                }
-                catch (Exception ex)
-                {
-                    _log($"  enr decode failed: {ex.GetType().Name}: {ex.Message}");
-                }
-            }
-            else if (record.StartsWith("enrtree://", StringComparison.Ordinal))
-            {
-                await ResolveTreeAsync(record.Trim(), onEnrFound, counter, visitedTrees, timeout, maxLeaves, ct);
+                _log($"  enr decode failed: {ex.GetType().Name}: {ex.Message}");
             }
         }
 
-        private static (string PubKey, string Domain) ParseEnrTreeUrl(string url)
+        private bool TryAcceptSequence(string enrtreeUrl, string root, string domain)
         {
+            if (!ulong.TryParse(ExtractField(root, " seq="), out var seq))
+            {
+                _log($"  enrtree root for {domain} has no valid seq - ignoring");
+                return false;
+            }
+            lock (_seqLock)
+            {
+                if (_highestSeqByTree.TryGetValue(enrtreeUrl, out var highest) && seq < highest)
+                {
+                    _log($"  enrtree root for {domain} has seq {seq} below seen {highest} - ignoring");
+                    return false;
+                }
+                _highestSeqByTree[enrtreeUrl] = seq;
+                return true;
+            }
+        }
+
+        private static bool MatchesLabel(string label, string record)
+        {
+            byte[] want;
+            try
+            {
+                want = Base32DecodeNoPad(label);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            if (want.Length < MinHashBytes) return false;
+            var digest = new Sha3Keccack().CalculateHash(Encoding.UTF8.GetBytes(record));
+            if (want.Length > digest.Length) return false;
+            for (var i = 0; i < want.Length; i++)
+            {
+                if (digest[i] != want[i]) return false;
+            }
+            return true;
+        }
+
+        private static bool TryParseEnrTreeUrl(string url, out string pubKey, out string domain)
+        {
+            pubKey = null;
+            domain = null;
             const string prefix = "enrtree://";
-            if (!url.StartsWith(prefix, StringComparison.Ordinal))
-                throw new ArgumentException("Not an enrtree URL", nameof(url));
+            if (url == null || !url.StartsWith(prefix, StringComparison.Ordinal)) return false;
             var rest = url.Substring(prefix.Length);
             var at = rest.IndexOf('@');
-            return (rest.Substring(0, at), rest.Substring(at + 1));
+            if (at <= 0 || at == rest.Length - 1) return false;
+            pubKey = rest.Substring(0, at);
+            domain = rest.Substring(at + 1);
+            return true;
         }
 
         private static string ExtractField(string record, string marker)
@@ -200,7 +321,7 @@ namespace Nethereum.DevP2P.Dns
 
                 var key = new EthECKey(pubCompressed, false);
                 var sig = EthECDSASignatureFactory.FromComponents(r, s);
-                return key.Verify(digest, sig);
+                return sig.IsLowS && key.Verify(digest, sig);
             }
             catch
             {

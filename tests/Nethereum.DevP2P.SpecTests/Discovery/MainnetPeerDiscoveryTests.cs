@@ -12,12 +12,14 @@ using Nethereum.Signer;
 using Nethereum.Signer.Enr;
 using Xunit;
 using Xunit.Abstractions;
+using Nethereum.Testing;
 
 #nullable enable
 
 namespace Nethereum.DevP2P.SpecTests.Discovery
 {
     [Trait("Category", "Integration-Peer")]
+    [Trait("Category", "LivePeer")]
     public class MainnetPeerDiscoveryTests
     {
         private const int DefaultDevP2PPort = 30303;
@@ -265,34 +267,34 @@ namespace Nethereum.DevP2P.SpecTests.Discovery
 
         private async Task<DiscoveryContext> BuildDiscoveryContextOrSkipAsync()
         {
-            var host = Environment.GetEnvironmentVariable("PEER_HOST")?.Trim();
+            var host = TestEnvironment.ServiceOrNull("PeerHost")?.Trim();
             Skip.If(string.IsNullOrEmpty(host),
-                "PEER_HOST env var not set — skipping live peer integration. Set PEER_HOST=<addr> to enable.");
+                "Services:PeerHost is not set in appsettings.test.local.json — skipping live peer integration. Set it to <addr> to enable.");
 
-            var discv4Port = int.TryParse(Environment.GetEnvironmentVariable("PEER_DISCV4_PORT"), out var p4)
+            var discv4Port = int.TryParse(TestEnvironment.ServiceOrNull("PeerDiscv4Port"), out var p4)
                 ? p4 : DefaultDiscv4Port;
-            var discv5Port = int.TryParse(Environment.GetEnvironmentVariable("PEER_DISCV5_PORT"), out var p5)
+            var discv5Port = int.TryParse(TestEnvironment.ServiceOrNull("PeerDiscv5Port"), out var p5)
                 ? p5 : DefaultDiscv5Port;
-            var devp2pPort = int.TryParse(Environment.GetEnvironmentVariable("PEER_DEVP2P_PORT"), out var pd)
+            var devp2pPort = int.TryParse(TestEnvironment.ServiceOrNull("PeerDevp2pPort"), out var pd)
                 ? pd : DefaultDevP2PPort;
-            var rpcHost = Environment.GetEnvironmentVariable("PEER_RPC_HOST")?.Trim();
+            var rpcHost = TestEnvironment.ServiceOrNull("PeerRpcHost")?.Trim();
             if (string.IsNullOrEmpty(rpcHost)) rpcHost = host;
-            var rpcPort = int.TryParse(Environment.GetEnvironmentVariable("PEER_RPC_PORT"), out var pr)
+            var rpcPort = int.TryParse(TestEnvironment.ServiceOrNull("PeerRpcPort"), out var pr)
                 ? pr : DefaultJsonRpcPort;
 
             _output.WriteLine($"Target: discv4 UDP {host}:{discv4Port}, discv5 UDP {host}:{discv5Port}");
-            _output.WriteLine("Override PEER_HOST, PEER_DISCV4_PORT, PEER_DISCV5_PORT, PEER_ENODE to retarget.");
+            _output.WriteLine("Override Services:PeerHost, PeerDiscv4Port, PeerDiscv5Port, PeerEnode to retarget.");
 
             var ipAddress = await ResolveSingleIpAsync(host!);
 
-            var enodeUrl = Environment.GetEnvironmentVariable("PEER_ENODE")?.Trim();
+            var enodeUrl = TestEnvironment.ServiceOrNull("PeerEnode")?.Trim();
             if (string.IsNullOrEmpty(enodeUrl))
             {
                 enodeUrl = await TryGetEnodeViaAdminAsync(rpcHost!, rpcPort, ipAddress, devp2pPort);
             }
             Skip.If(string.IsNullOrEmpty(enodeUrl),
                 "No usable enode — admin_nodeInfo is not exposed on this RPC. " +
-                "Set PEER_ENODE=enode://<nodeid>@<host>:<port> to enable discv4/discv5 dial.");
+                "Set Services:PeerEnode to enode://<nodeid>@<host>:<port> to enable discv4/discv5 dial.");
 
             var (peerPub, _, _) = ParseEnode(enodeUrl!);
 

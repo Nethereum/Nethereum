@@ -183,7 +183,7 @@ namespace Nethereum.DevP2P.SpecTests.Discv5
                 var candidateId = Discv5Crypto.ComputeNodeId(candidate.GetPubKey(compresseed: true));
                 if (Discv5RoutingTable.LogDistance(targetId, candidateId) == distanceFromLocal)
                 {
-                    var ip = new IPAddress(new byte[] { 203, 0, 113, (byte)(attempt + 1) });
+                    var ip = new IPAddress(new byte[] { 93, 184, 216, (byte)(attempt + 1) });
                     const ushort port = 30444;
                     var enr = BuildSignedEnr(candidate, ip, port, port);
                     var encoded = EnrRecordEncoder.EncodeRecord(enr);

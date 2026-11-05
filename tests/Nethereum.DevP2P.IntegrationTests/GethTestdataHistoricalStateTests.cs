@@ -23,6 +23,7 @@ using Nethereum.Merkle.Patricia.Storage;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
     public class GethTestdataHistoricalStateTests
     {
         private readonly ITestOutputHelper _output;
@@ -184,6 +185,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             var chainBytes = await File.ReadAllBytesAsync(Path.Combine(testdata, "chain.rlp"));
             var calculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
             var blockStore = new InMemoryBlockStore();
+            await Helpers.GethTestdataGenesisHeader.SeedAsync(testdata, blockStore, stateStore, trieNodeStore);
             var activations = HiveTestdataChainActivations.Instance;
             var engine = new BlockExecutor(
                 stateStore, blockStore, activations,
@@ -275,6 +277,24 @@ namespace Nethereum.DevP2P.IntegrationTests
             Assert.Equal(blockNumber, matched);
         }
 
+        private static System.Collections.Generic.List<Withdrawal> DecodeWithdrawals(RLPCollection blockColl)
+        {
+            if (blockColl.Count < 4 || !(blockColl[3] is RLPCollection wList)) return null;
+            var withdrawals = new System.Collections.Generic.List<Withdrawal>();
+            foreach (var wItem in wList)
+            {
+                var wColl = (RLPCollection)wItem;
+                withdrawals.Add(new Withdrawal
+                {
+                    Index = (ulong)wColl[0].RLPData.ToBigIntegerFromRLPDecoded(),
+                    ValidatorIndex = (ulong)wColl[1].RLPData.ToBigIntegerFromRLPDecoded(),
+                    Address = wColl[2].RLPData,
+                    AmountInGwei = (ulong)wColl[3].RLPData.ToBigIntegerFromRLPDecoded()
+                });
+            }
+            return withdrawals;
+        }
+
         private static int GetRlpItemLength(byte[] data, int pos) =>
             Helpers.RlpStreamHelpers.GetRlpItemLength(data, pos);
 
@@ -286,6 +306,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             var chainBytes = await File.ReadAllBytesAsync(Path.Combine(testdata, "chain.rlp"));
             var calculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
             var blockStore = new InMemoryBlockStore();
+            await Helpers.GethTestdataGenesisHeader.SeedAsync(testdata, blockStore, stateStore, trieNodeStore);
             var activations = HiveTestdataChainActivations.Instance;
             var engine = new BlockExecutor(
                 stateStore, blockStore, activations,
@@ -359,7 +380,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                         Hardfork = "homestead"
                     };
                     var diagnoseEngine = new BlockExecutor(
-                        stateStore, new InMemoryBlockStore(), new FixedChainActivations(HardforkName.Homestead),
+                        stateStore, blockStore, new FixedChainActivations(HardforkName.Homestead),
                         chainConfigFactory: _ => chainConfig,
                         hardforkConfigFactory: _ => Nethereum.EVM.Precompiles.DefaultMainnetHardforkRegistry.Instance.Get(HardforkName.Homestead),
                         stateRootCalculator: calculator,
@@ -444,8 +465,8 @@ namespace Nethereum.DevP2P.IntegrationTests
                     return;
                 }
 
-                var r = await processor.ImportAsync(header, transactions, uncles: null, withdrawals: null);
-                Assert.True(r.RootMatches, $"Block {n} broke before reaching block 4: {r.ErrorMessage}");
+                var r = await processor.ImportAsync(header, transactions, uncles: null, withdrawals: DecodeWithdrawals(blockColl));
+                Assert.True(r.RootMatches, $"Block {n} broke before reaching block 4: {r.DescribeRejection()}");
                 pos += consumed;
             }
         }
@@ -477,6 +498,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             _output.WriteLine($"Decoded {transactions.Count} transactions");
 
             var blockStore = new InMemoryBlockStore();
+            await Helpers.GethTestdataGenesisHeader.SeedAsync(testdata, blockStore, stateStore, trieNodeStore);
             var calculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
             var activations = HiveTestdataChainActivations.Instance;
             var engine = new BlockExecutor(
@@ -494,7 +516,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 trieNodeStore: trieNodeStore);
             var processor = new BlockImporter(engine, blockStore, stateStore);
 
-            var result = await processor.ImportAsync(header, transactions, uncles: null, withdrawals: null);
+            var result = await processor.ImportAsync(header, transactions, uncles: null, withdrawals: DecodeWithdrawals(firstBlockRlp));
             _output.WriteLine($"Active fork: {result.Fork}");
             _output.WriteLine($"Miner reward credited: {result.MinerRewardCredited} wei");
             _output.WriteLine($"Transactions executed: {result.TransactionsExecuted}");
@@ -503,7 +525,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             if (!string.IsNullOrEmpty(result.ErrorMessage)) _output.WriteLine($"Error: {result.ErrorMessage}");
 
             Assert.True(result.RootMatches,
-                $"Block 1 stateRoot mismatch.\n  Expected (header): {result.ExpectedStateRoot.ToHex()}\n  Computed: {result.ComputedStateRoot?.ToHex()}");
+                $"Block 1 stateRoot mismatch.\n  Expected (header): {result.ExpectedStateRoot.ToHex()}\n  Computed: {result.ComputedStateRoot?.ToHex()}\n  {result.DescribeRejection()}");
         }
 
         private static byte[] ReEncodeAsList(RLPCollection coll) =>

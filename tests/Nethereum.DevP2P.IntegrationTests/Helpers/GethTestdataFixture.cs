@@ -15,7 +15,7 @@ namespace Nethereum.DevP2P.IntegrationTests.Helpers
         }
     }
 
-    [CollectionDefinition(Name)]
+    [CollectionDefinition(Name, DisableParallelization = true)]
     public class GethTestdataCollection : ICollectionFixture<GethTestdataFixture>
     {
         public const string Name = "geth-testdata";

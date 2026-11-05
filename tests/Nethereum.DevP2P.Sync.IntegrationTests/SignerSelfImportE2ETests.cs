@@ -20,7 +20,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         public SignerSelfImportE2ETests(ITestOutputHelper output) => _output = output;
 
         [Fact]
-        public async Task Given_ASignerThatSealedBlockN_When_ASiblingPushesBlockNPlusOneOnTopOfIt_Then_TheSignerImportsItAndSealsNPlusTwoOnTopOfThat()
+        public async Task Given_ASignerThatSealedBlockN_When_ASiblingAnnouncesBlockNPlusOneOnTopOfIt_Then_TheSignerImportsItAndSealsNPlusTwoOnTopOfThat()
         {
             var (signer, sibling) = await DevChainNetwork.TwoConnectedNodesAsync();
             DevChainFollower signerFollower = null;
@@ -81,7 +81,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_ASignerThatSealedBlockN_When_ItsOwnBlockNIsEchoedBackByASibling_Then_ItIsNotReExecuted()
+        public async Task Given_ASignerThatSealedBlockN_When_ASiblingAnnouncesItsOwnBlockNBackToIt_Then_ItIsNotReExecuted()
         {
             var (signer, sibling) = await DevChainNetwork.TwoConnectedNodesAsync();
             DevChainFollower signerFollower = null;
@@ -106,24 +106,20 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 var nonceAfterSeal = (await signer.Bundle.State.GetAccountAsync(sender.Address.ToLowerInvariant())).Nonce;
                 Assert.Equal(new BigInteger(1), (BigInteger)nonceAfterSeal);
 
-                var sealedTransactions = (await signer.Bundle.Transactions.GetByBlockHashAsync(blockN.BlockHash))?.ToList()
-                    ?? new System.Collections.Generic.List<Nethereum.Model.ISignedTransaction>();
-
-                var echoedFromSibling = new Nethereum.Model.P2P.NewBlockMessage
-                {
-                    Header = blockN.Header,
-                    Transactions = sealedTransactions,
-                    Uncles = new System.Collections.Generic.List<Nethereum.Model.BlockHeader>(),
-                    Withdrawals = new System.Collections.Generic.List<Nethereum.Model.Withdrawal>(),
-                    TotalDifficulty = blockN.Header.Difficulty
-                };
-                signer.PushedBlocks.OnNewBlock(echoedFromSibling);
+                var announcedBack = Nethereum.Model.P2P.BlockRangeUpdateMessageEncoder.Encode(
+                    new Nethereum.Model.P2P.BlockRangeUpdateMessage
+                    {
+                        EarliestBlock = 0,
+                        LatestBlock = (ulong)blockN.Header.BlockNumber,
+                        LatestBlockHash = blockN.BlockHash
+                    });
+                await sibling.BroadcastPool.BroadcastAsync(
+                    Nethereum.Model.P2P.EthMessageIds.BlockRangeUpdate, announcedBack);
 
                 await DevChainNetwork.StaysFalseAsync(
                     () => signerFollower.ExecutedHeight > (long)blockN.Header.BlockNumber,
                     TimeSpan.FromSeconds(5));
-                _output.WriteLine($"signerFollower.ExecutedHeight after echo = {signerFollower.ExecutedHeight}; " +
-                    $"pending in PushedBlocks = {signer.PushedBlocks.PendingCount}");
+                _output.WriteLine($"signerFollower.ExecutedHeight after echo = {signerFollower.ExecutedHeight}");
 
                 var nonceAfterEcho = (await signer.Bundle.State.GetAccountAsync(sender.Address.ToLowerInvariant())).Nonce;
                 Assert.Equal(new BigInteger(1), (BigInteger)nonceAfterEcho);

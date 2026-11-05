@@ -1,3 +1,5 @@
+using Nethereum.DevP2P.IntegrationTests.Helpers;
+using System;
 using System.IO;
 using System.Linq;
 using Nethereum.DevP2P.Sync;
@@ -19,6 +21,7 @@ using Nethereum.DevP2P.Sync.Snap.Bootstrap;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
     public class HeadStateLoaderCanaryTests
     {
         private readonly ITestOutputHelper _output;
@@ -48,7 +51,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             var path = FindHeadState();
             var doc = JObject.Parse(File.ReadAllText(path));
             var addr = "0x000f3df6d732807ef1319fb7b8bb8522d0beac02";
-            var entry = (JObject)doc["accounts"][addr];
+            var entry = (JObject)((JObject)doc["accounts"]).Properties().First(p => string.Equals(p.Name, addr, StringComparison.OrdinalIgnoreCase)).Value;
             var expectedStorageRoot = ParseHex(entry["root"].ToString());
 
             var storage = new InMemoryContentNodeStore();
@@ -80,17 +83,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             if (s.Length % 2 != 0) s = "0" + s;
             return s.HexToByteArray();
         }
-        private static string FindHeadState()
-        {
-            var probe = System.AppContext.BaseDirectory;
-            while (probe != null)
-            {
-                var sibling = Path.Combine(probe, "..", "go-ethereum", "cmd", "devp2p", "internal", "ethtest", "testdata", "headstate.json");
-                if (File.Exists(sibling)) return Path.GetFullPath(sibling);
-                probe = Path.GetDirectoryName(probe);
-            }
-            throw new FileNotFoundException(
-                "headstate.json not found. Expected at ../go-ethereum/cmd/devp2p/internal/ethtest/testdata/ relative to repo root.");
-        }
+        private static string FindHeadState() =>
+            Path.Combine(GethToolLocator.FindEthTestTestdata(), "headstate.json");
     }
 }

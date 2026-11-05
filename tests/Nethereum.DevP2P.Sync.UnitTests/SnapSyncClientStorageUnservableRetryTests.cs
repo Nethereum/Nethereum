@@ -136,7 +136,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             Assert.True(peer.FailedCalls >= MinimumFailedCalls, $"the subtask must have been retried while unservable; failed={peer.FailedCalls}");
             Assert.True(peer.ServedCalls > 0, "the subtask must have been fetched once peers served again");
-            Assert.Empty(deferredStorageDebts);
+            Assert.Empty(set.AccountsNeedingHeal);
             Assert.Empty(accountsNeedingHeal);
             Assert.True(set.AllDone);
             Assert.Contains(owner, set.Tasks[0].StorageCompleted, ByteArrayComparer.Current);

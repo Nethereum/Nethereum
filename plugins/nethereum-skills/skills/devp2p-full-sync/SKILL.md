@@ -76,7 +76,7 @@ The archive cursor (`bundle.Metadata.GetLastFetchedBody()`) does **not** move wh
 A follower doesn't call the backfiller directly in most cases — it consumes an `IBlockSource`, a chain-agnostic abstraction (defined in `Nethereum.CoreChain`) that streams blocks and reports when the source diverges from what was previously seen (a reorg or a bad peer). Two DevP2P-backed implementations exist:
 
 - **`DevP2PBlockSource`** — a multi-peer source (built on the pool + scheduler) that a follower pulls from, reporting chain breaks so the caller can auto-rewind.
-- **`PushedBlockSource`** — accepts blocks pushed to it (e.g. from a broadcast peer bridge) rather than pulling.
+- **`FollowingBlockSource`** — wraps a pulling source and pulls again whenever a peer announces a higher head (`BlockRangeUpdate`).
 
 > **Note:** these two types are named in the README's type table (role description, no method signature block); no tagged doc-example test covers constructing or streaming from either. Check `src/Nethereum.CoreChain/Sync/IBlockSource.cs` directly for the current interface shape before relying on it as stable.
 
@@ -100,7 +100,7 @@ Phase 1 validates the parent-hash chain as it fetches, so a peer serving a block
 | Fill a bounded, known range of blocks | `ParallelBlockBackfiller.BackfillAsync(start, end, ct)` |
 | Fill bodies/receipts over headers already in the store | `BackfillAsync(start, end, headersFromStore: true, ct)` |
 | Keep the live tip fed without waiting on history | `TipBandBodyFollowService.FillOnceAsync` |
-| Consume blocks as a stream with reorg handling | `IBlockSource` (`DevP2PBlockSource` pulling, or `PushedBlockSource` for a push model) |
+| Consume blocks as a stream with reorg handling | `IBlockSource` (`DevP2PBlockSource` pulling, or `FollowingBlockSource` to keep pulling as peers announce new heads) |
 | Lay the header skeleton itself, backward from a trusted tip | `BackwardBlockWalker` |
 
 For full documentation, see: https://docs.nethereum.com/docs/devp2p/guide-full-sync

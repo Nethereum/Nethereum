@@ -7,6 +7,9 @@ if (args.Any(a => a is "--help" or "-h" or "-?"))
 }
 
 var options = HarnessCliArgs.Parse(args);
+options.HiveEnvironment = Environment.GetEnvironmentVariables().Keys.Cast<string>()
+    .Where(k => k.StartsWith("HIVE_", StringComparison.Ordinal))
+    .ToDictionary(k => k, k => Environment.GetEnvironmentVariable(k)!);
 var app = await HarnessNodeHost.BuildAsync(options, args);
 await app.RunAsync();
 

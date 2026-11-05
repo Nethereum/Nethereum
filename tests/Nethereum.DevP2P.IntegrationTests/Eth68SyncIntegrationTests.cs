@@ -16,6 +16,7 @@ using Xunit.Abstractions;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class Eth68SyncIntegrationTests
     {
         private readonly DevP2PGethFixture _fixture;
@@ -92,7 +93,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             var receipt = await _fixture.SendEtherFromSealerAsync(
                 recipient, BigInteger.Parse("100000000000000000"));
             var includedBlock = (ulong)receipt.BlockNumber.Value;
-            _output.WriteLine($"Tx {receipt.TransactionHash} included in block #{includedBlock}");
+            _output.WriteLine($"Tx {receipt.TransactionHash} included in block #{includedBlock} {receipt.BlockHash}");
+            await LogGethViewAsync(includedBlock);
 
             var conn = await OpenEthSessionAsync();
             try
@@ -125,7 +127,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             }
         }
 
-        private static async Task<List<BlockBody>> RequestBodiesAsync(
+        private async Task<List<BlockBody>> RequestBodiesAsync(
             RlpxConnection conn, int ethOffset, byte[][] blockHashes)
         {
             var request = new GetBlockBodiesMessage
@@ -139,6 +141,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 GetBlockBodiesMessageEncoder.Encode(request),
                 ethOffset + Eth68MessageIds.BlockBodies);
 
+            LogResponse("BlockBodies", request.RequestId, payload);
             return BlockBodiesMessageEncoder.Decode(payload).Bodies;
         }
 
@@ -149,7 +152,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             var receipt = await _fixture.SendEtherFromSealerAsync(
                 recipient, BigInteger.Parse("50000000000000000"));
             var includedBlock = (ulong)receipt.BlockNumber.Value;
-            _output.WriteLine($"Tx {receipt.TransactionHash} included in block #{includedBlock}");
+            _output.WriteLine($"Tx {receipt.TransactionHash} included in block #{includedBlock} {receipt.BlockHash}");
+            await LogGethViewAsync(includedBlock);
 
             var conn = await OpenEthSessionAsync();
             try
@@ -179,7 +183,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             }
         }
 
-        private static async Task<List<List<Receipt>>> RequestReceiptsAsync(
+        private async Task<List<List<Receipt>>> RequestReceiptsAsync(
             RlpxConnection conn, int ethOffset, byte[][] blockHashes)
         {
             var request = new GetReceiptsMessage
@@ -193,9 +197,24 @@ namespace Nethereum.DevP2P.IntegrationTests
                 GetReceiptsMessageEncoder.Encode(request),
                 ethOffset + Eth68MessageIds.Receipts);
 
+            LogResponse("Receipts", request.RequestId, payload);
             return ReceiptsMessageEncoder.Decode(payload).ReceiptsByBlock;
         }
 
+
+        private void LogResponse(string kind, ulong requestId, byte[] payload)
+        {
+            var hex = payload.ToHex();
+            _output.WriteLine($"{kind} response to request {requestId}: {payload.Length} bytes {hex.Substring(0, Math.Min(hex.Length, 400))}");
+        }
+
+        private async Task LogGethViewAsync(ulong blockNumber)
+        {
+            var web3 = _fixture.GetWeb3();
+            var head = await web3.Eth.Blocks.GetBlockNumber.SendRequestAsync();
+            var block = await web3.Eth.Blocks.GetBlockWithTransactionsHashesByNumber.SendRequestAsync(new HexBigInteger(blockNumber));
+            _output.WriteLine($"geth head {head.Value}; block {blockNumber} hash {block?.BlockHash} txs {block?.TransactionHashes?.Length}");
+        }
         private async Task WaitForBlockHeightAsync(ulong minHeight, TimeSpan timeout)
         {
             var web3 = _fixture.GetWeb3();
@@ -244,7 +263,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             return conn;
         }
 
-        private static async Task<List<BlockHeader>> RequestHeadersAsync(
+        private async Task<List<BlockHeader>> RequestHeadersAsync(
             RlpxConnection conn, int ethOffset, ulong startBlock, int count)
         {
             var request = new GetBlockHeadersMessage
@@ -261,6 +280,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                 GetBlockHeadersMessageEncoder.Encode(request),
                 ethOffset + Eth68MessageIds.BlockHeaders);
 
+            LogResponse("BlockHeaders", request.RequestId, payload);
             return BlockHeadersMessageEncoder.Decode(payload).Headers;
         }
     }

@@ -149,7 +149,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Storage_RangeTruncated_CreatesCursoredSubTasks_NoDebtUntilDrain()
+        public async Task Storage_RangeTruncated_CreatesCursoredSubTasks_NothingMarkedNeedHealUntilDrain()
         {
             var s = await RunAsync();
 
@@ -165,13 +165,13 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             foreach (var st in subTasks)
                 Assert.Equal(s.WhaleStorageRoot, st.StorageRoot, ByteArrayComparer.Current);
 
-            Assert.Empty(creationCheckpoint.DeferredStorageDebts);
+            Assert.Empty(creationCheckpoint.AccountsNeedingHeal);
 
             Assert.True(s.Result.RootMatchesTarget);
         }
 
         [Fact]
-        public async Task Storage_ChunkedWhale_SingleRootDrain_NoDebt()
+        public async Task Storage_ChunkedWhale_SingleRootDrain_NotMarkedNeedHeal()
         {
             var s = await RunAsync();
 
@@ -179,7 +179,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 a => ByteArrayComparer.Current.Equals(a.AccountHash, s.WhaleAccountHash));
 
             var finalCheckpoint = s.Checkpoints[^1];
-            Assert.DoesNotContain(finalCheckpoint.DeferredStorageDebts,
+            Assert.DoesNotContain(finalCheckpoint.AccountsNeedingHeal,
                 d => ByteArrayComparer.Current.Equals(d.AccountHash, s.WhaleAccountHash));
 
             var finalTask = finalCheckpoint.State.Tasks[0];
@@ -204,7 +204,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             var smallReloaded = PatriciaTrie.LoadFromStorage(s.SmallStorageRoot, s.ClientNodeStore, s.SmallAccountHash);
             Assert.Equal(s.SmallStorageRoot, smallReloaded.Root.GetHash(), ByteArrayComparer.Current);
-            Assert.DoesNotContain(s.Checkpoints[^1].DeferredStorageDebts,
+            Assert.DoesNotContain(s.Checkpoints[^1].AccountsNeedingHeal,
                 d => ByteArrayComparer.Current.Equals(d.AccountHash, s.SmallAccountHash));
         }
 

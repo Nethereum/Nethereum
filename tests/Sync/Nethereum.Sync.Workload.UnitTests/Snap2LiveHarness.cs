@@ -271,6 +271,26 @@ namespace Nethereum.Chain.TestData.UnitTests
 
         public void HoldTrieNodeRequests() => _holdTrieNodes = true;
 
+        private Func<byte[], List<byte[]>, bool> _withholdTrieNode;
+        private int _withheldTrieNodePaths;
+
+        public int WithheldTrieNodePaths => Volatile.Read(ref _withheldTrieNodePaths);
+
+        public void WithholdTrieNodes(Func<byte[], List<byte[]>, bool> withhold) => Volatile.Write(ref _withholdTrieNode, withhold);
+
+        public void ServeAllTrieNodes() => Volatile.Write(ref _withholdTrieNode, null);
+
+        private async Task<TrieNodesMessage> FetchServedTrieNodesAsync(
+            byte[] stateRoot, List<List<byte[]>> paths, Func<List<List<byte[]>>, Task<TrieNodesMessage>> fetch)
+        {
+            var withhold = Volatile.Read(ref _withholdTrieNode);
+            if (withhold == null) return await fetch(paths).ConfigureAwait(false);
+            var served = paths.Where(p => !withhold(stateRoot, p)).ToList();
+            Interlocked.Add(ref _withheldTrieNodePaths, paths.Count - served.Count);
+            if (served.Count == 0) return new TrieNodesMessage { Nodes = new List<byte[]>() };
+            return await fetch(served).ConfigureAwait(false);
+        }
+
         public void ReleaseTrieNodeRequests() => _holdTrieNodes = false;
 
         private async Task WaitWhilePausedAsync(CancellationToken ct)
@@ -314,6 +334,8 @@ namespace Nethereum.Chain.TestData.UnitTests
 
         public void OnTargetRootChanged() => _inner.OnTargetRootChanged();
 
+        public void ClearStatelessMarks() => _inner.ClearStatelessMarks();
+
         public Task<List<BlockHeader>> FetchHeadersAsync(ulong startBlock, ulong limit, CancellationToken ct, bool reverse = false)
             => _inner.FetchHeadersAsync(startBlock, limit, ct, reverse);
 
@@ -334,15 +356,41 @@ namespace Nethereum.Chain.TestData.UnitTests
         public Task<List<List<Receipt>>> FetchReceiptsAsync(IReadOnlyList<byte[]> blockHashes, CancellationToken ct)
             => _inner.FetchReceiptsAsync(blockHashes, ct);
 
+        private byte[] _holdAccountRangesExcept;
+
+        public void HoldAccountRangesExcept(byte[] owner) => Volatile.Write(ref _holdAccountRangesExcept, owner);
+
+        public void ReleaseAccountRanges() => Volatile.Write(ref _holdAccountRangesExcept, null);
+
+        private async Task WaitWhileAccountRangeHeldAsync(byte[] startingHash, byte[] limitHash, CancellationToken ct)
+        {
+            while (true)
+            {
+                var owner = Volatile.Read(ref _holdAccountRangesExcept);
+                if (owner == null) return;
+                if (ByteArrayComparer.Current.Compare(startingHash, owner) <= 0 && ByteArrayComparer.Current.Compare(owner, limitHash) <= 0) return;
+                if (_crashed) throw new SimulatedCrashException();
+                await Task.Delay(20, ct).ConfigureAwait(false);
+            }
+        }
+
+        private volatile bool _failAccountRanges;
+
+        public void FailAccountRanges(bool fail) => _failAccountRanges = fail;
+
         public async Task<AccountRangeMessage> FetchAccountRangeAsync(byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, CancellationToken ct)
         {
             await WaitWhilePausedAsync(ct).ConfigureAwait(false);
+            await WaitWhileAccountRangeHeldAsync(startingHash, limitHash, ct).ConfigureAwait(false);
+            if (_failAccountRanges) throw new FetchRequestFailedException("account range withheld by the test", null);
             return await _inner.FetchAccountRangeAsync(stateRoot, startingHash, limitHash, responseBytes, ct).ConfigureAwait(false);
         }
 
         public async Task<AccountRangeMessage> FetchAccountRangeAsync(byte[] stateRoot, byte[] startingHash, byte[] limitHash, ulong responseBytes, Func<AccountRangeMessage, bool> verifyResponse, CancellationToken ct)
         {
             await WaitWhilePausedAsync(ct).ConfigureAwait(false);
+            await WaitWhileAccountRangeHeldAsync(startingHash, limitHash, ct).ConfigureAwait(false);
+            if (_failAccountRanges) throw new FetchRequestFailedException("account range withheld by the test", null);
             return await _inner.FetchAccountRangeAsync(stateRoot, startingHash, limitHash, responseBytes, verifyResponse, ct).ConfigureAwait(false);
         }
 
@@ -381,7 +429,8 @@ namespace Nethereum.Chain.TestData.UnitTests
             Interlocked.Increment(ref _trieNodeRequests);
             RecordTrieNodeOwners(paths);
             await WaitWhileTrieNodesHeldAsync(ct).ConfigureAwait(false);
-            return await _inner.FetchTrieNodesAsync(stateRoot, paths, responseBytes, ct).ConfigureAwait(false);
+            return await FetchServedTrieNodesAsync(stateRoot, paths,
+                served => _inner.FetchTrieNodesAsync(stateRoot, served, responseBytes, ct)).ConfigureAwait(false);
         }
 
         public async Task<TrieNodesMessage> FetchTrieNodesAsync(byte[] stateRoot, List<List<byte[]>> paths, ulong responseBytes, Func<TrieNodesMessage, bool> verifyResponse, CancellationToken ct)
@@ -389,7 +438,8 @@ namespace Nethereum.Chain.TestData.UnitTests
             Interlocked.Increment(ref _trieNodeRequests);
             RecordTrieNodeOwners(paths);
             await WaitWhileTrieNodesHeldAsync(ct).ConfigureAwait(false);
-            return await _inner.FetchTrieNodesAsync(stateRoot, paths, responseBytes, verifyResponse, ct).ConfigureAwait(false);
+            return await FetchServedTrieNodesAsync(stateRoot, paths,
+                served => _inner.FetchTrieNodesAsync(stateRoot, served, responseBytes, verifyResponse, ct)).ConfigureAwait(false);
         }
 
         public bool IsSnapStateServing(IEthPeer peer) => _inner.IsSnapStateServing(peer);

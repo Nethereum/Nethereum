@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +27,8 @@ using Nethereum.DevP2P.Sync.Serving;
 
 namespace Nethereum.DevP2P.IntegrationTests
 {
+    [Trait("Requires", "Externals")]
+    [Collection(ExternalToolConformanceCollection.Name)]
     public class Devp2pSnapTestConformanceTests
     {
         private readonly ITestOutputHelper _output;
@@ -83,8 +86,10 @@ namespace Nethereum.DevP2P.IntegrationTests
 
             using var sessionCts = new CancellationTokenSource();
             var listener = new RlpxListener(serverKey, serverConfig);
-            listener.PeerFailed += (_, e) => _output.WriteLine($"server PeerFailed: {e.Exception.GetType().Name}: {e.Exception.Message}");
-            listener.PeerAccepted += async (_, conn) =>
+            var peerWork = new Helpers.PeerWork();
+            listener.PeerFailed += (_, e) => peerWork.Log($"server PeerFailed: {e.Exception.GetType().Name}: {e.Exception.Message}");
+            var serverErrors = new ConcurrentQueue<string>();
+            listener.PeerAccepted += peerWork.OnEvent<RlpxConnection>(async conn =>
             {
                 try
                 {
@@ -119,9 +124,9 @@ namespace Nethereum.DevP2P.IntegrationTests
                 }
                 catch (Exception ex)
                 {
-                    _output.WriteLine($"server: {ex.GetType().Name}: {ex.Message}");
+                    serverErrors.Enqueue($"server: {ex.GetType().Name}: {ex.Message}");
                 }
-            };
+            });
 
             try
             {
@@ -165,6 +170,8 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 sessionCts.Cancel();
                 await listener.StopAsync();
+                await peerWork.DrainAsync(_output, TimeSpan.FromSeconds(10));
+                foreach (var error in serverErrors) _output.WriteLine(error);
             }
         }
 

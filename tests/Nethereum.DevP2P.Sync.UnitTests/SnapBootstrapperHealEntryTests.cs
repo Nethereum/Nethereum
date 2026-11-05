@@ -88,7 +88,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var storageRoot = new byte[32];
             for (int i = 0; i < 32; i++) { accountHash[i] = (byte)i; storageRoot[i] = (byte)(255 - i); }
             var persisted = new List<SnapSyncClient.AccountNeedingHeal> { new(accountHash, storageRoot) };
-            var persistedBlob = DeferredHealAccountsCodec.Encode(persisted);
+            var persistedBlob = NeedsHealAccountsCodec.Encode(persisted);
 
             var resolved = SnapBootstrapper.ResolveDeferredHealAccounts(
                 Array.Empty<SnapSyncClient.AccountNeedingHeal>(), persistedBlob);
@@ -108,7 +108,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var fresh = new List<SnapSyncClient.AccountNeedingHeal> { new(freshHash, freshRoot) };
 
             var persisted = new List<SnapSyncClient.AccountNeedingHeal> { new(Fill(0xaa), Fill(0xbb)) };
-            var persistedBlob = DeferredHealAccountsCodec.Encode(persisted);
+            var persistedBlob = NeedsHealAccountsCodec.Encode(persisted);
 
             var resolved = SnapBootstrapper.ResolveDeferredHealAccounts(fresh, persistedBlob);
 
@@ -128,22 +128,25 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public void Given_DurableDeferredStorageDebtExistsWithoutBlob_When_CheckingDeferredHealWork_Then_WorkIsRequired()
+        public void Given_NoDiscoveredAccounts_When_TheObsoleteWorkProbeRuns_Then_ReportsNoWork()
         {
             var metadata = CreateMetadataStore();
-            metadata.UpsertDeferredStorageDebt(new DeferredStorageDebt
-            {
-                AccountHash = Fill(0x11),
-                DiscoveredStorageRoot = Fill(0x22),
-                FetchStateRoot = Fill(0x33),
-                FetchPivotBlock = 123UL,
-                Reason = DeferredStorageReason.BigAccountSubrangeFailed,
-                Status = StorageCompleteness.DeferredBigAccount,
-            });
 
             var shouldHeal = SnapBootstrapper.HasDeferredStorageHealWork(
                 metadata,
                 Array.Empty<SnapSyncClient.AccountNeedingHeal>());
+
+            Assert.False(shouldHeal);
+        }
+
+        [Fact]
+        public void Given_ANonEmptyDiscoveredList_When_TheObsoleteWorkProbeRuns_Then_ReportsWork()
+        {
+            var metadata = CreateMetadataStore();
+
+            var shouldHeal = SnapBootstrapper.HasDeferredStorageHealWork(
+                metadata,
+                new[] { new SnapSyncClient.AccountNeedingHeal(Fill(0x11), Fill(0x22)) });
 
             Assert.True(shouldHeal);
         }
@@ -159,7 +162,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
 
             Assert.Empty(resolved);
             Assert.Contains(logger.Entries, e => e.Level == LogLevel.Warning
-                && e.Message.Contains("deferredheal.corrupt", StringComparison.Ordinal));
+                && e.Message.Contains("needsheal.corrupt", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -167,7 +170,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         {
             var accountHash = Fill(0x01);
             var storageRoot = Fill(0x02);
-            var persistedBlob = DeferredHealAccountsCodec.Encode(
+            var persistedBlob = NeedsHealAccountsCodec.Encode(
                 new List<SnapSyncClient.AccountNeedingHeal> { new(accountHash, storageRoot) });
             var logger = new CapturingLogger();
 

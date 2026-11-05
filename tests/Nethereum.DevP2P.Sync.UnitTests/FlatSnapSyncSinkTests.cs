@@ -70,7 +70,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_AWhaleLargerThanOnePage_When_DownloadedThroughTheFlatSnapSyncSink_Then_ItIsChunkedIntoCursoredSubtasksEverySlotReachesFlatAndNoDebtIsRecorded()
+        public async Task Given_AWhaleLargerThanOnePage_When_DownloadedThroughTheFlatSnapSyncSink_Then_ItIsChunkedIntoCursoredSubtasksAndEverySlotReachesFlat()
         {
             var (store, root, whaleSlots) = BuildState();
             var flat = new RecordingFlatWriter();
@@ -79,7 +79,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             Assert.True(run.WhaleHadCursoredSubtasks, "the whale was not chunked into cursored subtasks");
             Assert.Equal(0, run.CatchUps);
             Assert.Empty(run.Result.AccountsNeedingHeal);
-            Assert.Equal(0, run.DeferredStorageDebts);
             Assert.Equal(WhaleSlots, flat.StorageCountOf(Whale));
             foreach (var (slotHash, raw) in whaleSlots)
                 Assert.Equal(raw.ToHex(), flat.StorageOf(Whale, slotHash).ToHex());
@@ -87,12 +86,12 @@ namespace Nethereum.DevP2P.Sync.UnitTests
         }
 
         [Fact]
-        public async Task Given_AWhaleLargerThanOnePage_When_DownloadedThroughTheInMemorySnapSyncSink_Then_ItIsPulledWithoutCursoredSubtasks()
+        public async Task Given_TheInMemorySink_When_AWhaleIsTruncated_Then_ItIsPulledAsCursoredSubtasksAndTheRootMatches()
         {
             var (store, root, _) = BuildState();
             var run = await DownloadAsync(store, root, new InMemorySnapSyncSink(), withPivotCatchUp: false);
 
-            Assert.False(run.WhaleHadCursoredSubtasks);
+            Assert.True(run.WhaleHadCursoredSubtasks);
             Assert.True(run.Result.RootMatchesTarget);
             Assert.Empty(run.Result.AccountsNeedingHeal);
         }
@@ -127,7 +126,7 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             return (store, stateTrie.Root.GetHash(), whaleSlots);
         }
 
-        private sealed record DownloadRun(SnapSyncClient.SyncResult Result, bool WhaleHadCursoredSubtasks, int DeferredStorageDebts, int CatchUps);
+        private sealed record DownloadRun(SnapSyncClient.SyncResult Result, bool WhaleHadCursoredSubtasks, int CatchUps);
 
         private static async Task<DownloadRun> DownloadAsync(
             InMemoryContentNodeStore store, byte[] root, ISnapSyncSink sink, bool withPivotCatchUp)
@@ -135,7 +134,6 @@ namespace Nethereum.DevP2P.Sync.UnitTests
             var peer = new SmallStoragePagesPeer(new InProcessSnapPeer(new PatriciaSnapRequestHandler(store, new NoBytecodes())));
             var catchUps = 0;
             var whaleSubtasks = false;
-            var debts = 0;
             var client = new SnapSyncClient(peer, sink)
             {
                 AccountConcurrency = 1,
@@ -150,10 +148,9 @@ namespace Nethereum.DevP2P.Sync.UnitTests
                 checkpointSink: cp =>
                 {
                     if (cp.State.Tasks.Any(t => t.SubTasks.ContainsKey(Whale))) whaleSubtasks = true;
-                    debts += cp.DeferredStorageDebts.Count;
                 },
                 ct: cts.Token);
-            return new DownloadRun(result, whaleSubtasks, debts, catchUps);
+            return new DownloadRun(result, whaleSubtasks, catchUps);
         }
 
         private sealed class NoBytecodes : IBytecodeStore

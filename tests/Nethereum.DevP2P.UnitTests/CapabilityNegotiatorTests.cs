@@ -162,5 +162,22 @@ namespace Nethereum.DevP2P.UnitTests
             Assert.Equal(1, snap.Version);
             Assert.Equal(8, snap.Length);
         }
+
+        [Fact]
+        public void Given_BothSidesListSeveralVersions_When_Negotiated_Then_TheHighestVersionBothListWins()
+        {
+            var shared = CapabilityNegotiator.Negotiate(EthAndSnap(68, 69, 70, 71), EthAndSnap(68, 70, 72));
+
+            Assert.Equal(70, shared.Single(c => c.Name == "eth").Version);
+        }
+
+        [Fact]
+        public void Given_RemoteListsOnlyVersionsAboveOursWeDoNotShare_When_Negotiated_Then_NoEthCapabilityIsShared()
+        {
+            var shared = CapabilityNegotiator.Negotiate(EthAndSnap(68, 69), EthAndSnap(70));
+
+            Assert.DoesNotContain(shared, c => c.Name == "eth");
+            Assert.Contains(shared, c => c.Name == "snap");
+        }
     }
 }

@@ -100,17 +100,16 @@ namespace Nethereum.DevP2P.UnitTests.Eth
         }
 
         [Fact]
-        public async Task Given_SubscriberThrows_When_NewBlockReceived_Then_SessionRemainsConnected()
+        public async Task Given_SubscriberThrows_When_BlockRangeUpdateReceived_Then_SessionRemainsConnected()
         {
             var (listener, serverConn, clientConn) = await HandshakeOverLoopbackAsync();
             try
             {
-                var session = BuildSession(serverConn, remoteProtocolVersion: 68);
+                var session = BuildSession(serverConn, remoteProtocolVersion: 69);
 
-                session.NewBlockReceived += (_, _) => throw new InvalidOperationException("subscriber bug");
+                session.BlockRangeUpdateReceived += (_, _) => throw new InvalidOperationException("subscriber bug");
 
-                var validNewBlock = BuildValidNewBlockPayload();
-                await session.HandleEthMessageAsync(EthMessageIds.NewBlock, validNewBlock);
+                await session.HandleEthMessageAsync(EthMessageIds.BlockRangeUpdate, BuildValidBlockRangeUpdatePayload());
 
                 Assert.True(serverConn.IsConnected,
                     "subscriber-thrown exception must NOT tear down the wire connection");
@@ -123,19 +122,17 @@ namespace Nethereum.DevP2P.UnitTests.Eth
         }
 
         [Fact]
-        public async Task Given_SubscriberThrowsOperationCanceledException_When_NewBlockReceived_Then_Propagates()
+        public async Task Given_SubscriberThrowsOperationCanceledException_When_BlockRangeUpdateReceived_Then_Propagates()
         {
             var (listener, serverConn, clientConn) = await HandshakeOverLoopbackAsync();
             try
             {
-                var session = BuildSession(serverConn, remoteProtocolVersion: 68);
+                var session = BuildSession(serverConn, remoteProtocolVersion: 69);
 
-                session.NewBlockReceived += (_, _) => throw new OperationCanceledException();
-
-                var validNewBlock = BuildValidNewBlockPayload();
+                session.BlockRangeUpdateReceived += (_, _) => throw new OperationCanceledException();
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-                    session.HandleEthMessageAsync(EthMessageIds.NewBlock, validNewBlock));
+                    session.HandleEthMessageAsync(EthMessageIds.BlockRangeUpdate, BuildValidBlockRangeUpdatePayload()));
             }
             finally
             {
@@ -144,35 +141,13 @@ namespace Nethereum.DevP2P.UnitTests.Eth
             }
         }
 
-        internal static byte[] BuildValidNewBlockPayload()
-        {
-            var msg = new NewBlockMessage
+        internal static byte[] BuildValidBlockRangeUpdatePayload() =>
+            BlockRangeUpdateMessageEncoder.Encode(new BlockRangeUpdateMessage
             {
-                Header = new BlockHeader
-                {
-                    ParentHash = new byte[32],
-                    UnclesHash = new byte[32],
-                    Coinbase = "0x0000000000000000000000000000000000000000",
-                    StateRoot = new byte[32],
-                    TransactionsHash = new byte[32],
-                    ReceiptHash = new byte[32],
-                    LogsBloom = new byte[256],
-                    Difficulty = Nethereum.Util.EvmUInt256.One,
-                    BlockNumber = 1,
-                    GasLimit = 30_000_000,
-                    GasUsed = 0,
-                    Timestamp = 1700000000,
-                    ExtraData = new byte[0],
-                    MixHash = new byte[32],
-                    Nonce = new byte[8]
-                },
-                Transactions = new List<ISignedTransaction>(),
-                Uncles = new List<BlockHeader>(),
-                Withdrawals = null,
-                TotalDifficulty = BigInteger.One
-            };
-            return NewBlockMessageEncoder.Encode(msg);
-        }
+                EarliestBlock = 0,
+                LatestBlock = 1,
+                LatestBlockHash = System.Linq.Enumerable.Repeat((byte)7, 32).ToArray()
+            });
 
         internal class NullEth68Handler : IEth68RequestHandler
         {

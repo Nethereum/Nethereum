@@ -19,13 +19,17 @@ namespace Nethereum.DevP2P.Sync.Serving
             SnapOffset = _connection.GetCapabilityOffset("snap");
         }
 
-        public async Task HandleSnapMessageAsync(int localId, byte[] payload, CancellationToken ct = default)
+        public Task HandleSnapMessageAsync(int localId, byte[] payload, CancellationToken ct = default)
+            => HandleSnapMessageAsync(localId, payload, null, ct);
+
+        public async Task HandleSnapMessageAsync(int localId, byte[] payload, InFlightDecodeLease? lease, CancellationToken ct = default)
         {
             switch (localId)
             {
                 case SnapMessageIds.GetAccountRange:
                 {
                     var req = GetAccountRangeMessageEncoder.Decode(payload);
+                    lease?.Dispose();
                     var resp = await _handler.GetAccountRangeAsync(req, ct);
                     await _connection.SendMessageAsync(
                         SnapOffset + SnapMessageIds.AccountRange,
@@ -35,6 +39,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                 case SnapMessageIds.GetStorageRanges:
                 {
                     var req = GetStorageRangesMessageEncoder.Decode(payload);
+                    lease?.Dispose();
                     var resp = await _handler.GetStorageRangesAsync(req, ct);
                     await _connection.SendMessageAsync(
                         SnapOffset + SnapMessageIds.StorageRanges,
@@ -44,6 +49,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                 case SnapMessageIds.GetByteCodes:
                 {
                     var req = GetByteCodesMessageEncoder.Decode(payload);
+                    lease?.Dispose();
                     var resp = await _handler.GetByteCodesAsync(req, ct);
                     await _connection.SendMessageAsync(
                         SnapOffset + SnapMessageIds.ByteCodes,
@@ -55,6 +61,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                     if (_connection.NegotiatedSnapVersion() >= 2) break;
 
                     var req = GetTrieNodesMessageEncoder.Decode(payload);
+                    lease?.Dispose();
                     var resp = await _handler.GetTrieNodesAsync(req, ct);
                     await _connection.SendMessageAsync(
                         SnapOffset + SnapMessageIds.TrieNodes,
@@ -64,6 +71,7 @@ namespace Nethereum.DevP2P.Sync.Serving
                 case SnapMessageIds.GetBlockAccessLists:
                 {
                     var req = GetBlockAccessListsMessageEncoder.Decode(payload);
+                    lease?.Dispose();
                     var resp = await _handler.GetBlockAccessListsAsync(req, ct);
                     await _connection.SendMessageAsync(
                         SnapOffset + SnapMessageIds.BlockAccessLists,

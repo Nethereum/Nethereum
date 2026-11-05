@@ -6,21 +6,23 @@ using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model.P2P;
 using Nethereum.RPC.Eth.DTOs;
 using Xunit;
+using Nethereum.Testing;
 
 namespace Nethereum.DevP2P.UnitTests.Integration
 {
     [Trait("Category", "Integration")]
+    [Trait("Category", "LivePeer")]
     public class GethEth68Tests
     {
         private static string GetEnode()
         {
-            var enode = Environment.GetEnvironmentVariable("GETH_ENODE");
-            Skip.If(enode == null, "Set GETH_ENODE to run integration tests");
+            var enode = TestEnvironment.ServiceOrNull("GethEnode");
+            Skip.If(string.IsNullOrEmpty(enode), "Set Services:GethEnode in appsettings.test.local.json to run integration tests");
             return enode;
         }
 
         private string GetRpcUrl() =>
-            Environment.GetEnvironmentVariable("GETH_RPC_URL") ?? "http://127.0.0.1:8545";
+            TestEnvironment.Service("GethRpcUrl");
 
         [SkippableFact]
         public async Task ExchangeStatus_WithGeth()

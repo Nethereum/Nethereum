@@ -63,6 +63,7 @@ namespace Nethereum.DevP2P.IntegrationTests
             {
                 ClientId = "Nethereum/test",
                 MaxInboundPerIP = 1,
+                IsLanAddress = _ => false,
                 MaxInboundPerSubnet = 0,
                 HandshakeTimeoutMs = 30000,
                 ReadTimeoutMs = 30000

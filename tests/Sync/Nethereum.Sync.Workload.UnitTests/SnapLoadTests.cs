@@ -761,13 +761,12 @@ namespace Nethereum.Chain.TestData.UnitTests
                 Assert.True(committedHead < head, $"the pivot must trail the tip: committed {committedHead}, tip {head}");
 
                 var pivotHeader = await server.Bundle.Blocks.GetByNumberAsync(result.PivotBlockNumber);
-                var recovered = new TrieFallbackStateStore(bundle.State, (INodeBlobStore)bundle.TrieNodes, () => pivotHeader.StateRoot);
                 var serverAtPivot = PatriciaTrie.LoadFromStorage(pivotHeader.StateRoot, server.Bundle.TrieNodes);
                 var accountDecoder = new AccountEncoder();
                 var checkedCount = 0;
                 foreach (var kv in await server.Bundle.State.GetAllAccountsAsync())
                 {
-                    var synced = await recovered.GetAccountAsync(kv.Key);
+                    var synced = await FollowerStateAtPivot.ReadAsync(bundle, pivotHeader.StateRoot, kv.Key);
                     Assert.True(synced != null, $"account {kv.Key} missing from follower at pivot");
                     var expectedLeaf = serverAtPivot.Get(Sha3Keccack.Current.CalculateHash(kv.Key.HexToByteArray()));
                     Assert.True(expectedLeaf != null, $"account {kv.Key} missing from server trie at pivot");

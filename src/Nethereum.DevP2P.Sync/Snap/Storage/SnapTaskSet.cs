@@ -13,7 +13,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
         private readonly List<SnapAccountTask> _tasks;
         private readonly Queue<byte[]> _codeQueue = new();
         private readonly HashSet<byte[]> _codeSeen = new(ByteArrayComparer.Current);
-        private readonly List<byte[]> _needHeal = new();
+        private readonly HashSet<byte[]> _needHeal = new(ByteArrayComparer.Current);
         private readonly byte[][] _pendingRangeNext;
         private readonly bool[] _pendingRangeDone;
         private long _leaseRound;
@@ -28,7 +28,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
         public int AccountRangeFairShareInterval { get; set; } = 2;
 
         public SnapTaskSet(int partitions)
-            : this(SnapHashRanges.SplitHashRange(new byte[32], SnapHashRanges.FilledHash(0xff), partitions)) { }
+            : this(SnapHashRanges.SplitHashRange(SnapHashRanges.MinHash(), SnapHashRanges.MaxHash(), partitions)) { }
 
         public SnapTaskSet(IReadOnlyList<(byte[] Next, byte[] Last)> partitions)
         {
@@ -81,6 +81,22 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             get { lock (_gate) return _needHeal.ToList(); }
         }
 
+        internal IReadOnlyList<SnapSyncClient.AccountNeedingHeal> NeedHealSnapshot()
+        {
+            lock (_gate)
+                return _needHeal.Select(a => new SnapSyncClient.AccountNeedingHeal(a, new byte[32])).ToList();
+        }
+
+        internal bool IsStorageCompleted(int taskIndex, byte[] account)
+        {
+            lock (_gate) return _tasks[taskIndex].StorageCompleted.Contains(account);
+        }
+
+        internal SnapFragment LeaseLargeSubtask()
+        {
+            lock (_gate) return TryLeaseLargeSubtask();
+        }
+
         public bool HasPendingCode
         {
             get { lock (_gate) return _codeQueue.Count > 0; }
@@ -120,50 +136,29 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
         {
             lock (_gate)
             {
-                int rangeDone = 0;
-                int rangeInFlight = 0;
-                int rangePending = 0;
-                int stateTasks = 0;
-                int largeContracts = 0;
-                int largeSubtaskPending = 0;
-                int largeSubtaskInFlight = 0;
-                int largeSubtaskDone = 0;
-
+                var tally = default(DiagnosticsTally);
                 foreach (var t in _tasks)
                 {
-                    if (t.RangeDone) rangeDone++;
-                    else if (t.RangeInFlight) rangeInFlight++;
-                    else rangePending++;
-
-                    stateTasks += t.StateTasks.Count;
-                    largeContracts += t.LargeContracts.Count;
-                    foreach (var c in t.LargeContracts.Values)
-                    {
-                        foreach (var s in c.Subtasks)
-                        {
-                            if (s.Done) largeSubtaskDone++;
-                            else if (s.InFlight) largeSubtaskInFlight++;
-                            else largeSubtaskPending++;
-                        }
-                    }
+                    tally.TallyRanges(t);
+                    tally.TallyLargeContracts(t);
                 }
 
                 bool hasLeasableWork =
-                    largeSubtaskPending > 0 ||
-                    stateTasks > 0 ||
+                    tally.LargeSubtaskPending > 0 ||
+                    tally.StateTasks > 0 ||
                     _codeQueue.Count > 0 ||
-                    rangePending > 0;
+                    tally.RangePending > 0;
 
                 return new SnapTaskSetDiagnostics(
                     _tasks.Count,
-                    rangeDone,
-                    rangeInFlight,
-                    rangePending,
-                    stateTasks,
-                    largeContracts,
-                    largeSubtaskPending,
-                    largeSubtaskInFlight,
-                    largeSubtaskDone,
+                    tally.RangeDone,
+                    tally.RangeInFlight,
+                    tally.RangePending,
+                    tally.StateTasks,
+                    tally.LargeContracts,
+                    tally.LargeSubtaskPending,
+                    tally.LargeSubtaskInFlight,
+                    tally.LargeSubtaskDone,
                     _codeQueue.Count,
                     _needHeal.Count,
                     _tasks.All(t => t.Done) && _codeQueue.Count == 0,
@@ -438,7 +433,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             var chunks = SnapHashRanges.ComputeWhaleChunkCount(
                 LargeContractConcurrency, MaxRequestSizeBytes, pageSlotCount, lastSlotHash);
             var subs = SnapHashRanges
-                .SplitHashRange(resumeFrom, SnapHashRanges.FilledHash(0xff), chunks)
+                .SplitHashRange(resumeFrom, SnapHashRanges.MaxHash(), chunks)
                 .Select(r => new Subtask { Next = r.Start, Last = r.End })
                 .ToList();
             var contract = new LargeContractStorage
@@ -551,6 +546,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
                 }
         }
 
+        [Obsolete("No longer used: storage completion requires a re-fetch from the durable cursor.")]
         public bool CompleteOwnerViaLocalRoot(int taskIndex, byte[] accountHash)
         {
             lock (_gate)
@@ -573,6 +569,14 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
         public void MarkNeedHeal(byte[] account)
         {
             lock (_gate) _needHeal.Add(account);
+        }
+
+        public bool MarkNeedHealIfRootMismatch(byte[] account, byte[] localRoot, byte[] expectedRoot)
+        {
+            if (expectedRoot == null || localRoot == null || Nethereum.Util.ByteUtil.AreEqual(localRoot, expectedRoot))
+                return false;
+            MarkNeedHeal(account);
+            return true;
         }
 
         public void RevertAllInFlightLeases()
@@ -610,6 +614,40 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
                     case SnapFragment.Bytecode f:
                         foreach (var h in f.Hashes) _codeQueue.Enqueue(h);
                         break;
+                }
+            }
+        }
+
+        private struct DiagnosticsTally
+        {
+            public int RangeDone;
+            public int RangeInFlight;
+            public int RangePending;
+            public int StateTasks;
+            public int LargeContracts;
+            public int LargeSubtaskPending;
+            public int LargeSubtaskInFlight;
+            public int LargeSubtaskDone;
+
+            public void TallyRanges(SnapAccountTask t)
+            {
+                if (t.RangeDone) RangeDone++;
+                else if (t.RangeInFlight) RangeInFlight++;
+                else RangePending++;
+            }
+
+            public void TallyLargeContracts(SnapAccountTask t)
+            {
+                StateTasks += t.StateTasks.Count;
+                LargeContracts += t.LargeContracts.Count;
+                foreach (var c in t.LargeContracts.Values)
+                {
+                    foreach (var s in c.Subtasks)
+                    {
+                        if (s.Done) LargeSubtaskDone++;
+                        else if (s.InFlight) LargeSubtaskInFlight++;
+                        else LargeSubtaskPending++;
+                    }
                 }
             }
         }

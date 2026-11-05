@@ -24,6 +24,7 @@ using Nethereum.Merkle.Patricia.Storage;
 namespace Nethereum.DevP2P.IntegrationTests
 {
     [Collection(DevP2PGethFixture.COLLECTION_NAME)]
+    [Trait("Requires", "Externals")]
     public class BlockReExecutionIntegrationTests
     {
         private static readonly (string Address, string BalanceHex)[] GenesisAlloc = new[]
@@ -83,8 +84,11 @@ namespace Nethereum.DevP2P.IntegrationTests
                 Hardfork = "london"
             };
             var blockStore = new InMemoryBlockStore();
+            var (genesisHeader, _) = await FetchBlockAsync(0);
+            await blockStore.SaveAsync(genesisHeader, _fixture.GenesisHash);
             var trieNodeStore = new InMemoryContentNodeStore();
             var stateRootCalculator = new IncrementalStateRootCalculator(stateStore, trieNodeStore);
+            Assert.Equal(_fixture.GenesisStateRoot.ToHex(), (await stateRootCalculator.ComputeStateRootAsync()).ToHex());
             var activations = new FixedChainActivations(HardforkName.London);
             var engine = new BlockExecutor(
                 stateStore,
@@ -94,7 +98,11 @@ namespace Nethereum.DevP2P.IntegrationTests
                 hardforkConfigFactory: _ => chainConfig.GetHardforkConfig(),
                 stateRootCalculator: stateRootCalculator,
                 rewardPolicy: NoRewardPolicy.Instance,
-                trieNodeStore: trieNodeStore);
+                trieNodeStore: trieNodeStore,
+                authorResolver: _ => DevP2PGethFixture.SealerAddress,
+                logger: null,
+                blockRootsProvider: null,
+                validation: new BlockValidationOptions { SealedByClique = true });
             var blockImporter = new BlockImporter(engine, blockStore, stateStore);
 
             _output.WriteLine($"Replaying blocks {fromBlock}..{toBlock} from genesis state");
@@ -160,18 +168,7 @@ namespace Nethereum.DevP2P.IntegrationTests
                     Eth68StatusMessageEncoder.Encode(status));
                 await conn.ReceiveMessageAsync();
 
-                var (_, headersPayload) = await conn.RequestAsync(
-                    ethOffset + Eth68MessageIds.GetBlockHeaders,
-                    GetBlockHeadersMessageEncoder.Encode(new GetBlockHeadersMessage
-                    {
-                        RequestId = conn.NextRequestId(),
-                        StartBlock = blockNumber,
-                        Limit = 1,
-                        Skip = 0,
-                        Reverse = false
-                    }),
-                    ethOffset + Eth68MessageIds.BlockHeaders);
-                var header = BlockHeadersMessageEncoder.Decode(headersPayload).Headers[0];
+                var header = await RequestServedHeaderAsync(conn, ethOffset, blockNumber);
 
                 var blockHash = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(header);
 
@@ -183,13 +180,46 @@ namespace Nethereum.DevP2P.IntegrationTests
                         BlockHashes = new[] { blockHash }
                     }),
                     ethOffset + Eth68MessageIds.BlockBodies);
-                var body = BlockBodiesMessageEncoder.Decode(bodiesPayload).Bodies[0];
+                var bodies = BlockBodiesMessageEncoder.Decode(bodiesPayload).Bodies;
+                Assert.True(bodies.Count == 1, $"geth served {bodies.Count} bodies for block #{blockNumber}, whose header it had served");
 
-                return (header, body.Transactions);
+                return (header, bodies[0].Transactions);
             }
             finally
             {
                 await conn.DisconnectAsync();
+            }
+        }
+
+        private static readonly TimeSpan HeaderServedDeadline = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan HeaderRetryInterval = TimeSpan.FromMilliseconds(200);
+
+        private static async Task<BlockHeader> RequestServedHeaderAsync(RlpxConnection conn, int ethOffset, ulong blockNumber)
+        {
+            var deadline = DateTime.UtcNow + HeaderServedDeadline;
+            while (true)
+            {
+                var (_, headersPayload) = await conn.RequestAsync(
+                    ethOffset + Eth68MessageIds.GetBlockHeaders,
+                    GetBlockHeadersMessageEncoder.Encode(new GetBlockHeadersMessage
+                    {
+                        RequestId = conn.NextRequestId(),
+                        StartBlock = blockNumber,
+                        Limit = 1,
+                        Skip = 0,
+                        Reverse = false
+                    }),
+                    ethOffset + Eth68MessageIds.BlockHeaders);
+                var headers = BlockHeadersMessageEncoder.Decode(headersPayload).Headers;
+                if (headers.Count > 0)
+                {
+                    Assert.True(headers.Count == 1, $"geth served {headers.Count} headers for a one-header request of block #{blockNumber}");
+                    Assert.Equal(blockNumber, (ulong)headers[0].BlockNumber);
+                    return headers[0];
+                }
+                Assert.True(DateTime.UtcNow < deadline,
+                    $"geth served no header for block #{blockNumber} over eth within {HeaderServedDeadline.TotalSeconds:F0} s of its RPC reporting the block");
+                await Task.Delay(HeaderRetryInterval);
             }
         }
     }

@@ -37,7 +37,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
 
     public static class DeferredStorageDebtFinalRootResolver
     {
-        private const ulong AccountProofResponseBytes = 16_384;
+        internal const ulong AccountProofResponseBytes = 16_384;
 
         public static async Task<AccountStorageResolution> ResolveAccountStorageRootAsync(
             byte[] stateRoot,
@@ -45,11 +45,7 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             Func<byte[], byte[], byte[], ulong, CancellationToken, Task<AccountRangeMessage>> fetchAccountRange,
             CancellationToken ct)
         {
-            if (stateRoot == null || stateRoot.Length != 32)
-                throw new ArgumentException("stateRoot must be 32 bytes", nameof(stateRoot));
-            if (accountHash == null || accountHash.Length != 32)
-                throw new ArgumentException("accountHash must be 32 bytes", nameof(accountHash));
-            if (fetchAccountRange == null) throw new ArgumentNullException(nameof(fetchAccountRange));
+            Guard(stateRoot, accountHash, fetchAccountRange);
 
             try
             {
@@ -57,41 +53,13 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
                         stateRoot, accountHash, accountHash, AccountProofResponseBytes, ct)
                     .ConfigureAwait(false);
 
-                var keys = new List<byte[]>(response.Accounts?.Count ?? 0);
-                var values = new List<byte[]>(response.Accounts?.Count ?? 0);
-                if (response.Accounts != null)
-                {
-                    foreach (var entry in response.Accounts)
-                    {
-                        if (entry.Hash == null || entry.Hash.Length != 32 || entry.Body == null)
-                            continue;
-                        keys.Add(entry.Hash);
-                        values.Add(SlimAccountEncoder.FromSlim(entry.Body));
-                    }
-                }
+                var (keys, values) = ReadLeaves(response);
 
                 var proof = (IList<byte[]>)(response.Proof ?? new List<byte[]>());
                 var proofResult = ProofVerification.Current.Range.Verify(stateRoot, accountHash, keys, values, proof);
                 if (!proofResult.Valid) return AccountStorageResolution.Indeterminate;
 
-                var match = -1;
-                for (int i = 0; i < keys.Count; i++)
-                {
-                    if (ByteUtil.AreEqual(keys[i], accountHash))
-                    {
-                        match = i;
-                        break;
-                    }
-                }
-                if (match < 0) return AccountStorageResolution.AbsentOrEmpty;
-
-                var account = new AccountEncoder().Decode(values[match]);
-                if (account.StateRoot == null
-                    || account.StateRoot.Length != 32
-                    || ByteUtil.AreEqual(account.StateRoot, DefaultValues.EMPTY_TRIE_HASH))
-                    return AccountStorageResolution.AbsentOrEmpty;
-
-                return AccountStorageResolution.Found((byte[])account.StateRoot.Clone());
+                return FindStorageRoot(keys, values, accountHash);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception)
@@ -100,139 +68,87 @@ namespace Nethereum.DevP2P.Sync.Snap.Storage
             }
         }
 
-        public static async Task ResolveAsync(
+        private static void Guard(
+            byte[] stateRoot,
+            byte[] accountHash,
+            Func<byte[], byte[], byte[], ulong, CancellationToken, Task<AccountRangeMessage>> fetchAccountRange)
+        {
+            if (stateRoot == null || stateRoot.Length != 32)
+                throw new ArgumentException("stateRoot must be 32 bytes", nameof(stateRoot));
+            if (accountHash == null || accountHash.Length != 32)
+                throw new ArgumentException("accountHash must be 32 bytes", nameof(accountHash));
+            if (fetchAccountRange == null) throw new ArgumentNullException(nameof(fetchAccountRange));
+        }
+
+        private static (List<byte[]> Keys, List<byte[]> Values) ReadLeaves(AccountRangeMessage response)
+        {
+            var keys = new List<byte[]>(response.Accounts?.Count ?? 0);
+            var values = new List<byte[]>(response.Accounts?.Count ?? 0);
+            if (response.Accounts != null)
+            {
+                foreach (var entry in response.Accounts)
+                {
+                    if (entry.Hash == null || entry.Hash.Length != 32 || entry.Body == null)
+                        continue;
+                    keys.Add(entry.Hash);
+                    values.Add(SlimAccountEncoder.FromSlim(entry.Body));
+                }
+            }
+            return (keys, values);
+        }
+
+        private static AccountStorageResolution FindStorageRoot(
+            List<byte[]> keys, List<byte[]> values, byte[] accountHash)
+        {
+            var match = -1;
+            for (int i = 0; i < keys.Count; i++)
+            {
+                if (ByteUtil.AreEqual(keys[i], accountHash))
+                {
+                    match = i;
+                    break;
+                }
+            }
+            if (match < 0) return AccountStorageResolution.AbsentOrEmpty;
+
+            var account = new AccountEncoder().Decode(values[match]);
+            if (account.StateRoot == null
+                || account.StateRoot.Length != 32
+                || ByteUtil.AreEqual(account.StateRoot, DefaultValues.EMPTY_TRIE_HASH))
+                return AccountStorageResolution.AbsentOrEmpty;
+
+            return AccountStorageResolution.Found((byte[])account.StateRoot.Clone());
+        }
+
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
+        public static Task ResolveAsync(
             byte[] finalStateRoot,
             ulong finalPivotBlock,
             IChainMetadataStore metadata,
             IFetchRequestScheduler scheduler,
             ILogger logger = null,
             CancellationToken ct = default)
-        {
-            if (finalStateRoot == null || finalStateRoot.Length != 32)
-                throw new ArgumentException("finalStateRoot must be 32 bytes", nameof(finalStateRoot));
-            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
-            if (scheduler == null) throw new ArgumentNullException(nameof(scheduler));
+            => Task.CompletedTask;
 
-            var debts = metadata.ListOpenDeferredStorageDebts();
-            foreach (var debt in debts)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var resolution = await ResolveAccountStorageRootAsync(
-                        finalStateRoot, debt.AccountHash, scheduler.FetchAccountRangeAsync, ct)
-                    .ConfigureAwait(false);
-
-                if (resolution.Status == AccountStorageResolutionStatus.Indeterminate)
-                {
-                    logger?.LogWarning(
-                        "snap.deferred.resolve account=0x{Account} final_root=0x{Root} unresolved (fetch failed or proof invalid); debt remains open",
-                        debt.AccountHash.ToHex(), finalStateRoot.ToHex());
-                    continue;
-                }
-
-                var updated = debt.Clone();
-                updated.FinalStateRoot = (byte[])finalStateRoot.Clone();
-
-                if (resolution.Status == AccountStorageResolutionStatus.AbsentOrEmpty)
-                {
-                    updated.Status = StorageCompleteness.ProofDropped;
-                    updated.FinalStorageRoot = null;
-                    metadata.UpsertDeferredStorageDebt(updated);
-                    continue;
-                }
-
-                updated.Status = StorageCompleteness.FinalRootReResolved;
-                updated.FinalStorageRoot = resolution.StorageRoot;
-                metadata.UpsertDeferredStorageDebt(updated);
-            }
-        }
-
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public static IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> BuildFinalStorageSeeds(
             IChainMetadataStore metadata)
-        {
-            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
-            var debts = metadata.ListOpenDeferredStorageDebts();
-            var seeds = new List<(byte[] AccountHash, byte[] StorageRoot)>();
-            foreach (var debt in debts)
-            {
-                if (debt.Status != StorageCompleteness.FinalRootReResolved
-                    || debt.FinalStorageRoot == null
-                    || debt.FinalStorageRoot.Length != 32)
-                    continue;
-                seeds.Add(((byte[])debt.AccountHash.Clone(), (byte[])debt.FinalStorageRoot.Clone()));
-            }
-            return seeds;
-        }
+            => Array.Empty<(byte[] AccountHash, byte[] StorageRoot)>();
 
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public static void MarkFinalStorageSeedsDeepComplete(
             IChainMetadataStore metadata,
             IReadOnlyList<(byte[] AccountHash, byte[] StorageRoot)> completedSeeds)
         {
-            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
-            if (completedSeeds == null || completedSeeds.Count == 0) return;
-
-            var openDebts = metadata.ListOpenDeferredStorageDebts();
-            foreach (var debt in openDebts)
-            {
-                if (debt.Status != StorageCompleteness.FinalRootReResolved
-                    || debt.FinalStorageRoot == null
-                    || debt.FinalStorageRoot.Length != 32)
-                    continue;
-
-                var completed = false;
-                foreach (var seed in completedSeeds)
-                {
-                    if (ByteUtil.AreEqual(debt.AccountHash, seed.AccountHash)
-                        && ByteUtil.AreEqual(debt.FinalStorageRoot, seed.StorageRoot))
-                    {
-                        completed = true;
-                        break;
-                    }
-                }
-                if (!completed) continue;
-
-                var updated = debt.Clone();
-                updated.Status = StorageCompleteness.DeepComplete;
-                metadata.UpsertDeferredStorageDebt(updated);
-            }
         }
+
+        [Obsolete("No longer used: snap sync records no deferred storage debt; accounts that need heal are healed at the live pivot. Kept for 7.0 compatibility.")]
         public static void EnsureDebtRowsForDeferredHealAccounts(
             IChainMetadataStore metadata,
             IReadOnlyList<SnapSyncClient.AccountNeedingHeal> accounts,
             byte[] fetchStateRoot,
             ulong? fetchPivotBlock)
         {
-            if (metadata == null) throw new ArgumentNullException(nameof(metadata));
-            if (accounts == null || accounts.Count == 0) return;
-            if (fetchStateRoot == null || fetchStateRoot.Length != 32)
-                throw new ArgumentException("fetchStateRoot must be 32 bytes", nameof(fetchStateRoot));
-
-            var openDebts = metadata.ListOpenDeferredStorageDebts();
-            foreach (var account in accounts)
-            {
-                var alreadyTracked = false;
-                foreach (var existing in openDebts)
-                {
-                    if (ByteUtil.AreEqual(existing.AccountHash, account.AccountHash)
-                        && ByteUtil.AreEqual(existing.DiscoveredStorageRoot, account.ExpectedStorageRoot))
-                    {
-                        alreadyTracked = true;
-                        break;
-                    }
-                }
-                if (alreadyTracked)
-                    continue;
-
-                metadata.UpsertDeferredStorageDebt(new DeferredStorageDebt
-                {
-                    AccountHash = (byte[])account.AccountHash.Clone(),
-                    DiscoveredStorageRoot = (byte[])account.ExpectedStorageRoot.Clone(),
-                    FetchStateRoot = (byte[])fetchStateRoot.Clone(),
-                    FetchPivotBlock = fetchPivotBlock,
-                    Reason = DeferredStorageReason.BigAccountSubrangeFailed,
-                    Status = StorageCompleteness.DeferredBigAccount,
-                });
-            }
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Nethereum.DevP2P.Sync.IntegrationTests.Harness;
+using Nethereum.DevP2P.Sync.Peering;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Util;
 using Xunit;
@@ -11,6 +12,8 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
 {
     public class ClusterTopologyE2ETests
     {
+        private static readonly TimeSpan ConfiguredDialWindow = new PeerPoolOptions().EffectiveTrustedRedialInterval * 3;
+
         private readonly ITestOutputHelper _output;
 
         public ClusterTopologyE2ETests(ITestOutputHelper output) => _output = output;
@@ -49,7 +52,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
         }
 
         [Fact]
-        public async Task Given_AThreeNodeCluster_When_OneNodeSealsABlock_Then_EveryOtherNodeReceivesThatBlock()
+        public async Task Given_AThreeNodeCluster_When_OneNodeSealsABlock_Then_EveryOtherNodeIsAnnouncedThatBlock()
         {
             var nodes = (await DevChainNetwork.TrustedClusterAsync(3)).ToList();
             try
@@ -65,13 +68,13 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 foreach (var node in others)
                 {
                     var received = await DevChainNetwork.WaitUntilAsync(
-                        () => node.ObservedBlocks.Any(b =>
-                            ByteUtil.AreEqual(BlockHashOf(b), produced.BlockHash)),
+                        () => node.ObservedHeads.Any(h =>
+                            ByteUtil.AreEqual(h.LatestBlockHash, produced.BlockHash)),
                         TimeSpan.FromSeconds(15));
 
                     Assert.True(received,
-                        $"node {nodes.IndexOf(node)} never received the block sealed by node 0 " +
-                        $"(observed {node.ObservedBlocks.Count} block(s))");
+                        $"node {nodes.IndexOf(node)} was never announced the block sealed by node 0 " +
+                        $"(observed {node.ObservedHeads.Count} head(s))");
                 }
 
                 _output.WriteLine($"all {others.Count} sibling(s) received the sealed block");
@@ -96,7 +99,7 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                     {
                         var connected = await DevChainNetwork.WaitUntilAsync(
                             () => node.OutboundSessionTo(peer) != null,
-                            TimeSpan.FromSeconds(15));
+                            ConfiguredDialWindow);
 
                         Assert.True(connected,
                             $"node {nodes.IndexOf(node)} has no outbound session to node {nodes.IndexOf(peer)} " +
@@ -153,8 +156,5 @@ namespace Nethereum.DevP2P.Sync.IntegrationTests
                 foreach (var node in nodes) await node.DisposeAsync();
             }
         }
-
-        private static byte[] BlockHashOf(Nethereum.Model.P2P.NewBlockMessage message) =>
-            Nethereum.CoreChain.BlockHashCalculator.ForHeader(message.Header);
     }
 }

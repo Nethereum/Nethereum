@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,6 +13,7 @@ using Nethereum.CoreChain;
 using Nethereum.CoreChain.Storage;
 using Nethereum.Documentation;
 using Nethereum.DevP2P.Sync.Metrics;
+using Nethereum.DevP2P.Sync.Scheduling;
 using Nethereum.EVM;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Model;
@@ -56,55 +58,32 @@ namespace Nethereum.DevP2P.Sync.FullSync
         private static readonly ParallelOptions PersistParallelOptions =
             new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 2) };
 
+        private const string ObsoletePeerPenaltyMessage =
+            "The backfiller no longer keeps its own peer-failure counters: transport failures and successes go to the scheduler's quarantine (RegisterTimeoutForQuarantine / RegisterSuccessForQuarantine), which owns the drop-for-redial decision.";
+
+        [Obsolete(ObsoletePeerPenaltyMessage)]
         public const int PeerFailureDropThreshold = 5;
+        [Obsolete(ObsoletePeerPenaltyMessage)]
         public static readonly TimeSpan PeerFailureCooldown = TimeSpan.FromSeconds(1);
+        [Obsolete(ObsoletePeerPenaltyMessage)]
         public static readonly TimeSpan PeerTimeoutBenchDuration = TimeSpan.FromSeconds(30);
 
+        [Obsolete(ObsoletePeerPenaltyMessage)]
         public const int TrustedRepeatedBenchDropThreshold = 3;
 
         public static readonly TimeSpan HardStallThreshold = TimeSpan.FromMinutes(5);
 
-        private readonly PeerFailureTracker _peerFailures =
-            new PeerFailureTracker(PeerFailureDropThreshold, PeerFailureCooldown, PeerTimeoutBenchDuration);
-
-        private readonly ConcurrentDictionary<Guid, int> _trustedBenchDropCounts = new();
-
-        private bool IsPeerOnCooldown(Guid peerId) => _peerFailures.IsOnCooldown(peerId);
+        internal const string TipBandRole = "tipband";
 
         private void RecordPeerRequestSuccess(IEthPeer peer)
         {
-            _peerFailures.RecordSuccess(peer.Id);
-            _trustedBenchDropCounts.TryRemove(peer.Id, out _);
+            _scheduler.RegisterSuccessForQuarantine(peer.Id, TimeoutStreakKind.Eth);
             _pool.ReportSuccess(peer.Id);
         }
 
         private void RecordPeerRequestFailure(IEthPeer peer, string stage, bool wasTimeout)
         {
-            switch (_peerFailures.RecordFailure(peer.Id, wasTimeout))
-            {
-                case PeerFailureOutcome.Dispose:
-                    _logger.LogWarning(
-                        "Phase 1 backfill: peer {Peer} hit {N} consecutive {Stage} transport failures",
-                        peer.Id.ToString().Substring(0, 8), PeerFailureDropThreshold, stage);
-                    DropOnRepeatedBench(peer, stage, wasTimeout: false);
-                    break;
-                case PeerFailureOutcome.Bench:
-                    _logger.LogDebug(
-                        "Phase 1 backfill: benching slow peer {Peer} for {Secs}s after {N} consecutive {Stage} timeouts",
-                        peer.Id.ToString().Substring(0, 8), (int)PeerTimeoutBenchDuration.TotalSeconds, PeerFailureDropThreshold, stage);
-                    DropOnRepeatedBench(peer, stage, wasTimeout: true);
-                    break;
-            }
-        }
-
-        private void DropOnRepeatedBench(IEthPeer peer, string stage, bool wasTimeout)
-        {
-            if (peer.IsTrusted)
-            {
-                var count = _trustedBenchDropCounts.AddOrUpdate(peer.Id, 1, (_, prev) => prev + 1);
-                if (count < TrustedRepeatedBenchDropThreshold) return;
-                _trustedBenchDropCounts.TryRemove(peer.Id, out _);
-            }
+            if (!_scheduler.RegisterTimeoutForQuarantine(peer.Id, TimeoutStreakKind.Eth, peer.IsTrusted, out _)) return;
 
             _logger.LogWarning(
                 "Phase 1 backfill: dropping unresponsive peer {Peer} for redial after repeated {Stage} {Kind}",
@@ -112,7 +91,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             _ = _pool.DropAsync(peer.Id, wasTimeout ? "repeated eth timeout" : "repeated eth transport failure", CancellationToken.None);
         }
 
-        private void RecordReceiptDeliveryOutcome(IEthPeer peer, int matched)
+        private void RecordDeliveryOutcome(IEthPeer peer, int matched)
         {
             if (matched > 0) RecordPeerRequestSuccess(peer);
         }
@@ -124,7 +103,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             => RecordPeerRequestSuccess(peer);
 
         public void RecordReceiptDeliveryOutcomeForTest(IEthPeer peer, int matched)
-            => RecordReceiptDeliveryOutcome(peer, matched);
+            => RecordDeliveryOutcome(peer, matched);
 
         public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
 
@@ -161,6 +140,8 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         private static double Ema(double prev, double sample) => prev <= 0 ? sample : 0.2 * sample + 0.8 * prev;
         private bool _headersFromStore;
+
+        internal const string ReceiptsRole = "receipts";
 
         private readonly string _role;
 
@@ -210,7 +191,14 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         private static readonly TimeSpan PausePollInterval = TimeSpan.FromSeconds(2);
 
-        private bool BackfillPaused => _pauseControl?.ShouldPauseBackfill() ?? false;
+        private bool BackfillPaused => (_pauseControl?.ShouldPauseBackfill() ?? false) || YieldsToExecution;
+
+        private bool YieldsToExecution => _role == "history" && (_pauseControl?.ShouldYieldToExecution() ?? false);
+
+        private string DescribeBackfillIdle()
+            => (_pauseControl?.ShouldPauseBackfill() ?? false)
+                ? _pauseControl!.DescribeBackfillPause()
+                : _pauseControl?.DescribeYieldToExecution();
 
         private bool ShouldPausePersist()
         {
@@ -220,7 +208,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
         private string DescribePersistPause()
             => BackfillPaused
-                ? _pauseControl!.DescribeBackfillPause()
+                ? DescribeBackfillIdle()
                 : _backpressure?.DescribeHistoryBackpressure() ?? "backpressure";
 
         private async Task<bool> WaitWhilePersistPausedAsync(CancellationToken ct)
@@ -251,6 +239,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             public ulong BlocksWritten { get; init; }
             public ulong TransactionsWritten { get; init; }
             public ulong ReceiptsWritten { get; init; }
+            public ulong ReceiptsUnmatched { get; init; }
             public ulong EndBlock { get; init; }
         }
 
@@ -305,7 +294,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                     ? RunHeaderLoaderAsync(queue, cursor, endBlock, stagesCt)
                     : RunHeaderProducerAsync(queue, cursor, endBlock, stagesCt), stagesCt);
 
-            var bodyTask = Task.Run(
+            var bodyTask = _role == ReceiptsRole ? Task.CompletedTask : Task.Run(
                 () => RunBodyFetcherAsync(queue, stagesCt), stagesCt);
 
             var receiptTask = Task.Run(
@@ -332,6 +321,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 BlocksWritten = (ulong)Interlocked.Read(ref _blocksWritten),
                 TransactionsWritten = (ulong)Interlocked.Read(ref _txsWritten),
                 ReceiptsWritten = (ulong)Interlocked.Read(ref _receiptsWritten),
+                ReceiptsUnmatched = (ulong)Interlocked.Read(ref _receiptUnmatched),
                 EndBlock = endBlock,
             };
         }
@@ -426,7 +416,10 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
                     if (header == null || hash == null) break;
 
-                    queue.EnqueueHeader(header, hash);
+                    if (_role == ReceiptsRole)
+                        queue.EnqueueHeaderWithBody(header, hash, await LoadStoredBodyAsync(hash).ConfigureAwait(false));
+                    else
+                        queue.EnqueueHeader(header, hash);
                     loaded++;
                 }
 
@@ -464,22 +457,9 @@ namespace Nethereum.DevP2P.Sync.FullSync
 
             while (!ct.IsCancellationRequested && (nextEnqueue <= endBlock || inFlight.Count > 0 || pending.Count > 0))
             {
-                while (queue.Pending >= HeaderProducerLookaheadBlocks && !ct.IsCancellationRequested)
-                {
-                    try { await Task.Delay(50, ct).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { return; }
-                }
+                if (!await WaitForQueueRoomAsync(queue, ct).ConfigureAwait(false)) return;
 
-                while (inFlight.Count < HeaderProducerInFlight
-                       && nextDispatch <= endBlock
-                       && !ct.IsCancellationRequested)
-                {
-                    var remaining = endBlock - nextDispatch + 1;
-                    var take = remaining < DefaultHeaderBatchSize ? remaining : DefaultHeaderBatchSize;
-                    var start = nextDispatch;
-                    inFlight.Add(FetchHeaderBatchAsync(start, take, ct));
-                    nextDispatch += take;
-                }
+                DispatchHeaderBatches(inFlight, ref nextDispatch, endBlock, ct);
 
                 if (inFlight.Count == 0 && pending.Count == 0) break;
 
@@ -493,51 +473,101 @@ namespace Nethereum.DevP2P.Sync.FullSync
                     catch (Exception ex)
                     {
                         _logger.LogWarning(ex, "Phase 1 backfill: header dispatch failed; retrying");
-                        await DelayWithCancel(500, ct).ConfigureAwait(false);
+                        await DelayUnlessCancelled(500, ct).ConfigureAwait(false);
                         continue;
                     }
 
-                    if (result.Headers == null || result.Headers.Count == 0)
+                    if (!await TryStageHeaderBatchAsync(result.Start, result.Headers, pending, ct).ConfigureAwait(false))
                     {
-                        await DelayWithCancel(200, ct).ConfigureAwait(false);
                         nextDispatch = Math.Min(nextDispatch, result.Start);
                         continue;
                     }
-
-                    if (!HeadersAreContiguous(result.Headers, result.Start))
-                    {
-                        _logger.LogWarning(
-                            "Phase 1 backfill: non-contiguous header batch at {Block} — retrying",
-                            result.Start);
-                        nextDispatch = Math.Min(nextDispatch, result.Start);
-                        continue;
-                    }
-
-                    var hashes = new byte[result.Headers.Count][];
-                    for (int i = 0; i < result.Headers.Count; i++)
-                        hashes[i] = HashHeader(result.Headers[i]);
-
-                    pending[result.Start] = (result.Headers, hashes);
                 }
 
-                while (pending.TryGetValue(nextEnqueue, out var entry))
+                DrainPendingHeaders(queue, pending, ref nextEnqueue, ref nextDispatch, ref lastPersistedHash);
+            }
+        }
+
+        private async Task<bool> WaitForQueueRoomAsync(BlockTaskQueue queue, CancellationToken ct)
+        {
+            while (queue.Pending >= HeaderProducerLookaheadBlocks && !ct.IsCancellationRequested)
+            {
+                try { await Task.Delay(50, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { return false; }
+            }
+            return true;
+        }
+
+        private void DispatchHeaderBatches(
+            List<Task<(ulong Start, List<BlockHeader> Headers)>> inFlight,
+            ref ulong nextDispatch,
+            ulong endBlock,
+            CancellationToken ct)
+        {
+            while (inFlight.Count < HeaderProducerInFlight
+                   && nextDispatch <= endBlock
+                   && !ct.IsCancellationRequested)
+            {
+                var remaining = endBlock - nextDispatch + 1;
+                var take = remaining < DefaultHeaderBatchSize ? remaining : DefaultHeaderBatchSize;
+                var start = nextDispatch;
+                inFlight.Add(FetchHeaderBatchAsync(start, take, ct));
+                nextDispatch += take;
+            }
+        }
+
+        private async Task<bool> TryStageHeaderBatchAsync(
+            ulong start,
+            List<BlockHeader> headers,
+            SortedDictionary<ulong, (List<BlockHeader> Headers, byte[][] Hashes)> pending,
+            CancellationToken ct)
+        {
+            if (headers == null || headers.Count == 0)
+            {
+                await DelayUnlessCancelled(200, ct).ConfigureAwait(false);
+                return false;
+            }
+
+            if (!BlockBatchValidator.HeadersAreContiguous(headers, start, descending: false))
+            {
+                _logger.LogWarning(
+                    "Phase 1 backfill: non-contiguous header batch at {Block} — retrying",
+                    start);
+                return false;
+            }
+
+            var hashes = new byte[headers.Count][];
+            for (int i = 0; i < headers.Count; i++)
+                hashes[i] = RlpKeccakBlockHashProvider.Instance.ComputeBlockHash(headers[i]);
+
+            pending[start] = (headers, hashes);
+            return true;
+        }
+
+        private void DrainPendingHeaders(
+            BlockTaskQueue queue,
+            SortedDictionary<ulong, (List<BlockHeader> Headers, byte[][] Hashes)> pending,
+            ref ulong nextEnqueue,
+            ref ulong nextDispatch,
+            ref byte[] lastPersistedHash)
+        {
+            while (pending.TryGetValue(nextEnqueue, out var entry))
+            {
+                pending.Remove(nextEnqueue);
+                if (!BlockBatchValidator.ValidateParentChain(entry.Headers, entry.Hashes, lastPersistedHash, out var brokenAt))
                 {
-                    pending.Remove(nextEnqueue);
-                    if (!BlockBatchValidator.ValidateParentChain(entry.Headers, entry.Hashes, lastPersistedHash, out var brokenAt))
-                    {
-                        _logger.LogWarning(
-                            "Phase 1 backfill: parent-hash chain break at index {Index} of batch starting block {Block} — retrying",
-                            brokenAt, nextEnqueue);
-                        nextDispatch = Math.Min(nextDispatch, nextEnqueue);
-                        break;
-                    }
-
-                    for (int i = 0; i < entry.Headers.Count; i++)
-                        queue.EnqueueHeader(entry.Headers[i], entry.Hashes[i]);
-
-                    lastPersistedHash = entry.Hashes[entry.Hashes.Length - 1];
-                    nextEnqueue += (ulong)entry.Headers.Count;
+                    _logger.LogWarning(
+                        "Phase 1 backfill: parent-hash chain break at index {Index} of batch starting block {Block} — retrying",
+                        brokenAt, nextEnqueue);
+                    nextDispatch = Math.Min(nextDispatch, nextEnqueue);
+                    break;
                 }
+
+                for (int i = 0; i < entry.Headers.Count; i++)
+                    queue.EnqueueHeader(entry.Headers[i], entry.Hashes[i]);
+
+                lastPersistedHash = entry.Hashes[entry.Hashes.Length - 1];
+                nextEnqueue += (ulong)entry.Headers.Count;
             }
         }
 
@@ -566,7 +596,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             {
                 if (BackfillPaused)
                 {
-                    if (!wasPaused) { _logger.LogInformation("Phase 1 backfill: body fetch idle — {Status}", _pauseControl!.DescribeBackfillPause()); wasPaused = true; }
+                    if (!wasPaused) { _logger.LogInformation("Phase 1 backfill: body fetch idle — {Status}", DescribeBackfillIdle()); wasPaused = true; }
                     try { await Task.Delay(PausePollInterval, ct).ConfigureAwait(false); }
                     catch (OperationCanceledException) { return; }
                     continue;
@@ -576,27 +606,20 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 foreach (var peer in _pool.ActivePeersByPreference)
                 {
                     if (ct.IsCancellationRequested) return;
-                    if (!_pool.IsPeerActive(peer.Id) || IsPeerOnCooldown(peer.Id)) continue;
 
-                    while (!IsPeerOnCooldown(peer.Id))
+                    while (_pool.IsPeerActive(peer.Id))
                     {
                         var reservation = queue.ReserveBodies(peer.Id, DefaultBodyCapacityPerPeer);
                         if (reservation.Count == 0) break;
 
                         var peerCopy = peer;
-                        inFlight.Add(DispatchBodyFetchAsync(queue, peerCopy, reservation, ct));
+                        var dispatch = DispatchBodyFetchAsync(queue, peerCopy, reservation, ct);
+                        if (dispatch.IsCompleted) break;
+                        inFlight.Add(dispatch);
                     }
                 }
 
-                var workWait = queue.BodyWorkAvailable.ReadAsync(ct).AsTask();
-                var inFlightAny = inFlight.Count > 0
-                    ? Task.WhenAny(inFlight)
-                    : Task.Delay(100, ct);
-
-                var completed = await Task.WhenAny(workWait, inFlightAny).ConfigureAwait(false);
-                _ = completed;
-
-                inFlight.RemoveAll(t => t.IsCompleted);
+                await WaitForWorkOrAnyCompletionAsync(queue.BodyWorkAvailable, inFlight, ct).ConfigureAwait(false);
             }
 
             try { await Task.WhenAll(inFlight).ConfigureAwait(false); } catch { }
@@ -615,8 +638,8 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 var bodies = await _worker.GetBodiesAsync(peer, reservation.Hashes.ToList(), requestCts.Token).ConfigureAwait(false);
                 _bodyLatMsEma = Ema(_bodyLatMsEma, sw.Elapsed.TotalMilliseconds);
                 Interlocked.Increment(ref _bodyReqDone);
-                RecordPeerRequestSuccess(peer);
                 var result = queue.DeliverBodies(reservation, bodies);
+                RecordDeliveryOutcome(peer, result.Matched);
                 delivered = true;
                 if (result.Unmatched > 0) Interlocked.Add(ref _bodyUnmatched, result.Unmatched);
                 if (result.Unmatched > 0)
@@ -650,6 +673,19 @@ namespace Nethereum.DevP2P.Sync.FullSync
         }
 
 
+        private static async Task WaitForWorkOrAnyCompletionAsync(
+            ChannelReader<bool> workAvailable, List<Task> inFlight, CancellationToken ct)
+        {
+            var workWait = workAvailable.ReadAsync(ct).AsTask();
+            var inFlightAny = inFlight.Count > 0
+                ? Task.WhenAny(inFlight)
+                : Task.Delay(100, ct);
+
+            await Task.WhenAny(workWait, inFlightAny).ConfigureAwait(false);
+
+            inFlight.RemoveAll(t => t.IsCompleted);
+        }
+
         private async Task RunReceiptFetcherAsync(BlockTaskQueue queue, CancellationToken ct)
         {
             var inFlight = new List<Task>();
@@ -658,7 +694,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             {
                 if (BackfillPaused)
                 {
-                    if (!wasPaused) { _logger.LogInformation("Phase 1 backfill: receipt fetch idle — {Status}", _pauseControl!.DescribeBackfillPause()); wasPaused = true; }
+                    if (!wasPaused) { _logger.LogInformation("Phase 1 backfill: receipt fetch idle — {Status}", DescribeBackfillIdle()); wasPaused = true; }
                     try { await Task.Delay(PausePollInterval, ct).ConfigureAwait(false); }
                     catch (OperationCanceledException) { return; }
                     continue;
@@ -668,27 +704,20 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 foreach (var peer in _pool.ActivePeersByPreference.OrderByDescending(p => p.EthVersion >= 70))
                 {
                     if (ct.IsCancellationRequested) return;
-                    if (!_pool.IsPeerActive(peer.Id) || IsPeerOnCooldown(peer.Id)) continue;
 
-                    while (!IsPeerOnCooldown(peer.Id))
+                    while (_pool.IsPeerActive(peer.Id))
                     {
                         var reservation = queue.ReserveReceipts(peer.Id, Volatile.Read(ref _receiptCapacity));
                         if (reservation.Count == 0) break;
 
                         var peerCopy = peer;
-                        inFlight.Add(DispatchReceiptFetchAsync(queue, peerCopy, reservation, ct));
+                        var dispatch = DispatchReceiptFetchAsync(queue, peerCopy, reservation, ct);
+                        if (dispatch.IsCompleted) break;
+                        inFlight.Add(dispatch);
                     }
                 }
 
-                var workWait = queue.ReceiptWorkAvailable.ReadAsync(ct).AsTask();
-                var inFlightAny = inFlight.Count > 0
-                    ? Task.WhenAny(inFlight)
-                    : Task.Delay(100, ct);
-
-                var completed = await Task.WhenAny(workWait, inFlightAny).ConfigureAwait(false);
-                _ = completed;
-
-                inFlight.RemoveAll(t => t.IsCompleted);
+                await WaitForWorkOrAnyCompletionAsync(queue.ReceiptWorkAvailable, inFlight, ct).ConfigureAwait(false);
             }
 
             try { await Task.WhenAll(inFlight).ConfigureAwait(false); } catch { }
@@ -704,7 +733,9 @@ namespace Nethereum.DevP2P.Sync.FullSync
             var delivered = false;
             try
             {
-                var receipts = await _worker.GetReceiptsAsync(peer, reservation.Hashes.ToList(), requestCts.Token).ConfigureAwait(false);
+                var receipts = await _worker.GetReceiptsAsync(
+                    peer, reservation.Hashes.ToList(), reservation.Headers.Select(h => (ulong)h.GasUsed).ToList(), requestCts.Token)
+                    .ConfigureAwait(false);
                 _receiptLatMsEma = Ema(_receiptLatMsEma, sw.Elapsed.TotalMilliseconds);
                 Interlocked.Increment(ref _receiptReqDone);
                 var result = queue.DeliverReceipts(reservation, receipts);
@@ -712,7 +743,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 AdaptReceiptCapacity(reservation.Count, receipts?.Count ?? 0);
                 if (result.Unmatched > 0) Interlocked.Add(ref _receiptUnmatched, result.Unmatched);
 
-                RecordReceiptDeliveryOutcome(peer, result.Matched);
+                RecordDeliveryOutcome(peer, result.Matched);
 
                 if (result.Unmatched > 0)
                 {
@@ -774,7 +805,8 @@ namespace Nethereum.DevP2P.Sync.FullSync
                                 _logger.LogWarning(
                                     "Phase 1 backfill: reclaimed {N} stale reservations at cursor {Cursor} (orphaned by a dropped/hung peer)",
                                     reclaimed, stuckCursor);
-                            if (queue.Pending == 0 || BackfillPaused)
+                            bool paused = BackfillPaused;
+                            if (queue.Pending == 0 || paused)
                             {
                                 stallDetector = new ProgressStallDetector(HardStallThreshold);
                             }
@@ -783,10 +815,11 @@ namespace Nethereum.DevP2P.Sync.FullSync
                                 throw new BackfillStalledException(stuckCursor, stallDetector.StalledFor(stallNow));
                             }
 
-                            _logger.LogWarning(
-                                "Phase 1 backfill: persist drain blocked {Elapsed:F0}s at cursor {Next} — that block's " +
-                                "body/receipts are not fetched+matched yet, so nothing is persistable. Not a backpressure pause.",
-                                swWait.Elapsed.TotalSeconds, queue.PersistCursor);
+                            if (!paused)
+                                _logger.LogWarning(
+                                    "Phase 1 backfill: persist drain blocked {Elapsed:F0}s at cursor {Next} — that block's " +
+                                    "body/receipts are not fetched+matched yet, so nothing is persistable. Not a backpressure pause.",
+                                    swWait.Elapsed.TotalSeconds, queue.PersistCursor);
                         }
                     }
                     _drainWaitMsWindow += swWait.Elapsed.TotalMilliseconds;
@@ -794,7 +827,14 @@ namespace Nethereum.DevP2P.Sync.FullSync
                 }
 
                 var swDrain = Stopwatch.StartNew();
-                if (_bundle is IBatchedBlockPersister batched)
+                if (_role == ReceiptsRole)
+                {
+                    var swReceipts = Stopwatch.StartNew();
+                    foreach (var task in ready)
+                        await PersistReceiptsOnlyAsync(task, ct).ConfigureAwait(false);
+                    _persistMsEma = Ema(_persistMsEma, swReceipts.Elapsed.TotalMilliseconds / Math.Max(ready.Count, 1));
+                }
+                else if (_bundle is IBatchedBlockPersister batched && _role != TipBandRole)
                 {
                     var swBuild = Stopwatch.StartNew();
                     var freezeBoundary = _exemptPersister?.FreezeBoundary ?? BigInteger.MinusOne;
@@ -901,6 +941,34 @@ namespace Nethereum.DevP2P.Sync.FullSync
             }
         }
 
+        private async Task<BlockBody> LoadStoredBodyAsync(byte[] hash)
+        {
+            var txs = await _bundle.Transactions.GetByBlockHashAsync(hash).ConfigureAwait(false);
+            return new BlockBody
+            {
+                Transactions = txs == null ? new List<ISignedTransaction>() : new List<ISignedTransaction>(txs),
+                Uncles = new List<BlockHeader>(),
+            };
+        }
+
+        private async Task PersistReceiptsOnlyAsync(BlockTaskQueue.BlockTask task, CancellationToken ct)
+        {
+            if (ct.IsCancellationRequested) return;
+
+            var storedTxs = task.Body?.Transactions?.Count ?? 0;
+            var receiptCount = task.Receipts?.Count ?? 0;
+            if (storedTxs < receiptCount)
+            {
+                _logger.LogWarning(
+                    "Receipt-backfill: block {Block} has {RcptCount} receipts but only {TxCount} stored txs — skipping persist",
+                    task.BlockNumber, receiptCount, storedTxs);
+                return;
+            }
+
+            var pb = BuildPersistableBlock(task, BigInteger.MinusOne);
+            await BlockPersistence.PersistReceiptsAsync(_bundle, pb, task.Header.BlockNumber.ToBigInteger()).ConfigureAwait(false);
+        }
+
         private async Task PersistBlockAsync(BlockTaskQueue.BlockTask task, CancellationToken ct)
         {
             if (ct.IsCancellationRequested) return;
@@ -908,24 +976,10 @@ namespace Nethereum.DevP2P.Sync.FullSync
             var pb = BuildPersistableBlock(task, BigInteger.MinusOne);
             var blockNumber = task.Header.BlockNumber.ToBigInteger();
 
-            var saveBlock = _bundle.Blocks.SaveAsync(pb.Header, pb.Hash);
-            var saveUncles = _bundle.Uncles.SaveAsync(pb.Hash, pb.Uncles);
-            await Task.WhenAll(saveBlock, saveUncles).ConfigureAwait(false);
-
-            if (pb.Withdrawals != null)
-                await _bundle.Withdrawals.SaveAsync(pb.Hash, pb.Withdrawals).ConfigureAwait(false);
-
-            if (pb.Transactions != null && pb.Transactions.Count > 0)
-                await _bundle.Transactions.SaveManyAsync(pb.Hash, blockNumber, pb.Transactions).ConfigureAwait(false);
-
-            if (pb.Receipts != null && pb.Receipts.Count > 0)
-                await _bundle.Receipts.SaveManyAsync(pb.Hash, blockNumber, pb.Receipts).ConfigureAwait(false);
-
-            if (_bundle.Logs != null && pb.Logs != null && pb.Logs.Count > 0)
-                await _bundle.Logs.SaveManyLogsAsync(pb.Logs, pb.Hash, blockNumber).ConfigureAwait(false);
-
-            if (_bundle.Logs != null && pb.Bloom != null)
-                await _bundle.Logs.SaveBlockBloomAsync(blockNumber, pb.Bloom).ConfigureAwait(false);
+            await _bundle.Blocks.SaveAsync(pb.Header, pb.Hash).ConfigureAwait(false);
+            await BlockPersistence.PersistBodyAsync(
+                _bundle, pb.Hash, blockNumber, pb.Uncles, pb.Withdrawals, pb.Transactions).ConfigureAwait(false);
+            await BlockPersistence.PersistReceiptsAsync(_bundle, pb, blockNumber).ConfigureAwait(false);
         }
 
         public PersistableBlock BuildPersistableBlock(BlockTaskQueue.BlockTask task, BigInteger freezeBoundary)
@@ -1019,23 +1073,7 @@ namespace Nethereum.DevP2P.Sync.FullSync
             catch { return null; }
         }
 
-        private static bool HeadersAreContiguous(IList<BlockHeader> headers, ulong startBlock)
-        {
-            if (headers[0].BlockNumber != (long)startBlock) return false;
-            for (int i = 1; i < headers.Count; i++)
-            {
-                if (headers[i].BlockNumber != headers[i - 1].BlockNumber + 1) return false;
-            }
-            return true;
-        }
-
-        private byte[] HashHeader(BlockHeader header)
-        {
-            var encoded = BlockHeaderEncoder.Current.Encode(header);
-            return _keccak.CalculateHash(encoded);
-        }
-
-        private static async Task DelayWithCancel(int ms, CancellationToken ct)
+        private static async Task DelayUnlessCancelled(int ms, CancellationToken ct)
         {
             try { await Task.Delay(ms, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { }

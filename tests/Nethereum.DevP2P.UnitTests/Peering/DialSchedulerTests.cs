@@ -274,6 +274,20 @@ namespace Nethereum.DevP2P.UnitTests.Peering
                 () => scheduler.OnPeerDisconnected(null, PeerDirection.Outbound));
         }
 
+        [Fact]
+        public async Task Given_CandidateRefusedForLackOfOutboundRoom_When_RoomAppears_Then_ItCanBeReservedWithoutWaitingForHistoryExpiry()
+        {
+            var scheduler = new DialScheduler(new DialSchedulerOptions { MaxActiveDials = 4 }, maxPeers: 1);
+            var first = Candidate(1);
+            var second = Candidate(2);
+            Assert.True(await scheduler.TryReserveSlotAsync(first, CancellationToken.None));
+
+            Assert.False(await scheduler.TryReserveSlotAsync(second, CancellationToken.None));
+            scheduler.ReleaseSlot(first, DialOutcome.Success);
+
+            Assert.True(await scheduler.TryReserveSlotAsync(second, CancellationToken.None));
+        }
+
         private sealed class TestClock
         {
             private DateTimeOffset _now;

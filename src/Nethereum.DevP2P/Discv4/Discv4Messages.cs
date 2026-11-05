@@ -40,6 +40,8 @@ namespace Nethereum.DevP2P.Discv4
 
     public class Discv4NeighborsMessage
     {
+        public const int MaxNeighbors = 12;
+
         public List<Discv4Neighbor> Nodes { get; set; } = new();
         public long Expiration { get; set; }
     }
@@ -82,10 +84,10 @@ namespace Nethereum.DevP2P.Discv4
                 Version = (int)outer[0].RLPData.ToLongFromRLPDecoded(),
                 From = Discv4Endpoint.Decode((RLPCollection)outer[1]),
                 To = Discv4Endpoint.Decode((RLPCollection)outer[2]),
-                Expiration = outer[3].RLPData.ToLongFromRLPDecoded()
+                Expiration = ExpirationFromRlp(outer[3].RLPData)
             };
             if (outer.Count > 4)
-                msg.EnrSeq = (ulong)outer[4].RLPData.ToLongFromRLPDecoded();
+                msg.EnrSeq = outer[4].RLPData.ToULongFromRLPDecoded();
             return msg;
         }
 
@@ -114,10 +116,10 @@ namespace Nethereum.DevP2P.Discv4
             {
                 To = Discv4Endpoint.Decode((RLPCollection)outer[0]),
                 PingHash = outer[1].RLPData,
-                Expiration = outer[2].RLPData.ToLongFromRLPDecoded()
+                Expiration = ExpirationFromRlp(outer[2].RLPData)
             };
             if (outer.Count > 3)
-                msg.EnrSeq = (ulong)outer[3].RLPData.ToLongFromRLPDecoded();
+                msg.EnrSeq = outer[3].RLPData.ToULongFromRLPDecoded();
             return msg;
         }
 
@@ -135,8 +137,14 @@ namespace Nethereum.DevP2P.Discv4
             return new Discv4FindNodeMessage
             {
                 Target = outer[0].RLPData,
-                Expiration = outer[1].RLPData.ToLongFromRLPDecoded()
+                Expiration = ExpirationFromRlp(outer[1].RLPData)
             };
+        }
+
+        public static long DecodeEnrRequestExpiration(byte[] data)
+        {
+            var outer = (RLPCollection)RLP.RLP.Decode(data);
+            return ExpirationFromRlp(outer[0].RLPData);
         }
 
         public static byte[] EncodeNeighbors(Discv4NeighborsMessage msg)
@@ -164,7 +172,7 @@ namespace Nethereum.DevP2P.Discv4
             var nodesList = (RLPCollection)outer[0];
             var msg = new Discv4NeighborsMessage
             {
-                Expiration = outer[1].RLPData.ToLongFromRLPDecoded()
+                Expiration = ExpirationFromRlp(outer[1].RLPData)
             };
             foreach (RLPCollection nodeRlp in nodesList)
             {
@@ -183,6 +191,11 @@ namespace Nethereum.DevP2P.Discv4
         {
             if (value == 0) return new byte[0];
             return ((long)value).ToBytesForRLPEncoding();
+        }
+
+        private static long ExpirationFromRlp(byte[] value)
+        {
+            return unchecked((long)value.ToULongFromRLPDecoded());
         }
 
         private static byte[] LongToRlp(long value)
